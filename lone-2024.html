@@ -6,11 +6,7 @@
   <title>Lone 2024 — कानोड़ ग्राम सेवा सहकारी समिति</title>
   <meta name="description" content="Aadhar के exact 12 अंक से Lone 2024 डेटा खोजें — कानोड़ ग्राम सेवा सहकारी समिति" />
   <link rel="icon" href="data:," />
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -24,40 +20,16 @@
       darkMode: "class"
     }
   </script>
-
-  <!-- PapaParse -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
   <style>
-    html{scroll-behavior:smooth}
     body{font-family: Inter, system-ui, Arial}
     h1,h2{font-family: Poppins, Inter, system-ui}
     .glass{backdrop-filter:saturate(140%) blur(10px)}
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
-    /* कॉपी/सेलेक्ट कम करना */
-    * { user-select: none; -webkit-user-select: none; }
-    /* प्रिंट में कुछ भी न दिखे */
     @media print { body { display: none !important; } }
-    /* वॉटरमार्क */
-    .wm:before{
-      content: "KANOD GSS • CONFIDENTIAL";
-      position: fixed; inset: 0; pointer-events: none;
-      background: repeating-linear-gradient(45deg, rgba(2,6,23,.06) 0 24px, transparent 24px 48px);
-      color: rgba(2,6,23,.08); font-weight: 700; letter-spacing: .2em;
-      text-align: center; padding-top: 15vh; font-size: 20px;
-    }
-    /* ओवरले (screenshot/devtools hint) */
-    #cover{position: fixed; inset:0; background: rgba(15,23,42,.88); color:#fff;
-      display:none; z-index: 9999; align-items:center; justify-content:center; text-align:center; padding:24px}
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 wm" oncontextmenu="return false;">
-  <div id="cover">
-    <div>
-      <div class="text-xl font-bold">स्क्रीन कैप्चर/डेवटूल्स डिटेक्टेड</div>
-      <div class="mt-2 text-sm opacity-90">सुरक्षा हेतु कंटेंट छिपाया गया है। विंडो पर वापस आएँ।</div>
-    </div>
-  </div>
+<body class="bg-slate-50 text-slate-800">
 
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 glass">
@@ -95,7 +67,7 @@
           <input id="aadhar" type="text" inputmode="numeric" autocomplete="off" maxlength="12"
                  placeholder="उदा: 123412341234"
                  class="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-base tracking-widest focus:outline-none focus:ring-4 focus:ring-sky-200" />
-          <p class="mt-1 text-xs text-slate-500">सिर्फ अंक लिखें • कॉपी/स्क्रीनशॉट सीमित</p>
+          <p class="mt-1 text-xs text-slate-500">सिर्फ अंक लिखें • Excel/CSV सुझाव नीचे देखें</p>
         </div>
         <button id="findBtn"
                 class="h-[48px] rounded-xl bg-brand px-5 font-semibold text-white shadow-soft hover:opacity-90">
@@ -107,10 +79,8 @@
         </button>
       </div>
 
-      <!-- Status -->
       <div id="status" class="mt-4 hidden text-sm"></div>
 
-      <!-- Results -->
       <div id="resultWrap" class="mt-6 hidden">
         <h2 class="text-xl font-extrabold">रिकॉर्ड विवरण</h2>
         <div class="mt-3 overflow-x-auto">
@@ -120,72 +90,125 @@
         </div>
       </div>
 
-      <!-- No result -->
       <div id="nores" class="mt-6 hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
-        कोई रिकॉर्ड नहीं मिला। कृपया Aadhar नंबर जाँचें (12 अंक).
+        कोई रिकॉर्ड नहीं मिला। कृपया Aadhar नंबर जाँचें (12 अंक) या CSV हेडर/फॉर्मेट देखें।
       </div>
     </div>
 
     <div class="mt-4 text-xs text-slate-500">
-      नोट: CSV को UTF-8 में सेव करें। <b>Account Number</b> कॉलम Excel में “Text” फॉर्मेट पर रखें ताकि 17 अंकों के नंबर ज्यों-के-त्यों रहें।
+      नोट: CSV को UTF-8 में सेव करें। <b>Aadhar Number</b> और <b>Account Number</b> कॉलम Excel में **Text** फॉर्मेट रखें (leading zeros न कटें)।
     </div>
   </main>
 
   <script>
-    // ===== Config =====
     const CSV_URL = './lone-2024.csv';
-    const COLS = ['Aadhar Number','BL Number','Name','Father Name','Account Number','DMR number','Lone Amount','Date of Distributation'];
 
-    // ===== State =====
-    let indexMap = new Map(); // aadhar12 -> row
+    // संभावित हेडर नाम (Aadhaar/Aadhar/Adhar/आधार…)
+    const HEADER_ALIASES = {
+      aadhar: [
+        'Aadhar Number','Aadhaar Number','Adhar Number','Aadhar','Aadhaar','Adhar',
+        'Aadhar No','Aadhaar No','Adhar No','Aadhar_No','Aadhaar_No','Adhar_No',
+        'आधार संख्या','आधार नंबर','आधार'
+      ],
+      bl: ['BL Number','BL No','BL_Number','BL_No','बीएल नंबर'],
+      name: ['Name','नाम'],
+      fname: ['Father Name','FatherName','Father_Name','Fathers Name','पिता का नाम','पिता का नाम '],
+      account: ['Account Number','Account No','Account_Number','A/C Number','A/C No','खाता संख्या','खाता नंबर'],
+      dmr: ['DMR number','DMR Number','DMR No','DMR_no','डीएमआर नंबर'],
+      amount: ['Lone Amount','Loan Amount','Amount','राशि','ऋण राशि'],
+      date: ['Date of Distributation','Date of Distribution','Distribution Date','तिथि','वितरण तिथि']
+    };
 
-    // Helpers
+    // UI helpers
     const onlyDigits = s => String(s||'').replace(/\D+/g,'');
-    const isExactAadhar = s => /^\d{12}$/.test(s);
-
+    const isAadhar12 = s => /^\d{12}$/.test(s);
     function setStatus(msg, kind='info') {
       const el = document.getElementById('status');
       el.textContent = msg;
       el.classList.remove('hidden');
-      el.className = '';
-      el.id = 'status';
+      el.className = ''; el.id = 'status';
       el.classList.add('mt-4','text-sm');
-      if (kind === 'ok') el.classList.add('text-emerald-700');
-      else if (kind === 'err') el.classList.add('text-red-600');
+      if (kind==='ok') el.classList.add('text-emerald-700');
+      else if (kind==='err') el.classList.add('text-red-600');
       else el.classList.add('text-slate-600');
     }
-    function clearStatus(){ document.getElementById('status').classList.add('hidden'); }
+    const clearStatus = () => document.getElementById('status').classList.add('hidden');
 
-    function renderRow(row) {
+    // normalize header: lower, remove spaces/underscores, strip BOM
+    const norm = h => String(h||'').replace(/^\ufeff/,'').toLowerCase().replace(/[\s_]+/g,'').trim();
+
+    // find best matching actual header name for each logical field
+    function mapHeaders(actualHeaders){
+      const map = {}; // logical -> actual
+      const normalized = actualHeaders.map(h => [h, norm(h)]);
+      function findOne(aliasList){
+        for (const [orig, n] of normalized){
+          for (const a of aliasList){
+            if (n === norm(a)) return orig;
+          }
+        }
+        // fuzzy: contains 'aadhar' etc.
+        for (const [orig, n] of normalized){
+          for (const a of aliasList){
+            const an = norm(a);
+            if (an && n.includes(an)) return orig;
+          }
+        }
+        return null;
+      }
+      map.aadhar  = findOne(HEADER_ALIASES.aadhar);
+      map.bl      = findOne(HEADER_ALIASES.bl);
+      map.name    = findOne(HEADER_ALIASES.name);
+      map.fname   = findOne(HEADER_ALIASES.fname);
+      map.account = findOne(HEADER_ALIASES.account);
+      map.dmr     = findOne(HEADER_ALIASES.dmr);
+      map.amount  = findOne(HEADER_ALIASES.amount);
+      map.date    = findOne(HEADER_ALIASES.date);
+      return map;
+    }
+
+    let indexMap = new Map();  // aadhar12 -> row
+    let headerMap = null;      // logical -> actual header
+
+    function renderRow(row){
       const tbody = document.getElementById('resultBody');
       tbody.innerHTML = '';
-      const forceText = new Set(['Account Number','Aadhar Number','BL Number','DMR number']);
+      const order = [
+        ['Aadhar Number', row[headerMap.aadhar]],
+        ['BL Number', row[headerMap.bl]],
+        ['Name', row[headerMap.name]],
+        ['Father Name', row[headerMap.fname]],
+        ['Account Number', row[headerMap.account]],
+        ['DMR number', row[headerMap.dmr]],
+        ['Lone Amount', row[headerMap.amount]],
+        ['Date of Distributation', row[headerMap.date]],
+      ];
+      const forceText = new Set(['Aadhar Number','Account Number','BL Number','DMR number']);
 
-      COLS.forEach(label => {
-        const val = row[label] ?? '';
+      for (const [label, valRaw] of order){
         const tr = document.createElement('tr');
-
-        const th = document.createElement('th');
-        th.className = 'text-left text-slate-600 text-sm px-3 py-2 align-top whitespace-nowrap';
-        th.textContent = label;
-
+        const th = Object.assign(document.createElement('th'), {
+          className: 'text-left text-slate-600 text-sm px-3 py-2 align-top whitespace-nowrap',
+          textContent: label
+        });
         const td = document.createElement('td');
         td.className = 'bg-white rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800';
+        const val = (valRaw ?? '').toString().trim();
         if (forceText.has(label)) {
           const span = document.createElement('span');
           span.className = 'mono tracking-wide select-all';
-          span.textContent = String(val);
+          span.textContent = val;
           td.appendChild(span);
         } else {
           td.textContent = val;
         }
         tr.appendChild(th); tr.appendChild(td);
         tbody.appendChild(tr);
-      });
-
+      }
       document.getElementById('nores').classList.add('hidden');
       document.getElementById('resultWrap').classList.remove('hidden');
     }
+
     function showNoResult(){
       document.getElementById('resultWrap').classList.add('hidden');
       document.getElementById('nores').classList.remove('hidden');
@@ -193,22 +216,16 @@
 
     function doFind(){
       clearStatus();
-      const input = document.getElementById('aadhar');
-      const q = onlyDigits(input.value.trim());
-
-      if (!isExactAadhar(q)) {
-        setStatus('कृपया 12 अंकों का वैध Aadhar दर्ज करें (सिर्फ अंक).', 'err');
+      const q = onlyDigits(document.getElementById('aadhar').value);
+      if (!isAadhar12(q)){
+        setStatus('कृपया 12 अंकों का वैध Aadhar दर्ज करें (सिर्फ अंक).','err');
         showNoResult();
-        input.focus();
         return;
       }
       const row = indexMap.get(q);
-      if (row) {
-        renderRow(row);
-      } else {
-        showNoResult();
-      }
+      if (row) renderRow(row); else showNoResult();
     }
+
     function doReset(){
       document.getElementById('aadhar').value='';
       document.getElementById('resultWrap').classList.add('hidden');
@@ -217,54 +234,49 @@
       document.getElementById('aadhar').focus();
     }
 
-    // Load CSV
     function loadCSV(){
       setStatus('डेटा लोड हो रहा है…','info');
       Papa.parse(CSV_URL, {
         download:true, header:true, skipEmptyLines:true, dynamicTyping:false,
         complete: (res)=>{
+          const headers = res.meta.fields.map(h => h.replace(/^\ufeff/,''));
+          headerMap = mapHeaders(headers);
+
+          // Debug status: कौन-सा कॉलम मिला
+          setStatus(
+            `कॉलम मैप: Aadhaar→"${headerMap.aadhar}", BL→"${headerMap.bl}", Name→"${headerMap.name}", Father→"${headerMap.fname}", Account→"${headerMap.account}", DMR→"${headerMap.dmr}", Amount→"${headerMap.amount}", Date→"${headerMap.date}"`,
+            'ok'
+          );
+
+          // कोई भी required header missing?
+          const required = ['aadhar','name','account'];
+          const missing = required.filter(k => !headerMap[k]);
+          if (missing.length){
+            setStatus('CSV हेडर नहीं मिले: ' + missing.join(', ') + '. कृपया हेडर नामों की जाँच करें।','err');
+          }
+
           indexMap = new Map();
           res.data.forEach(r=>{
-            const obj = {};
-            COLS.forEach(c => obj[c] = (r[c] ?? '').toString().trim());
-            const key = onlyDigits(obj['Aadhar Number']);
-            if (isExactAadhar(key)) indexMap.set(key, obj);
+            // सभी वैल्यू string/trim
+            const row = {};
+            headers.forEach(h => row[h] = (r[h] ?? '').toString().trim());
+            const key = onlyDigits(row[headerMap.aadhar] || '');
+            if (isAadhar12(key)) indexMap.set(key, row);
           });
-          setStatus(`डेटा लोड हो गया (${indexMap.size} रिकॉर्ड).`, 'ok');
         },
-        error: (err)=> setStatus('CSV लोड त्रुटि: '+err, 'err')
+        error: (err)=> setStatus('CSV लोड त्रुटि: '+err,'err')
       });
     }
 
     // Events
     document.getElementById('findBtn').addEventListener('click', doFind);
     document.getElementById('resetBtn').addEventListener('click', doReset);
-    document.getElementById('aadhar').addEventListener('keydown', e=>{ if(e.key==='Enter') doFind(); });
-    // allow only digits in input
     document.getElementById('aadhar').addEventListener('input', e=>{
       e.target.value = onlyDigits(e.target.value).slice(0,12);
     });
-
-    // ===== Deterrents (not foolproof) =====
-    // Block Ctrl/Cmd+P
-    document.addEventListener('keydown', (e)=>{
-      if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); e.stopPropagation(); setStatus('Print निष्क्रिय है।', 'err'); }
-      // PrintScreen (best-effort)
-      if (e.key === 'PrintScreen' || e.keyCode === 44) showCover(true);
-      // DevTools heuristic (F12)
-      if (e.key === 'F12') showCover(true);
+    document.getElementById('aadhar').addEventListener('keydown', e=>{
+      if (e.key==='Enter') doFind();
     });
-    // Hide on beforeprint
-    window.addEventListener('beforeprint', ()=>{ showCover(true); });
-    window.addEventListener('afterprint',  ()=>{ showCover(false); });
-    // Visibility change (switching/OS capture guess)
-    document.addEventListener('visibilitychange', ()=>{
-      if (document.hidden) showCover(true); else showCover(false);
-    });
-    function showCover(show){
-      const c = document.getElementById('cover');
-      c.style.display = show ? 'flex' : 'none';
-    }
 
     // Init
     loadCSV();
