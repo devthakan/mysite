@@ -5,57 +5,56 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>कानोड़ ग्राम सेवा सहकारी समिति</title>
   <meta name="description" content="किसानों के लिए त्वरित, पारदर्शी और विश्वसनीय सहकारी सेवाएँ।" />
+  <link rel="icon" href="data:," />
 
-  <!-- Tailwind (CDN) -->
+  <!-- Google Fonts: Poppins (headings) + Inter (body) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
-          fontFamily: { sans: ["Inter","system-ui","Arial"] },
-          boxShadow: { soft:"0 12px 30px rgba(2,6,23,.08)" },
-          colors: { brand: { DEFAULT:"#2563eb", fg:"#ffffff" } }
+          colors: { brand: { DEFAULT: "#3b82f6" } },
+          boxShadow: { soft: "0 14px 34px rgba(2,6,23,.10)" },
+          fontFamily: {
+            inter: ["Inter", "system-ui", "Arial"],
+            poppins: ["Poppins", "Inter", "system-ui"]
+          }
         }
       }
     }
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
   <style>
-    .hero-bg{
-      background:
-        radial-gradient(1000px 500px at 80% -10%, rgba(37,99,235,.20), transparent 60%),
-        radial-gradient(800px 600px at -10% 10%, rgba(16,185,129,.18), transparent 60%);
-    }
-    .glass{ backdrop-filter:saturate(140%) blur(10px); }
+    html{scroll-behavior:smooth}
+    body{font-family: Inter, system-ui, Arial;}
+    h1,h2,h3,.display{font-family: Poppins, Inter, system-ui}
+    .glass{backdrop-filter:saturate(140%) blur(10px)}
+    /* Decorative gradient blobs */
+    .blob{filter: blur(60px); opacity:.55}
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans">
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
 
-  <!-- Header / Navbar -->
+  <!-- NAVBAR -->
   <header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 dark:bg-slate-900/70 glass">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="./" class="flex items-center gap-3">
+      <a href="#top" class="flex items-center gap-3">
         <span class="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-soft"></span>
-        <span class="font-extrabold tracking-tight">कानोड़ ग्राम सेवा सहकारी समिति</span>
+        <span class="font-poppins text-[15px] font-extrabold tracking-tight">कानोड़ ग्राम सेवा सहकारी समिति</span>
       </a>
-
       <nav class="hidden sm:flex items-center gap-1 text-sm font-semibold">
         <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
         <a href="#about" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">समिति</a>
         <a href="#contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">संपर्क</a>
-        <button id="themeBtn" class="ml-1 px-3 py-2 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
-          डार्क/लाइट
-        </button>
       </nav>
-
-      <!-- Mobile menu btn -->
       <button id="menuBtn" class="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Menu">
         <svg class="h-6 w-6" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
     </div>
-
-    <!-- Mobile menu -->
     <div id="mobileNav" class="max-w-6xl mx-auto px-4 pb-3 hidden sm:hidden">
       <div class="grid gap-2 text-sm font-semibold">
         <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
@@ -65,190 +64,189 @@
     </div>
   </header>
 
-  <!-- Hero -->
-  <section class="hero-bg">
-    <div class="max-w-6xl mx-auto px-4 py-10 grid gap-10 md:grid-cols-2">
-      <div class="flex flex-col justify-center">
-        <span class="inline-flex w-max items-center gap-2 rounded-full border border-sky-200/60 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-400/30 dark:bg-sky-900/30 dark:text-sky-200">
+  <!-- HERO (Ultra-modern) -->
+  <section id="top" class="relative overflow-hidden">
+    <!-- gradient background -->
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 blob"></div>
+      <div class="absolute  top-20  left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-500 blob"></div>
+      <div class="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 blob"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-12 md:py-16 grid gap-10 md:grid-cols-2 items-center">
+      <!-- Left (copy) -->
+      <div>
+        <span class="inline-flex w-max items-center gap-2 rounded-full border border-sky-200/60 bg-white/70 px-3 py-1 text-[12px] font-semibold text-sky-700 shadow-sm glass">
           किसानों का विश्वास, समृद्धि का आधार
         </span>
-        <h1 class="mt-3 text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">
-          किसानों के लिए त्वरित, पारदर्शी और विश्वसनीय सहकारी सेवाएँ
+
+        <h1 class="mt-4 display text-4xl md:text-5xl font-extrabold leading-[1.12] tracking-tight">
+          किसानों के लिए <span class="text-sky-600">त्वरित</span>, <span class="text-emerald-600">पारदर्शी</span> और
+          <span class="text-indigo-600">विश्वसनीय</span> सहकारी सेवाएँ
         </h1>
-        <p class="mt-3 text-slate-600 dark:text-slate-300">
-          NABARD बजटित लघु अवधि ऋण—समय पर अदायगी, सरकार द्वारा ब्याज माफी। <br class="hidden sm:block">
-          छोटे किसानों की समृद्धि हेतु समर्पित संस्था।
+
+        <p class="mt-4 max-w-prose text-slate-600/90 dark:text-slate-300">
+          NABARD बजटित लघु अवधि ऋण—समय पर अदायगी पर सरकार द्वारा ब्याज माफी। छोटे किसानों की समृद्धि हेतु समर्पित संस्था।
         </p>
 
-        <!-- Stats -->
-        <div class="mt-6 grid grid-cols-3 gap-3">
-          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-            <div class="text-2xl font-extrabold">1230</div>
-            <div class="text-xs text-slate-500">कुल सदस्य</div>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-            <div class="text-2xl font-extrabold">810</div>
-            <div class="text-xs text-slate-500">ऋणी सदस्य</div>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-            <div class="text-2xl font-extrabold">1961</div>
-            <div class="text-xs text-slate-500">स्थापना</div>
-          </div>
-        </div>
-
         <div class="mt-6 flex flex-wrap items-center gap-3">
-          <a href="#sevaye" class="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 font-semibold text-brand-fg shadow-soft hover:opacity-90">
+          <a href="#sevaye"
+             class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-5 py-3 font-semibold text-white shadow-soft ring-1 ring-sky-300/40 hover:shadow-lg hover:translate-y-[-2px] transition">
             हमारी सेवाएँ देखें
             <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 5 5 9-9"/></svg>
           </a>
-          <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <span class="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 glass">
             रजिस्ट्रेशन: 424/C · दिनांक: 23/03/1961
           </span>
         </div>
       </div>
 
-      <!-- Side info card -->
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <h3 class="text-lg font-extrabold">समिति परिचय</h3>
-        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          समिति लघु अवधि के लिए ऋण देती है, जिसे निश्चित समय पर जमा करना होता है। NABARD द्वारा बजटित इस ऋण पर भारत एवं राजस्थान सरकार द्वारा ब्याज माफी प्रदान की जाती है—छोटे किसानों के हित में।
-        </p>
+      <!-- Right (floating glass stats) -->
+      <div class="relative">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
+            <div class="text-3xl font-extrabold font-poppins">1230</div>
+            <div class="text-[12px] text-slate-600">कुल सदस्य</div>
+          </div>
+          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
+            <div class="text-3xl font-extrabold font-poppins">810</div>
+            <div class="text-[12px] text-slate-600">ऋणी सदस्य</div>
+          </div>
+          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
+            <div class="text-3xl font-extrabold font-poppins">1961</div>
+            <div class="text-[12px] text-slate-600">स्थापना</div>
+          </div>
+        </div>
+        <!-- floating badge -->
+        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-soft glass">
+          किसानों की समृद्धि के लिए समर्पित
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Quick Services -->
+  <!-- त्वरित सेवाएँ (नीली थीम, जैसा स्क्रीनशॉट) -->
   <section id="sevaye" class="max-w-6xl mx-auto px-4 py-12">
-    <div class="flex items-end justify-between gap-3">
-      <h2 class="text-2xl font-extrabold tracking-tight">त्वरित सेवाएँ</h2>
-      <p class="text-sm text-slate-500">कार्ड्स पर क्लिक कर सीधे सेवा/फॉर्म खोलें</p>
-    </div>
-
-    <!-- NOTE: href="#" को अपने असली पेज/फॉर्म लिंक से बदलें -->
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200">₹</div>
-          <div>
-            <div class="font-bold">2024 बकाया ऋण सूचना</div>
-            <p class="mt-1 text-sm text-slate-500">देयकों की अद्यतन स्थिति</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+    <h2 class="text-3xl font-extrabold tracking-tight text-center">त्वरित सेवाएँ</h2>
+    <div class="mt-8 grid gap-5 sm:grid-cols-2">
+      <!-- कार्ड टेम्पलेट -->
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12a1 1 0 0 1 1 1v18l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1Zm2 6h8v2H8V8Zm0 4h8v2H8v-2Z"/></svg>
         </span>
+        <div class="font-semibold">2024 बकाया ऋण सूचना</div>
       </a>
 
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">📝</div>
-          <div>
-            <div class="font-bold">ST Loan Application</div>
-            <p class="mt-1 text-sm text-slate-500">ऑनलाइन आवेदन</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4V4Zm0 6h10v10H4V10Zm12 0h4v10h-4V10Z"/></svg>
+        </span>
+        <div class="font-semibold">ST Loan Application</div>
       </a>
 
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">👥</div>
-          <div>
-            <div class="font-bold">मेम्बर हिस्सा राशि</div>
-            <p class="mt-1 text-sm text-slate-500">अंशदान व विवरण</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7h18v10H3V7Zm2 2v6h14V9H5Zm2 1h4v4H7v-4Zm9 0h2v2h-2v-2Z"/></svg>
+        </span>
+        <div class="font-semibold">मेम्बर हिस्सा राशि</div>
       </a>
 
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-200">🧾</div>
-          <div>
-            <div class="font-bold">रशीद चेक करें</div>
-            <p class="mt-1 text-sm text-slate-500">भुगतान जाँच</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1Zm3 6h6v2h-6V8Zm0 4h3v2h-3v-2Z"/></svg>
+        </span>
+        <div class="font-semibold">रशीद चेक करे</div>
       </a>
 
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-200">📄</div>
-          <div>
-            <div class="font-bold">GRA फॉर्म</div>
-            <p class="mt-1 text-sm text-slate-500">डाउनलोड/सबमिट</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm6 1a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm-4 8h8a4 4 0 0 0-8 0Z"/></svg>
+        </span>
+        <div class="font-semibold">मेम्बर पूरी जानकारी</div>
       </a>
 
-      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-200">🌾</div>
-          <div>
-            <div class="font-bold">PMFBY - 2024</div>
-            <p class="mt-1 text-sm text-slate-500">फसल बीमा जानकारी</p>
-          </div>
-        </div>
-        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3Zm0 7.2c1.1-1.4 3.6-.8 3.6 1.1 0 1.5-1.3 2.7-3.6 4.5-2.3-1.8-3.6-3-3.6-4.5 0-1.9 2.5-2.5 3.6-1.1Z"/></svg>
+        </span>
+        <div class="font-semibold">जीवन सुरक्षा क्लेम</div>
+      </a>
+
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1v5h5M8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h5v2H8v-2Z"/></svg>
+        </span>
+        <div class="font-semibold">नए लोन आवेदन फॉर्म</div>
+      </a>
+
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4s-6 0-10 4-4 10-4 10 6 0 10-4 4-10 4-10Zm-9.5 6.5C9 12 8 14 8 16c2 0 4-1 5.5-2.5S16 9 16 7c-2 0-4 1-5.5 3.5Z"/></svg>
+        </span>
+        <div class="font-semibold">GRA फ़ॉर्म</div>
+      </a>
+
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h14v2H4V6Zm0 5h14v2H4v-2Zm0 5h14v2H4v-2Zm16-8h2v2h-2V8Zm0 5h2v2h-2v-2Zm0 5h2v2h-2v-2Z"/></svg>
+        </span>
+        <div class="font-semibold">बकाया ST ऋण सूची</div>
+      </a>
+
+      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
+        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l1.9 3.9L18 10l-3.9 2.1L12 16l-2.1-3.9L6 10l3.9-2.1L12 4Zm7 11a3 3 0 1 1-3 3h-2a5 5 0 1 0 5-5v2Z"/></svg>
+        </span>
+        <div class="font-semibold">PMFBY - 2024</div>
       </a>
     </div>
   </section>
 
-  <!-- About -->
+  <!-- ABOUT -->
   <section id="about" class="max-w-6xl mx-auto px-4 py-12">
     <h2 class="text-2xl font-extrabold tracking-tight">समिति की विस्तृत जानकारी</h2>
     <div class="mt-6 grid gap-4 md:grid-cols-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <h3 class="font-bold">समिति परिचय</h3>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          1230 सदस्य, जिनमें 810 ऋणी सदस्य। लघु अवधि ऋण समय पर जमा—सरकारी ब्याज माफी का लाभ।
-        </p>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+        <h3 class="font-poppins font-bold">उद्देश्य</h3>
+        <p class="mt-1 text-sm text-slate-600">छोटे किसानों की आर्थिक उन्नति व सहकारी सेवाओं की सुगमता।</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <h3 class="font-bold">कार्यकारिणी</h3>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">पदाधिकारियों की सूची एवं दायित्व।</p>
-        <a href="#" class="mt-2 inline-flex items-center gap-2 text-brand hover:underline">सूची देखें
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+        <h3 class="font-poppins font-bold">कार्यकारिणी</h3>
+        <p class="mt-1 text-sm text-slate-600">पदाधिकारियों की सूची एवं दायित्व।</p>
+        <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" href="#">सूची देखें
           <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
         </a>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-        <h3 class="font-bold">योजनाएं एवं कार्य</h3>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">चालित योजनाएँ, प्रक्रियाएँ व समयसीमा।</p>
-        <a href="#" class="mt-2 inline-flex items-center gap-2 text-brand hover:underline">विस्तार से
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+        <h3 class="font-poppins font-bold">योजनाएँ</h3>
+        <p class="mt-1 text-sm text-slate-600">लघु अवधि ऋण, बीमा, और अन्य सदस्य सेवाएँ।</p>
+        <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" href="#">विस्तार से
           <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- Contact -->
-  <section id="contact" class="relative bg-white/70 py-12 dark:bg-slate-950/40 glass">
+  <!-- CONTACT -->
+  <section id="contact" class="relative bg-white/70 py-12">
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl font-extrabold tracking-tight">संपर्क सूत्र</h2>
       <div class="mt-6 grid gap-4 md:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-          <h3 class="font-bold">फोन / ईमेल</h3>
-          <p class="mt-2">
-            <a class="font-semibold hover:underline" href="tel:8094251586">📞 8094251586</a>
-          </p>
-          <p>
-            <a class="font-semibold hover:underline" href="mailto:kanodgsss@gmail.com">✉️ kanodgsss@gmail.com</a>
-          </p>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+          <h3 class="font-poppins font-bold">फोन / ईमेल</h3>
+          <p class="mt-2"><a class="font-semibold hover:underline" href="tel:8094251586">📞 8094251586</a></p>
+          <p><a class="font-semibold hover:underline" href="mailto:kanodgsss@gmail.com">✉️ kanodgsss@gmail.com</a></p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-          <h3 class="font-bold">पता</h3>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+          <h3 class="font-poppins font-bold">पता</h3>
           <p class="mt-2 text-sm">KANOD, बाड़मेर, राजस्थान - 344034</p>
-          <a class="mt-2 inline-flex items-center gap-2 text-brand hover:underline"
-             target="_blank" rel="noopener"
-             href="https://maps.google.com/?q=KANOD%2C%20Barmer%20344034">
+          <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" target="_blank" rel="noopener" href="https://maps.google.com/?q=KANOD%2C%20Barmer%20344034">
             मानचित्र पर देखें
             <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
           </a>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
-          <h3 class="font-bold">त्वरित सम्पर्क</h3>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+          <h3 class="font-poppins font-bold">त्वरित सम्पर्क</h3>
           <div class="mt-2 grid gap-2">
             <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" href="tel:8094251586">कॉल करें</a>
             <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" target="_blank" rel="noopener" href="https://wa.me/918094251586">WhatsApp</a>
@@ -258,27 +256,14 @@
     </div>
   </section>
 
-  <footer class="border-t border-slate-200 bg-white py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/60">
-    <div class="max-w-6xl mx-auto px-4">
-      © 2025 KANOD GRAM SEWA SAHKARI SAMITI KANOD. All rights reserved.
-    </div>
+  <footer class="border-t border-slate-200 bg-white py-6 text-sm text-slate-500">
+    <div class="max-w-6xl mx-auto px-4">© 2025 KANOD GRAM SEWA SAHKARI SAMITI KANOD. All rights reserved.</div>
   </footer>
 
   <script>
-    // Mobile menu toggle
     const menuBtn = document.getElementById('menuBtn');
     const mobileNav = document.getElementById('mobileNav');
     if (menuBtn) menuBtn.onclick = () => mobileNav.classList.toggle('hidden');
-
-    // Dark/Light toggle (persisted)
-    const themeBtn = document.getElementById('themeBtn');
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') root.classList.add('dark');
-    if (themeBtn) themeBtn.onclick = () => {
-      root.classList.toggle('dark');
-      localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
-    };
   </script>
 </body>
 </html>
