@@ -1,169 +1,284 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Name से Find (CSV)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>कानोड़ ग्राम सेवा सहकारी समिति</title>
+  <meta name="description" content="किसानों के लिए त्वरित, पारदर्शी और विश्वसनीय सहकारी सेवाएँ।" />
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter","system-ui","Arial"] },
+          boxShadow: { soft:"0 12px 30px rgba(2,6,23,.08)" },
+          colors: { brand: { DEFAULT:"#2563eb", fg:"#ffffff" } }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root { --pad: 12px; }
-    body { font-family: system-ui, Arial, sans-serif; margin:0; background:#f6f7fb; color:#222; }
-    header { background:#fff; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.06); position:sticky; top:0; z-index:10; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: var(--pad); }
-    h1 { margin: 0 0 8px; font-size: 20px; }
-    .bar { display:flex; gap:8px; flex-wrap: wrap; }
-    input[type="text"] { flex:1; min-width: 220px; padding: 10px; border:1px solid #d0d5dd; border-radius: 8px; }
-    button { padding:10px 14px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    main { padding-top: 16px; }
-    .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.04); min-height:120px; display:flex; align-items:center; justify-content:center; }
-    .hint { color:#6b7280; font-size:14px; text-align:center; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-bottom:1px solid #eef2f7; padding:10px; text-align:left; font-size: 14px; }
-    th { background:#f8fafc; position: sticky; top: 74px; z-index: 5; }
-    tr:hover { background:#fafcff; }
-    .msg { text-align:center; color:#666; }
-    .stats { margin:10px 0; color:#555; font-size:13px; }
+    .hero-bg{
+      background:
+        radial-gradient(1000px 500px at 80% -10%, rgba(37,99,235,.20), transparent 60%),
+        radial-gradient(800px 600px at -10% 10%, rgba(16,185,129,.18), transparent 60%);
+    }
+    .glass{ backdrop-filter:saturate(140%) blur(10px); }
   </style>
 </head>
-<body>
-<header>
-  <div class="wrap">
-    <h1>🔎 Name से Find</h1>
-    <div class="bar">
-      <input id="q" type="text" placeholder="Name टाइप करें…" />
-      <button id="btnFind">Find</button>
-      <button id="btnReset" style="background:#6b7280">Reset</button>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans">
+
+  <!-- Header / Navbar -->
+  <header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 dark:bg-slate-900/70 glass">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="./" class="flex items-center gap-3">
+        <span class="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-soft"></span>
+        <span class="font-extrabold tracking-tight">कानोड़ ग्राम सेवा सहकारी समिति</span>
+      </a>
+
+      <nav class="hidden sm:flex items-center gap-1 text-sm font-semibold">
+        <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
+        <a href="#about" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">समिति</a>
+        <a href="#contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">संपर्क</a>
+        <button id="themeBtn" class="ml-1 px-3 py-2 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+          डार्क/लाइट
+        </button>
+      </nav>
+
+      <!-- Mobile menu btn -->
+      <button id="menuBtn" class="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Menu">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
     </div>
-    <div class="stats" id="stats" hidden></div>
-  </div>
-</header>
 
-<main class="wrap">
-  <div class="card" id="placeholder">
-    <div class="hint">ऊपर Name डालकर <b>Find</b> दबाएँ। परिणाम यहां दिखेंगे।</div>
-  </div>
-  <div id="tableWrap" style="display:none;"></div>
-  <p class="msg" id="msg" hidden></p>
-</main>
+    <!-- Mobile menu -->
+    <div id="mobileNav" class="max-w-6xl mx-auto px-4 pb-3 hidden sm:hidden">
+      <div class="grid gap-2 text-sm font-semibold">
+        <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
+        <a href="#about" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">समिति</a>
+        <a href="#contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">संपर्क</a>
+      </div>
+    </div>
+  </header>
 
-<script>
-/* ===== CSV parsing (simple) =====
-   Simple CSVs पर सही; अगर आपके डेटा में कॉमा/क्वोट्स जटिल हों, तो PapaParse बेहतर है।
-*/
-function parseCSV(text) {
-  const lines = text.replace(/\r/g, '').split('\n').filter(line => line.trim().length);
-  if (!lines.length) return { headers: [], rows: [] };
-  const headers = lines[0].split(',').map(h => h.trim());
-  const rows = lines.slice(1).map(line => {
-    const parts = line.split(',');
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = (parts[i] ?? '').trim());
-    return obj;
-  });
-  return { headers, rows };
-}
+  <!-- Hero -->
+  <section class="hero-bg">
+    <div class="max-w-6xl mx-auto px-4 py-10 grid gap-10 md:grid-cols-2">
+      <div class="flex flex-col justify-center">
+        <span class="inline-flex w-max items-center gap-2 rounded-full border border-sky-200/60 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-400/30 dark:bg-sky-900/30 dark:text-sky-200">
+          किसानों का विश्वास, समृद्धि का आधार
+        </span>
+        <h1 class="mt-3 text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">
+          किसानों के लिए त्वरित, पारदर्शी और विश्वसनीय सहकारी सेवाएँ
+        </h1>
+        <p class="mt-3 text-slate-600 dark:text-slate-300">
+          NABARD बजटित लघु अवधि ऋण—समय पर अदायगी, सरकार द्वारा ब्याज माफी। <br class="hidden sm:block">
+          छोटे किसानों की समृद्धि हेतु समर्पित संस्था।
+        </p>
 
-const state = { headers: [], rows: [], nameKey: null };
+        <!-- Stats -->
+        <div class="mt-6 grid grid-cols-3 gap-3">
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+            <div class="text-2xl font-extrabold">1230</div>
+            <div class="text-xs text-slate-500">कुल सदस्य</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+            <div class="text-2xl font-extrabold">810</div>
+            <div class="text-xs text-slate-500">ऋणी सदस्य</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+            <div class="text-2xl font-extrabold">1961</div>
+            <div class="text-xs text-slate-500">स्थापना</div>
+          </div>
+        </div>
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
-}
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <a href="#sevaye" class="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 font-semibold text-brand-fg shadow-soft hover:opacity-90">
+            हमारी सेवाएँ देखें
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 5 5 9-9"/></svg>
+          </a>
+          <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            रजिस्ट्रेशन: 424/C · दिनांक: 23/03/1961
+          </span>
+        </div>
+      </div>
 
-function renderTable(headers, rows) {
-  if (!rows.length) return '';
-  const thead = `<thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody>${
-    rows.map(r => `<tr>${headers.map(h => `<td>${escapeHtml(r[h] ?? '')}</td>`).join('')}</tr>`).join('')
-  }</tbody>`;
-  return `<table>${thead}${tbody}</table>`;
-}
+      <!-- Side info card -->
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <h3 class="text-lg font-extrabold">समिति परिचय</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          समिति लघु अवधि के लिए ऋण देती है, जिसे निश्चित समय पर जमा करना होता है। NABARD द्वारा बजटित इस ऋण पर भारत एवं राजस्थान सरकार द्वारा ब्याज माफी प्रदान की जाती है—छोटे किसानों के हित में।
+        </p>
+      </div>
+    </div>
+  </section>
 
-function findNameKey(headers) {
-  // "Name" कॉलम को case-insensitive ढंग से पहचानें
-  const idx = headers.findIndex(h => h.trim().toLowerCase() === 'name');
-  return idx >= 0 ? headers[idx] : null;
-}
+  <!-- Quick Services -->
+  <section id="sevaye" class="max-w-6xl mx-auto px-4 py-12">
+    <div class="flex items-end justify-between gap-3">
+      <h2 class="text-2xl font-extrabold tracking-tight">त्वरित सेवाएँ</h2>
+      <p class="text-sm text-slate-500">कार्ड्स पर क्लिक कर सीधे सेवा/फॉर्म खोलें</p>
+    </div>
 
-async function loadCSV() {
-  try {
-    const res = await fetch('data.csv', { cache: 'no-store' });
-    if (!res.ok) throw new Error('data.csv not found');
-    const text = await res.text();
-    const { headers, rows } = parseCSV(text);
-    state.headers = headers;
-    state.rows = rows;
-    state.nameKey = findNameKey(headers);
-    if (!state.nameKey) {
-      showMsg('⚠️ आपकी CSV में "Name" नाम का कॉलम नहीं मिला। कृपया हेडर को बिल्कुल "Name" रखें।');
-    }
-  } catch (e) {
-    showMsg('❌ data.csv लोड नहीं हुआ। उसे repo के root में अपलोड करें।');
-  }
-}
+    <!-- NOTE: href="#" को अपने असली पेज/फॉर्म लिंक से बदलें -->
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200">₹</div>
+          <div>
+            <div class="font-bold">2024 बकाया ऋण सूचना</div>
+            <p class="mt-1 text-sm text-slate-500">देयकों की अद्यतन स्थिति</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </span>
+      </a>
 
-function showMsg(text) {
-  document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('tableWrap').style.display = 'none';
-  const m = document.getElementById('msg');
-  m.textContent = text;
-  m.hidden = false;
-  document.getElementById('stats').hidden = true;
-}
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">📝</div>
+          <div>
+            <div class="font-bold">ST Loan Application</div>
+            <p class="mt-1 text-sm text-slate-500">ऑनलाइन आवेदन</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      </a>
 
-function showResults(rows, timeMs) {
-  const wrap = document.getElementById('tableWrap');
-  wrap.innerHTML = renderTable(state.headers, rows);
-  document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('msg').hidden = rows.length !== 0;
-  wrap.style.display = rows.length ? 'block' : 'none';
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">👥</div>
+          <div>
+            <div class="font-bold">मेम्बर हिस्सा राशि</div>
+            <p class="mt-1 text-sm text-slate-500">अंशदान व विवरण</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      </a>
 
-  const stats = document.getElementById('stats');
-  stats.textContent = `Results: ${rows.length} • Time: ${timeMs.toFixed(2)} ms`;
-  stats.hidden = false;
-}
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-200">🧾</div>
+          <div>
+            <div class="font-bold">रशीद चेक करें</div>
+            <p class="mt-1 text-sm text-slate-500">भुगतान जाँच</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      </a>
 
-function doFind() {
-  const q = document.getElementById('q').value.trim().toLowerCase();
-  if (!state.rows.length) return showMsg('❌ data.csv लोड नहीं हुआ।');
-  if (!state.nameKey) return showMsg('⚠️ CSV में "Name" कॉलम नहीं मिला।');
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-200">📄</div>
+          <div>
+            <div class="font-bold">GRA फॉर्म</div>
+            <p class="mt-1 text-sm text-slate-500">डाउनलोड/सबमिट</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      </a>
 
-  const t0 = performance.now();
-  const results = q
-    ? state.rows.filter(r => String(r[state.nameKey] ?? '').toLowerCase().includes(q))
-    : [];
-  const t1 = performance.now();
+      <a href="#" class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <div class="flex items-start gap-4">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-200">🌾</div>
+          <div>
+            <div class="font-bold">PMFBY - 2024</div>
+            <p class="mt-1 text-sm text-slate-500">फसल बीमा जानकारी</p>
+          </div>
+        </div>
+        <span class="absolute right-5 top-5 opacity-0 transition group-hover:opacity-100"><svg class="h-5 w-5" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg></span>
+      </a>
+    </div>
+  </section>
 
-  if (!results.length) {
-    document.getElementById('tableWrap').style.display = 'none';
-    document.getElementById('placeholder').style.display = 'none';
-    const m = document.getElementById('msg');
-    m.textContent = q ? 'कोई रिकॉर्ड नहीं मिला।' : 'कृपया Name टाइप करके Find दबाएँ।';
-    m.hidden = false;
-    document.getElementById('stats').hidden = true;
-  } else {
-    showResults(results, t1 - t0);
-  }
-}
+  <!-- About -->
+  <section id="about" class="max-w-6xl mx-auto px-4 py-12">
+    <h2 class="text-2xl font-extrabold tracking-tight">समिति की विस्तृत जानकारी</h2>
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <h3 class="font-bold">समिति परिचय</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          1230 सदस्य, जिनमें 810 ऋणी सदस्य। लघु अवधि ऋण समय पर जमा—सरकारी ब्याज माफी का लाभ।
+        </p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <h3 class="font-bold">कार्यकारिणी</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">पदाधिकारियों की सूची एवं दायित्व।</p>
+        <a href="#" class="mt-2 inline-flex items-center gap-2 text-brand hover:underline">सूची देखें
+          <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
+        </a>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+        <h3 class="font-bold">योजनाएं एवं कार्य</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">चालित योजनाएँ, प्रक्रियाएँ व समयसीमा।</p>
+        <a href="#" class="mt-2 inline-flex items-center gap-2 text-brand hover:underline">विस्तार से
+          <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
 
-function doReset() {
-  document.getElementById('q').value = '';
-  document.getElementById('tableWrap').style.display = 'none';
-  document.getElementById('msg').hidden = true;
-  document.getElementById('placeholder').style.display = 'flex';
-  document.getElementById('stats').hidden = true;
-}
+  <!-- Contact -->
+  <section id="contact" class="relative bg-white/70 py-12 dark:bg-slate-950/40 glass">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-2xl font-extrabold tracking-tight">संपर्क सूत्र</h2>
+      <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+          <h3 class="font-bold">फोन / ईमेल</h3>
+          <p class="mt-2">
+            <a class="font-semibold hover:underline" href="tel:8094251586">📞 8094251586</a>
+          </p>
+          <p>
+            <a class="font-semibold hover:underline" href="mailto:kanodgsss@gmail.com">✉️ kanodgsss@gmail.com</a>
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+          <h3 class="font-bold">पता</h3>
+          <p class="mt-2 text-sm">KANOD, बाड़मेर, राजस्थान - 344034</p>
+          <a class="mt-2 inline-flex items-center gap-2 text-brand hover:underline"
+             target="_blank" rel="noopener"
+             href="https://maps.google.com/?q=KANOD%2C%20Barmer%20344034">
+            मानचित्र पर देखें
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
+          </a>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-950/60 glass">
+          <h3 class="font-bold">त्वरित सम्पर्क</h3>
+          <div class="mt-2 grid gap-2">
+            <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" href="tel:8094251586">कॉल करें</a>
+            <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" target="_blank" rel="noopener" href="https://wa.me/918094251586">WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-document.getElementById('btnFind').addEventListener('click', doFind);
-document.getElementById('btnReset').addEventListener('click', doReset);
-document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doFind(); });
+  <footer class="border-t border-slate-200 bg-white py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/60">
+    <div class="max-w-6xl mx-auto px-4">
+      © 2025 KANOD GRAM SEWA SAHKARI SAMITI KANOD. All rights reserved.
+    </div>
+  </footer>
 
-// लोड पर CSV पढ़ें (कुछ भी render न करें)
-loadCSV();
-</script>
+  <script>
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileNav = document.getElementById('mobileNav');
+    if (menuBtn) menuBtn.onclick = () => mobileNav.classList.toggle('hidden');
+
+    // Dark/Light toggle (persisted)
+    const themeBtn = document.getElementById('themeBtn');
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') root.classList.add('dark');
+    if (themeBtn) themeBtn.onclick = () => {
+      root.classList.toggle('dark');
+      localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+    };
+  </script>
 </body>
 </html>
