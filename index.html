@@ -3,91 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Data Find / Search</title>
+  <title>Name से Find (CSV)</title>
   <style>
     :root { --pad: 12px; }
-    body { font-family: system-ui, Arial, sans-serif; margin: 0; background:#f6f7fb; color:#222; }
-    header { position: sticky; top:0; background:#fff; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.06); z-index: 10; }
-    .wrap { max-width:1100px; margin: 0 auto; padding: var(--pad); }
+    body { font-family: system-ui, Arial, sans-serif; margin:0; background:#f6f7fb; color:#222; }
+    header { background:#fff; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.06); position:sticky; top:0; z-index:10; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: var(--pad); }
     h1 { margin: 0 0 8px; font-size: 20px; }
     .bar { display:flex; gap:8px; flex-wrap: wrap; }
     input[type="text"] { flex:1; min-width: 220px; padding: 10px; border:1px solid #d0d5dd; border-radius: 8px; }
     button { padding:10px 14px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer; }
     button:disabled { opacity:.6; cursor:not-allowed; }
-    .chips { display:flex; gap:6px; flex-wrap: wrap; margin-top:8px; }
-    .chip { font-size:12px; background:#eef2ff; color:#3730a3; padding:4px 8px; border-radius:999px; }
-
-    .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.04); }
-    .stats { display:flex; gap:10px; align-items:center; margin: 8px 0 0; color:#555; font-size: 13px; }
-    .stats span { background:#f1f5f9; padding:3px 8px; border-radius: 999px; }
-
-    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    main { padding-top: 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding: var(--pad); box-shadow: 0 2px 10px rgba(0,0,0,.04); min-height:120px; display:flex; align-items:center; justify-content:center; }
+    .hint { color:#6b7280; font-size:14px; text-align:center; }
+    table { width:100%; border-collapse: collapse; }
     th, td { border-bottom:1px solid #eef2f7; padding:10px; text-align:left; font-size: 14px; }
-    th { background:#f8fafc; position: sticky; top: 64px; z-index: 5; }
+    th { background:#f8fafc; position: sticky; top: 74px; z-index: 5; }
     tr:hover { background:#fafcff; }
-
-    .nores { padding: 20px; text-align: center; color:#666; }
-    footer { text-align:center; padding: 20px; color:#8a8a8a; font-size: 12px; }
+    .msg { text-align:center; color:#666; }
+    .stats { margin:10px 0; color:#555; font-size:13px; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <h1>🔎 Data Find / Search (CSV आधारित)</h1>
-      <div class="bar">
-        <input id="q" type="text" placeholder="खोजें… (नाम, मोबाइल, शहर, आदि)" />
-        <button id="btnFind">Find</button>
-        <button id="btnReset" style="background:#6b7280">Reset</button>
-      </div>
-      <div class="chips" id="chips"></div>
-      <div class="stats" id="stats" hidden>
-        <span id="countBadge"></span>
-        <span id="timeBadge"></span>
-      </div>
+<header>
+  <div class="wrap">
+    <h1>🔎 Name से Find</h1>
+    <div class="bar">
+      <input id="q" type="text" placeholder="Name टाइप करें…" />
+      <button id="btnFind">Find</button>
+      <button id="btnReset" style="background:#6b7280">Reset</button>
     </div>
-  </header>
+    <div class="stats" id="stats" hidden></div>
+  </div>
+</header>
 
-  <main class="wrap">
-    <div class="card">
-      <div id="tableWrap"></div>
-      <div class="nores" id="nores" hidden>कोई परिणाम नहीं मिला</div>
-    </div>
-  </main>
-
-  <footer>Made for GitHub Pages · Client-side only</footer>
+<main class="wrap">
+  <div class="card" id="placeholder">
+    <div class="hint">ऊपर Name डालकर <b>Find</b> दबाएँ। परिणाम यहां दिखेंगे।</div>
+  </div>
+  <div id="tableWrap" style="display:none;"></div>
+  <p class="msg" id="msg" hidden></p>
+</main>
 
 <script>
-/* ======= हल्का CSV Parser (simple cases के लिए) =======
-   नोट: अगर आपके data में कॉमा/क्वोट्स बहुत complex हैं तो PapaParse जैसा
-   लाइब्रेरी इस्तेमाल करें। साधारण CSV (बिना embedded commas) पर ये काफी है।
+/* ===== CSV parsing (simple) =====
+   Simple CSVs पर सही; अगर आपके डेटा में कॉमा/क्वोट्स जटिल हों, तो PapaParse बेहतर है।
 */
 function parseCSV(text) {
-  const lines = text.replace(/\r/g, '').split('\n').filter(Boolean);
+  const lines = text.replace(/\r/g, '').split('\n').filter(line => line.trim().length);
   if (!lines.length) return { headers: [], rows: [] };
   const headers = lines[0].split(',').map(h => h.trim());
   const rows = lines.slice(1).map(line => {
-    const parts = line.split(','); // बेसिक split
+    const parts = line.split(',');
     const obj = {};
-    headers.forEach((h, i) => obj[h] = (parts[i] || '').trim());
+    headers.forEach((h, i) => obj[h] = (parts[i] ?? '').trim());
     return obj;
   });
   return { headers, rows };
 }
 
-const state = {
-  headers: [],
-  rows: [],
-  filtered: [],
-};
-
-function renderTable(headers, rows) {
-  if (!headers.length) return '';
-  const thead = `<thead><tr>${headers.map(h=>`<th>${escapeHtml(h) }</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody>${
-    rows.map(r => `<tr>${headers.map(h => `<td>${escapeHtml(r[h] ?? '')}</td>`).join('')}</tr>`).join('')
-  }</tbody>`;
-  return `<table>${thead}${tbody}</table>`;
-}
+const state = { headers: [], rows: [], nameKey: null };
 
 function escapeHtml(s) {
   return String(s)
@@ -98,73 +74,96 @@ function escapeHtml(s) {
     .replaceAll("'",'&#039;');
 }
 
-function setBadges(count, ms) {
+function renderTable(headers, rows) {
+  if (!rows.length) return '';
+  const thead = `<thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${
+    rows.map(r => `<tr>${headers.map(h => `<td>${escapeHtml(r[h] ?? '')}</td>`).join('')}</tr>`).join('')
+  }</tbody>`;
+  return `<table>${thead}${tbody}</table>`;
+}
+
+function findNameKey(headers) {
+  // "Name" कॉलम को case-insensitive ढंग से पहचानें
+  const idx = headers.findIndex(h => h.trim().toLowerCase() === 'name');
+  return idx >= 0 ? headers[idx] : null;
+}
+
+async function loadCSV() {
+  try {
+    const res = await fetch('data.csv', { cache: 'no-store' });
+    if (!res.ok) throw new Error('data.csv not found');
+    const text = await res.text();
+    const { headers, rows } = parseCSV(text);
+    state.headers = headers;
+    state.rows = rows;
+    state.nameKey = findNameKey(headers);
+    if (!state.nameKey) {
+      showMsg('⚠️ आपकी CSV में "Name" नाम का कॉलम नहीं मिला। कृपया हेडर को बिल्कुल "Name" रखें।');
+    }
+  } catch (e) {
+    showMsg('❌ data.csv लोड नहीं हुआ। उसे repo के root में अपलोड करें।');
+  }
+}
+
+function showMsg(text) {
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('tableWrap').style.display = 'none';
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.hidden = false;
+  document.getElementById('stats').hidden = true;
+}
+
+function showResults(rows, timeMs) {
+  const wrap = document.getElementById('tableWrap');
+  wrap.innerHTML = renderTable(state.headers, rows);
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('msg').hidden = rows.length !== 0;
+  wrap.style.display = rows.length ? 'block' : 'none';
+
   const stats = document.getElementById('stats');
-  const countBadge = document.getElementById('countBadge');
-  const timeBadge = document.getElementById('timeBadge');
-  countBadge.textContent = `Results: ${count}`;
-  timeBadge.textContent = `Search time: ${ms.toFixed(2)} ms`;
+  stats.textContent = `Results: ${rows.length} • Time: ${timeMs.toFixed(2)} ms`;
   stats.hidden = false;
 }
 
-function setChips(headers) {
-  const chips = document.getElementById('chips');
-  chips.innerHTML = headers.map(h => `<span class="chip">${escapeHtml(h)}</span>`).join('');
-}
-
-function searchRows(query) {
-  if (!query) return state.rows;
-  const q = query.toLowerCase();
-  // सभी कॉलम में substring match
-  return state.rows.filter(row =>
-    state.headers.some(h => String(row[h] ?? '').toLowerCase().includes(q))
-  );
-}
-
-async function init() {
-  // repo root से data.csv पढ़ें
-  const t0 = performance.now();
-  const res = await fetch('data.csv', { cache: 'no-store' });
-  if (!res.ok) {
-    document.getElementById('tableWrap').innerHTML = '<div class="nores">data.csv नहीं मिला</div>';
-    return;
-  }
-  const text = await res.text();
-  const { headers, rows } = parseCSV(text);
-  state.headers = headers;
-  state.rows = rows;
-  state.filtered = rows;
-
-  document.getElementById('tableWrap').innerHTML = renderTable(headers, rows.slice(0, 500)); // बहुत बड़ा data हो तो 500 rows तक दिखाएँ
-  setChips(headers);
-  setBadges(rows.length, performance.now() - t0);
-  document.getElementById('nores').hidden = rows.length !== 0;
-}
-
 function doFind() {
-  const q = document.getElementById('q').value.trim();
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  if (!state.rows.length) return showMsg('❌ data.csv लोड नहीं हुआ।');
+  if (!state.nameKey) return showMsg('⚠️ CSV में "Name" कॉलम नहीं मिला।');
+
   const t0 = performance.now();
-  const found = searchRows(q);
-  state.filtered = found;
-  document.getElementById('tableWrap').innerHTML = renderTable(state.headers, found.slice(0, 1000));
-  setBadges(found.length, performance.now() - t0);
-  document.getElementById('nores').hidden = found.length !== 0;
+  const results = q
+    ? state.rows.filter(r => String(r[state.nameKey] ?? '').toLowerCase().includes(q))
+    : [];
+  const t1 = performance.now();
+
+  if (!results.length) {
+    document.getElementById('tableWrap').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'none';
+    const m = document.getElementById('msg');
+    m.textContent = q ? 'कोई रिकॉर्ड नहीं मिला।' : 'कृपया Name टाइप करके Find दबाएँ।';
+    m.hidden = false;
+    document.getElementById('stats').hidden = true;
+  } else {
+    showResults(results, t1 - t0);
+  }
 }
 
 function doReset() {
   document.getElementById('q').value = '';
-  state.filtered = state.rows;
-  document.getElementById('tableWrap').innerHTML = renderTable(state.headers, state.rows.slice(0, 500));
-  setBadges(state.rows.length, 0);
-  document.getElementById('nores').hidden = state.rows.length !== 0;
+  document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('msg').hidden = true;
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('stats').hidden = true;
 }
 
 document.getElementById('btnFind').addEventListener('click', doFind);
 document.getElementById('btnReset').addEventListener('click', doReset);
 document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doFind(); });
 
-// पहली बार load
-init();
+// लोड पर CSV पढ़ें (कुछ भी render न करें)
+loadCSV();
 </script>
 </body>
 </html>
