@@ -1,270 +1,366 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>कानोड़ ग्राम सेवा सहकारी समिति</title>
-  <meta name="description" content="किसानों के लिए त्वरित, पारदर्शी और विश्वसनीय सहकारी सेवाएँ।" />
-  <link rel="icon" href="data:," />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KANOD G.S.S.S. | The Dashboard</title>
 
-  <!-- Google Fonts: Poppins (headings) + Inter (body) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT: "#3b82f6" } },
-          boxShadow: { soft: "0 14px 34px rgba(2,6,23,.10)" },
-          fontFamily: {
-            inter: ["Inter", "system-ui", "Arial"],
-            poppins: ["Poppins", "Inter", "system-ui"]
-          }
+    <style>
+        :root {
+            --bg-color: #f8f9fc;
+            --text-color: #1c202a;
+            --primary-color: #2b3a67; /* गहरा नीला */
+            --accent-color-1: #4a00e0; /* बैंगनी */
+            --accent-color-2: #8e2de2; /* हल्का बैंगनी */
+            --whatsapp-color: #25D366;
+            --card-bg: #FFFFFF;
+            --border-color: #EaEBF0;
+            --font-heading: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+            --font-body: 'Inter', 'Noto Sans Devanagari', sans-serif;
         }
-      }
-    }
-  </script>
 
-  <style>
-    html{scroll-behavior:smooth}
-    body{font-family: Inter, system-ui, Arial;}
-    h1,h2,h3,.display{font-family: Poppins, Inter, system-ui}
-    .glass{backdrop-filter:saturate(140%) blur(10px)}
-    /* Decorative gradient blobs */
-    .blob{filter: blur(60px); opacity:.55}
-  </style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+        
+        /* --- Header --- */
+        .header {
+            position: sticky;
+            top: 16px;
+            z-index: 100;
+            margin: 0 24px 24px 24px;
+        }
+        .header-container {
+            max-width: 1352px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
+        .login-btn {
+            background: linear-gradient(135deg, var(--accent-color-1), var(--accent-color-2));
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(142, 45, 226, 0.2);
+        }
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(142, 45, 226, 0.3);
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px 24px 24px;
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 24px;
+        }
+
+        .grid-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .grid-item.visible {
+             opacity: 1;
+             transform: translateY(0);
+        }
+
+        /* --- Individual Grid Item Styling --- */
+        .item-header { grid-column: 1 / 9; }
+        .item-clock { grid-column: 9 / 13; }
+        .item-stat1 { grid-column: 1 / 5; }
+        .item-stat2 { grid-column: 5 / 9; }
+        .item-stat3 { grid-column: 9 / 13; }
+        
+        .item-office-hours { grid-column: 1 / 5; }
+        .item-ration-dates { grid-column: 5 / 9; }
+        .item-whatsapp { grid-column: 9 / 13; }
+
+        /* Updated Grid Rows for Left Column */
+        .item-services { grid-column: 1 / 8; grid-row: span 3; }
+        .item-additional-links { grid-column: 1 / 8; grid-row: span 2; } /* New Box */
+        .item-intro { grid-column: 1 / 8; grid-row: span 2; }
+        
+        .item-team { grid-column: 8 / 13; grid-row: span 3; }
+        .item-schemes { grid-column: 8 / 13; grid-row: span 2; }
+        .item-footer { grid-column: 1 / -1; }
+
+        .item-header { background: linear-gradient(135deg, #f5f7fa, #e6e9f0); }
+        .item-header h1 { font-family: var(--font-heading); font-size: 3.5rem; line-height: 1.1; font-weight: 700; }
+        .item-header p { font-size: 1.1rem; color: #555; margin-top: 10px; }
+        
+        .item-clock { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #clock-time { font-family: var(--font-body); font-size: 3rem; font-weight: 700; color: var(--primary-color); }
+        #clock-date { font-size: 1rem; opacity: 0.7; }
+
+        .item-stat { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .item-stat .count {
+            font-family: var(--font-heading); font-size: 4rem; font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-color-1), var(--accent-color-2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .item-stat h3 { font-size: 1rem; font-weight: 500; }
+        
+        .info-box { display: flex; align-items: center; gap: 20px; }
+        .info-box .icon { font-size: 2.5rem; color: var(--primary-color); }
+        .info-box h3 { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 600; }
+        .info-box p { font-size: 1rem; color: #555; }
+        
+        .item-whatsapp {
+            background: var(--whatsapp-color); color: #fff;
+            display: flex; justify-content: center; align-items: center;
+            text-decoration: none; gap: 15px;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+        }
+        .item-whatsapp:hover { transform: scale(1.05) !important; box-shadow: 0 15px 30px rgba(37, 211, 102, 0.3); }
+        .item-whatsapp .icon { font-size: 2rem; }
+        .item-whatsapp span { font-size: 1.2rem; font-weight: 700; }
+
+        .item-services h2, .item-additional-links h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 20px; }
+        .services-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; list-style: none; }
+        .services-list li a {
+            display: block; padding: 16px; border-radius: 12px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            text-decoration: none; color: var(--text-color); font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .services-list li a:hover {
+             background: linear-gradient(135deg, var(--accent-color-1), var(--accent-color-2));
+             color: #fff; transform: scale(1.05);
+             border-color: transparent; box-shadow: 0 5px 15px rgba(142, 45, 226, 0.2);
+        }
+
+        .item-team h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 10px; }
+        .team-list { list-style: none; height: 90%; display: flex; flex-direction: column; justify-content: space-around; }
+        .team-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        
+        .item-schemes h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 10px; }
+        .schemes-list { list-style: none; }
+        .schemes-list li { padding: 4px 0; }
+        
+        .item-footer {
+            background-color: var(--primary-color); color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 20px;
+        }
+        .item-footer .contact { opacity: 0.8; }
+
+        @media (max-width: 1200px) {
+            .item-stat1, .item-stat2, .item-stat3 { grid-column: span 4 !important; }
+        }
+        @media (max-width: 1024px) {
+            .grid-item { grid-column: span 6 !important; }
+            .item-header, .item-services, .item-intro, .item-footer, .item-whatsapp, .item-additional-links { grid-column: span 12 !important; }
+        }
+        @media (max-width: 768px) {
+            .header { margin: 16px; top: 0; }
+            .dashboard-container { padding: 0 16px 16px 16px; }
+            .grid-item { grid-column: span 12 !important; grid-row: auto !important; }
+            .item-header h1 { font-size: 2.5rem; }
+            .services-list { grid-template-columns: 1fr; }
+            .info-box { flex-direction: column; align-items: flex-start; text-align: left; }
+        }
+
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100">
+<body>
 
-  <!-- NAVBAR -->
-  <header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 dark:bg-slate-900/70 glass">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="#top" class="flex items-center gap-3">
-        <span class="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-soft"></span>
-        <span class="font-poppins text-[15px] font-extrabold tracking-tight">कानोड़ ग्राम सेवा सहकारी समिति</span>
-      </a>
-      <nav class="hidden sm:flex items-center gap-1 text-sm font-semibold">
-        <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
-        <a href="#about" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">समिति</a>
-        <a href="#contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">संपर्क</a>
-      </nav>
-      <button id="menuBtn" class="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Menu">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
-    </div>
-    <div id="mobileNav" class="max-w-6xl mx-auto px-4 pb-3 hidden sm:hidden">
-      <div class="grid gap-2 text-sm font-semibold">
-        <a href="#sevaye" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">सेवाएँ</a>
-        <a href="#about" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">समिति</a>
-        <a href="#contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">संपर्क</a>
-      </div>
-    </div>
-  </header>
-
-  <!-- HERO (Ultra-modern) -->
-  <section id="top" class="relative overflow-hidden">
-    <!-- gradient background -->
-    <div class="absolute inset-0 -z-10">
-      <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 blob"></div>
-      <div class="absolute  top-20  left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-500 blob"></div>
-      <div class="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 blob"></div>
-    </div>
-
-    <div class="max-w-6xl mx-auto px-4 py-12 md:py-16 grid gap-10 md:grid-cols-2 items-center">
-      <!-- Left (copy) -->
-      <div>
-        <span class="inline-flex w-max items-center gap-2 rounded-full border border-sky-200/60 bg-white/70 px-3 py-1 text-[12px] font-semibold text-sky-700 shadow-sm glass">
-          किसानों का विश्वास, समृद्धि का आधार
-        </span>
-
-        <h1 class="mt-4 display text-4xl md:text-5xl font-extrabold leading-[1.12] tracking-tight">
-          किसानों के लिए <span class="text-sky-600">त्वरित</span>, <span class="text-emerald-600">पारदर्शी</span> और
-          <span class="text-indigo-600">विश्वसनीय</span> सहकारी सेवाएँ
-        </h1>
-
-        <p class="mt-4 max-w-prose text-slate-600/90 dark:text-slate-300">
-          NABARD बजटित लघु अवधि ऋण—समय पर अदायगी पर सरकार द्वारा ब्याज माफी। छोटे किसानों की समृद्धि हेतु समर्पित संस्था।
-        </p>
-
-        <div class="mt-6 flex flex-wrap items-center gap-3">
-          <a href="#sevaye"
-             class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-5 py-3 font-semibold text-white shadow-soft ring-1 ring-sky-300/40 hover:shadow-lg hover:translate-y-[-2px] transition">
-            हमारी सेवाएँ देखें
-            <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 5 5 9-9"/></svg>
-          </a>
-          <span class="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 glass">
-            रजिस्ट्रेशन: 424/C · दिनांक: 23/03/1961
-          </span>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">कानोड़ GSS</div>
+            <a href="#" class="login-btn">ऑफिशियल लॉगिन</a>
         </div>
-      </div>
+    </header>
 
-      <!-- Right (floating glass stats) -->
-      <div class="relative">
-        <div class="grid grid-cols-3 gap-3">
-          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
-            <div class="text-3xl font-extrabold font-poppins">1230</div>
-            <div class="text-[12px] text-slate-600">कुल सदस्य</div>
-          </div>
-          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
-            <div class="text-3xl font-extrabold font-poppins">810</div>
-            <div class="text-[12px] text-slate-600">ऋणी सदस्य</div>
-          </div>
-          <div class="rounded-2xl border border-white/60 bg-white/70 p-5 text-center shadow-soft glass">
-            <div class="text-3xl font-extrabold font-poppins">1961</div>
-            <div class="text-[12px] text-slate-600">स्थापना</div>
-          </div>
+    <div class="dashboard-container">
+        <div class="bento-grid">
+            <div class="grid-item item-header">
+                <h1>कानोड़ ग्राम सेवा सहकारी समिति</h1>
+                <p>किसानों के सर्वांगीण विकास और आर्थिक समृद्धि के लिए समर्पित।</p>
+            </div>
+
+            <div class="grid-item item-clock">
+                <div id="clock-time">07:33:02</div>
+                <div id="clock-date">Saturday, August 16, 2025</div>
+            </div>
+
+            <div class="grid-item item-stat item-stat1">
+                <div class="count" data-target="810">0</div>
+                <h3>कुल सदस्य</h3>
+            </div>
+            <div class="grid-item item-stat item-stat2">
+                <div class="count" data-target="1961">0</div>
+                <h3>ऋणी सदस्य</h3>
+            </div>
+            <div class="grid-item item-stat item-stat3">
+                <div class="count" data-target="1961">0</div>
+                <h3>स्थापना वर्ष</h3>
+            </div>
+            
+            <div class="grid-item item-office-hours info-box">
+                <div class="icon"><i class="fa-regular fa-clock"></i></div>
+                <div class="text">
+                    <h3>ऑफिस का समय</h3>
+                    <p>10:00 AM - 08:00 PM</p>
+                </div>
+            </div>
+            <div class="grid-item item-ration-dates info-box">
+                <div class="icon"><i class="fa-regular fa-calendar-days"></i></div>
+                <div class="text">
+                    <h3>राशन वितरण</h3>
+                    <p>हर महीने की 1-5 और 20 तारीख</p>
+                </div>
+            </div>
+            <a href="#" class="grid-item item-whatsapp">
+                <div class="icon"><i class="fa-brands fa-whatsapp"></i></div>
+                <span>ग्रुप से जुड़ें</span>
+            </a>
+
+            <div class="grid-item item-services">
+                <h2>सेवाएं और सूचनाएं</h2>
+                <ul class="services-list">
+                    <li><a href="lone-2024.html">2024 बकाया ऋण सूचना</a></li>
+                    <li><a href="#">ST Loan Application</a></li>
+                    <li><a href="#">मेम्बर हिस्सा राशि</a></li>
+                    <li><a href="#">रशीद चेक करे</a></li>
+                    <li><a href="#">मेम्बर पूरी जानकारी</a></li>
+                    <li><a href="#">बकाया ST ऋण सूचि</a></li>
+                    <li><a href="#">PMFBY - 2024</a></li>
+                </ul>
+            </div>
+            
+            <div class="grid-item item-additional-links">
+                <h2>डाउनलोड मेटेरियल </h2>
+                <ul class="services-list">
+                    <li><a href="#">जीवन सुरक्षा क्लेम</a></li>
+                    <li><a href="#">नए लोन आवेदन फॉर्म</a></li>
+                    <li><a href="#">GRA फॉर्म</a></li>
+                    <li><a href="#">बटन 4</a></li>
+                </ul>
+            </div>
+
+            <div class="grid-item item-team">
+                <h2>समिति कार्यकारिणी</h2>
+                <ul class="team-list">
+                    <li><span>अध्यक्ष</span> <strong>तेजा राम जाजड़ा</strong></li>
+                    <li><span>व्यवस्थापक</span> <strong>जोगाराम लेगा</strong></li>
+                    <li><span>उपाध्यक्ष</span> <strong>टिकमा राम</strong></li>
+                    <li><span>सदस्य</span> <strong>देदा राम</strong></li>
+                    <li><span>सदस्य</span> <strong>तुलसा राम लेगा</strong></li>
+                    <li><span>सदस्य</span> <strong>देवेन्द्र लेगा</strong></li>
+                    <li><span>सदस्य</span> <strong>रावता राम</strong></li>
+                    <li><span>... एवं अन्य सदस्य</span></li>
+                </ul>
+            </div>
+            
+             <div class="grid-item item-schemes">
+                <h2>प्रमुख योजनाएं</h2>
+                <ul class="schemes-list">
+                    <li>→ सदस्यों को नये ऋण प्रदान करना</li>
+                    <li>→ सदस्यों का फसल बीमा करना</li>
+                    <li>→ सहकार सुरक्षा व एक्सीडेंट बीमा</li>
+                    <li>→ पशुओं पर ऋण प्रदान करना</li>
+                </ul>
+            </div>
+
+            <div class="grid-item item-intro">
+                <h2>समिति परिचय</h2>
+                <p>समिति में 1230 मेम्बर हैं, जिसमें से 810 मेम्बरों को ऋण प्रदान किया जाता है। यह सरकार का उपक्रम है, जो छोटे किसानों को फायदा पहुँचाता है।</p>
+                <p style="margin-top:10px; font-weight: 500;"><strong>रजिस्ट्रेशन:</strong> 424/C (23/03/1961)</p>
+            </div>
+
+            <div class="grid-item item-footer">
+                <div class="copyright">© 2025 KANOD G.S.S.</div>
+                <div class="contact">
+                    <strong>संपर्क:</strong> 8094251586 | kanodgsss@gmail.com
+                </div>
+            </div>
+
         </div>
-        <!-- floating badge -->
-        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-soft glass">
-          किसानों की समृद्धि के लिए समर्पित
-        </div>
-      </div>
     </div>
-  </section>
 
-  <!-- त्वरित सेवाएँ (नीली थीम, जैसा स्क्रीनशॉट) -->
-  <section id="sevaye" class="max-w-6xl mx-auto px-4 py-12">
-    <h2 class="text-3xl font-extrabold tracking-tight text-center">त्वरित सेवाएँ</h2>
-    <div class="mt-8 grid gap-5 sm:grid-cols-2">
-      <!-- कार्ड टेम्पलेट -->
-      <a href="lone-2024.html" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12a1 1 0 0 1 1 1v18l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1Zm2 6h8v2H8V8Zm0 4h8v2H8v-2Z"/></svg>
-        </span>
-        <div class="font-semibold">2024 बकाया ऋण सूचना</div>
-      </a>
+    <script>
+        // --- Live Clock ---
+        const timeEl = document.getElementById('clock-time');
+        const dateEl = document.getElementById('clock-date');
+        function updateClock() {
+            const now = new Date();
+            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' };
+            const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' };
+            const timeString = now.toLocaleTimeString('en-GB', optionsTime);
+            const dateString = now.toLocaleDateString('en-US', optionsDate);
+            timeEl.textContent = timeString;
+            dateEl.textContent = dateString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4V4Zm0 6h10v10H4V10Zm12 0h4v10h-4V10Z"/></svg>
-        </span>
-        <div class="font-semibold">ST Loan Application</div>
-      </a>
+        // --- Animated Counter ---
+        const animateCounter = (counter) => {
+            const target = +counter.getAttribute('data-target');
+            const updateCount = () => {
+                const count = +counter.innerText;
+                const inc = Math.ceil(target / 100);
+                if (count < target) {
+                    counter.innerText = Math.min(count + inc, target);
+                    setTimeout(updateCount, 15);
+                } else { counter.innerText = target; }
+            };
+            updateCount();
+        };
 
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7h18v10H3V7Zm2 2v6h14V9H5Zm2 1h4v4H7v-4Zm9 0h2v2h-2v-2Z"/></svg>
-        </span>
-        <div class="font-semibold">मेम्बर हिस्सा राशि</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1Zm3 6h6v2h-6V8Zm0 4h3v2h-3v-2Z"/></svg>
-        </span>
-        <div class="font-semibold">रशीद चेक करे</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm6 1a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm-4 8h8a4 4 0 0 0-8 0Z"/></svg>
-        </span>
-        <div class="font-semibold">मेम्बर पूरी जानकारी</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3Zm0 7.2c1.1-1.4 3.6-.8 3.6 1.1 0 1.5-1.3 2.7-3.6 4.5-2.3-1.8-3.6-3-3.6-4.5 0-1.9 2.5-2.5 3.6-1.1Z"/></svg>
-        </span>
-        <div class="font-semibold">जीवन सुरक्षा क्लेम</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1v5h5M8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h5v2H8v-2Z"/></svg>
-        </span>
-        <div class="font-semibold">नए लोन आवेदन फॉर्म</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4s-6 0-10 4-4 10-4 10 6 0 10-4 4-10 4-10Zm-9.5 6.5C9 12 8 14 8 16c2 0 4-1 5.5-2.5S16 9 16 7c-2 0-4 1-5.5 3.5Z"/></svg>
-        </span>
-        <div class="font-semibold">GRA फ़ॉर्म</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h14v2H4V6Zm0 5h14v2H4v-2Zm0 5h14v2H4v-2Zm16-8h2v2h-2V8Zm0 5h2v2h-2v-2Zm0 5h2v2h-2v-2Z"/></svg>
-        </span>
-        <div class="font-semibold">बकाया ST ऋण सूची</div>
-      </a>
-
-      <a href="#" class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft hover:-translate-y-0.5 hover:shadow-lg transition">
-        <span class="grid h-12 w-12 place-items-center rounded-xl bg-sky-100 text-sky-600">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l1.9 3.9L18 10l-3.9 2.1L12 16l-2.1-3.9L6 10l3.9-2.1L12 4Zm7 11a3 3 0 1 1-3 3h-2a5 5 0 1 0 5-5v2Z"/></svg>
-        </span>
-        <div class="font-semibold">PMFBY - 2024</div>
-      </a>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about" class="max-w-6xl mx-auto px-4 py-12">
-    <h2 class="text-2xl font-extrabold tracking-tight">समिति की विस्तृत जानकारी</h2>
-    <div class="mt-6 grid gap-4 md:grid-cols-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-        <h3 class="font-poppins font-bold">उद्देश्य</h3>
-        <p class="mt-1 text-sm text-slate-600">छोटे किसानों की आर्थिक उन्नति व सहकारी सेवाओं की सुगमता।</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-        <h3 class="font-poppins font-bold">कार्यकारिणी</h3>
-        <p class="mt-1 text-sm text-slate-600">पदाधिकारियों की सूची एवं दायित्व।</p>
-        <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" href="#">सूची देखें
-          <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
-        </a>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-        <h3 class="font-poppins font-bold">योजनाएँ</h3>
-        <p class="mt-1 text-sm text-slate-600">लघु अवधि ऋण, बीमा, और अन्य सदस्य सेवाएँ।</p>
-        <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" href="#">विस्तार से
-          <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact" class="relative bg-white/70 py-12">
-    <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-extrabold tracking-tight">संपर्क सूत्र</h2>
-      <div class="mt-6 grid gap-4 md:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-          <h3 class="font-poppins font-bold">फोन / ईमेल</h3>
-          <p class="mt-2"><a class="font-semibold hover:underline" href="tel:8094251586">📞 8094251586</a></p>
-          <p><a class="font-semibold hover:underline" href="mailto:kanodgsss@gmail.com">✉️ kanodgsss@gmail.com</a></p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-          <h3 class="font-poppins font-bold">पता</h3>
-          <p class="mt-2 text-sm">KANOD, बाड़मेर, राजस्थान - 344034</p>
-          <a class="mt-2 inline-flex items-center gap-2 text-sky-600 hover:underline" target="_blank" rel="noopener" href="https://maps.google.com/?q=KANOD%2C%20Barmer%20344034">
-            मानचित्र पर देखें
-            <svg class="h-4 w-4" fill="none" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-9"/></svg>
-          </a>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
-          <h3 class="font-poppins font-bold">त्वरित सम्पर्क</h3>
-          <div class="mt-2 grid gap-2">
-            <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" href="tel:8094251586">कॉल करें</a>
-            <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2 font-semibold text-white shadow-soft hover:opacity-90" target="_blank" rel="noopener" href="https://wa.me/918094251586">WhatsApp</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="border-t border-slate-200 bg-white py-6 text-sm text-slate-500">
-    <div class="max-w-6xl mx-auto px-4">© 2025 KANOD GRAM SEWA SAHKARI SAMITI KANOD. All rights reserved.</div>
-  </footer>
-
-  <script>
-    const menuBtn = document.getElementById('menuBtn');
-    const mobileNav = document.getElementById('mobileNav');
-    if (menuBtn) menuBtn.onclick = () => mobileNav.classList.toggle('hidden');
-  </script>
+        // --- Reveal on Scroll ---
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 50); // Staggered delay
+                    if(entry.target.classList.contains('item-stat')) {
+                        const counter = entry.target.querySelector('.count');
+                        if(counter && counter.innerText === '0') animateCounter(counter);
+                    }
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+        document.querySelectorAll('.grid-item').forEach(el => { revealObserver.observe(el); });
+    </script>
 </body>
 </html>
-
