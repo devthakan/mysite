@@ -51,6 +51,7 @@
         <button id="refresh" class="px-3 py-2 rounded-lg bg-slate-700">Refresh</button>
       </div>
       <div id="list" class="text-slate-200 text-sm"></div>
+      <pre id="err" class="mt-3 text-xs text-red-300 whitespace-pre-wrap hidden"></pre>
     </section>
   </div>
 
@@ -72,8 +73,23 @@
 
 const $ = (id) => document.getElementById(id);
 
+function isDebug(){
+  return /(?:\?|&)debug=1(?:&|$)/.test(window.location.search);
+}
+
+function showErr(e){
+  const box = $('err');
+  if(!box) return;
+  const msg = e?.message || e?.error?.message || (typeof e==='string'? e : JSON.stringify(e, null, 2));
+  if(isDebug()){
+    box.classList.remove('hidden');
+    box.textContent = msg || '';
+  }
+  console.error('[Admin] ', msg);
+}
+
 function tbl(){
-  if(!sb) throw new Error('Client not ready');
+  if(!sb){ throw new Error('Client not ready'); }
   return (SCHEMA && SCHEMA !== 'public' && sb.schema) ? sb.schema(SCHEMA).from(MEMBERS_TABLE) : sb.from(MEMBERS_TABLE);
 }
 
@@ -85,29 +101,38 @@ async function addMember(){
   const guardian_name = $('m_father').value.trim().toUpperCase();
   if(!membership_no || !farmer_name || !guardian_name){ msgEl.textContent='कृपया सभी फील्ड भरें'; return; }
 
-  const dup = await tbl().select('membership_no').eq('membership_no', membership_no).maybeSingle();
-  if(dup.error){ msgEl.textContent='त्रुटि: SELECT विफल'; return; }
-  if(dup.data){ msgEl.textContent='यह सदस्य संख्या पहले से मौजूद है'; return; }
+  try {
+    const dup = await tbl().select('membership_no').eq('membership_no', membership_no).maybeSingle();
+    if(dup.error){ showErr(dup.error); msgEl.textContent='त्रुटि: SELECT विफल'; return; }
+    if(dup.data){ msgEl.textContent='यह सदस्य संख्या पहले से मौजूद है'; return; }
 
-  const ins = await tbl().insert({ membership_no, farmer_name, guardian_name });
-  if(ins.error){ msgEl.textContent='त्रुटि: INSERT विफल (policies/columns जाँचें)'; return; }
+    const ins = await tbl().insert({ membership_no, farmer_name, guardian_name });
+    if(ins.error){ showErr(ins.error); msgEl.textContent='त्रुटि: INSERT विफल'; return; }
 
-  msgEl.textContent='जोड़ा गया ✔';
-  $('m_no').value=''; $('m_name').value=''; $('m_father').value='';
-  loadMembers();
+    msgEl.textContent='जोड़ा गया ✔';
+    $('m_no').value=''; $('m_name').value=''; $('m_father').value='';
+    loadMembers();
+  } catch (e) {
+    showErr(e); msgEl.textContent='त्रुटि: अनुरोध विफल';
+  }
 }
 
 async function loadMembers(){
   const list = $('list');
   list.textContent = 'Loading…';
-  const q = await tbl().select('membership_no, farmer_name, guardian_name').order('membership_no', { ascending: true }).limit(50);
-  if(q.error){ list.textContent='लोड नहीं हो सका'; return; }
-  const data = q.data || [];
-  if(!data.length){ list.textContent='कोई रिकॉर्ड नहीं'; return; }
-  list.innerHTML = data.map(r=>`<div class="flex justify-between border-b border-white/10 py-2"><span>#${r.membership_no}</span><span>${r.farmer_name}</span><span>${r.guardian_name}</span></div>`).join('');
+  try {
+    const q = await tbl().select('membership_no, farmer_name, guardian_name').order('membership_no', { ascending: true }).limit(50);
+    if(q.error){ showErr(q.error); list.textContent='लोड नहीं हो सका'; return; }
+    const data = q.data || [];
+    if(!data.length){ list.textContent='कोई रिकॉर्ड नहीं'; return; }
+    list.innerHTML = data.map(r=>`<div class="flex justify-between border-b border-white/10 py-2"><span>#${r.membership_no}</span><span>${r.farmer_name}</span><span>${r.guardian_name}</span></div>`).join('');
+  } catch (e) {
+    showErr(e); list.textContent='लोड नहीं हो सका';
+  }
 }
 
 (function(){
+
   function init(){
     if(!window.supabase || !window.supabase.createClient) return;
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
