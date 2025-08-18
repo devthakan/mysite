@@ -294,10 +294,22 @@
     // === Membership Lookup gating ===
     // केवल Step-1 के visible fields validate करें (hidden Step-2 required होने से Next block न हो)
     function validateStep1(){
-      const ids = ['kisan_type','caste_cat','dob','bank_ac','aadhaar','mobile'];
-      for(const id of ids){
-        const el = $(id); if(!el) continue;
-        if(!el.checkValidity()){ el.reportValidity(); return false; }
+      // Step-1 के आवश्यक फील्ड
+      const requiredIds = ['kisan_type','caste_cat','gender','dob'];
+      for(const id of requiredIds){
+        const el=$(id); if(!el) continue;
+        if(!el.value){ el.reportValidity?.(); toast('कृपया सभी आवश्यक फील्ड भरें'); return false; }
+      }
+      // Exact-length numeric checks (regex के बिना)
+      const isDigits = (s,len)=> s && s.length===len && [...s].every(ch=>ch>='0' && ch<='9');
+      const ac = $('bank_ac').value.trim();
+      if(!isDigits(ac,17)){ $('bank_ac').reportValidity?.(); toast('बैंक खाता संख्या 17 अंकों की होनी चाहिए'); return false; }
+      const ad = $('aadhaar').value.trim();
+      if(!isDigits(ad,12)){ $('aadhaar').reportValidity?.(); toast('आधार 12 अंकों का होना चाहिए'); return false; }
+      const mob = $('mobile').value.trim();
+      if(!isDigits(mob,10)){ $('mobile').reportValidity?.(); toast('मोबाइल 10 अंकों का होना चाहिए'); return false; }
+      return true;
+    }
       }
       return true;
     }
@@ -426,9 +438,14 @@
 
         // Step nav
         $('next1').onclick = async () => {
-          if(!membershipOk){ toast('सदस्यता संख्या verify करें'); return; }
-          if(!validateStep1()) return; // केवल step-1 validate
-          setStep(2);
+          try{
+            if(!membershipOk){ toast('सदस्यता संख्या verify करें'); return; }
+            if(!validateStep1()) return; // केवल step-1 validation
+            setStep(2);
+          }catch(e){
+            console.error(e);
+            toast('Step 2 खोलने में समस्या: ' + (e?.message || e));
+          }
         };
         $('back2').onclick = () => setStep(1);
         $('next2').onclick = () => {
