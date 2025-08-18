@@ -23,17 +23,6 @@
       <p class="text-slate-300 mt-1">किस तालिका में लिखना/पढ़ना है — ऊपर constants से नियंत्रित करें</p>
     </header>
 
-    <!-- Connection / Diagnostics -->
-    <section class="glass rounded-2xl p-4 md:p-6 border border-white/10 mb-6 text-sm">
-      <div>Project URL: <span id="u" class="mono"></span></div>
-      <div>Schema: <span id="s" class="mono"></span> | Table: <span id="t" class="mono"></span></div>
-      <div>Status: <span id="status" class="mono">—</span></div>
-      <div class="mt-2">
-        <button id="btn_check" class="px-3 py-2 rounded-lg bg-slate-700">Check Setup</button>
-        <span id="diag" class="ml-2 text-slate-300"></span>
-      </div>
-    </section>
-
     <section class="glass rounded-2xl p-4 md:p-6 border border-white/10 mb-8">
       <div class="grid md:grid-cols-3 gap-4">
         <div>
@@ -53,7 +42,7 @@
         <button id="btn_add" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">Add Member</button>
         <span id="msg" class="text-slate-300"></span>
       </div>
-      <pre id="err" class="mt-3 text-xs text-red-300 whitespace-pre-wrap"></pre>
+      
     </section>
 
     <section class="glass rounded-2xl p-4 md:p-6 border border-white/10">
@@ -68,7 +57,7 @@
   <script>
     // ⬇️ अपनी असली keys डालें
     const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co"; // <-- यहाँ बदलें
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                    // <-- यहाँ बदलें";                    // <-- यहाँ बदलें
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                    // <-- यहाँ बदलें
 
     // ⬇️ यहाँ से table चुनेँ
     const SCHEMA = 'public';          // यदि अलग schema है तो बदलें
@@ -79,144 +68,56 @@
     $('s').textContent = SCHEMA;
     $('t').textContent = MEMBERS_TABLE;
 
-    let sb = null; // Supabase client
+    let sb = null;
 
-    function showErr(e){
-      const msg = e?.message || e?.error?.message || (typeof e==='string'? e : JSON.stringify(e, null, 2));
-      $('err').textContent = msg || '';
-      console.error(e);
-    }
+const $ = (id) => document.getElementById(id);
 
-    function tbl(){
-      if(!sb){ throw new Error('Supabase client not ready'); }
-      if(SCHEMA && SCHEMA !== 'public' && sb.schema){
-        return sb.schema(SCHEMA).from(MEMBERS_TABLE);
-      }
-      return sb.from(MEMBERS_TABLE);
-    }
+function tbl(){
+  if(!sb) throw new Error('Client not ready');
+  return (SCHEMA && SCHEMA !== 'public' && sb.schema) ? sb.schema(SCHEMA).from(MEMBERS_TABLE) : sb.from(MEMBERS_TABLE);
+}
 
-    async function checkSetup(){
-      $('diag').textContent = 'Checking…';
-      $('err').textContent = '';
-      if(!sb){ $('diag').innerHTML = '<span class="bad">Client not ready</span>'; return; }
-      try{
-        const sel = await tbl().select('membership_no', { count:'exact', head:true }).limit(1);
-        if(sel.error){
-          $('diag').innerHTML = '<span class="bad">SELECT failed</span>';
-          showErr(sel.error);
-          hintFromError(sel.error, 'select');
-          return;
-        }
-        const testId = 'TEST_'+Date.now();
-        const ins = await tbl().insert({ membership_no:testId, farmer_name:'TEST', guardian_name:'TEST' });
-        if(ins.error){
-          $('diag').innerHTML = '<span class="bad">INSERT failed</span>';
-          showErr(ins.error);
-          hintFromError(ins.error, 'insert');
-          return;
-        }
-        await tbl().delete().eq('membership_no', testId);
-        $('diag').innerHTML = '<span class="ok">OK: table + policies working</span>';
-      }catch(e){
-        $('diag').innerHTML = '<span class="bad">Check error</span>';
-        showErr(e);
-      }
-    }
+async function addMember(){
+  const msgEl = $('msg');
+  msgEl.textContent = '';
+  const membership_no = $('m_no').value.trim();
+  const farmer_name = $('m_name').value.trim().toUpperCase();
+  const guardian_name = $('m_father').value.trim().toUpperCase();
+  if(!membership_no || !farmer_name || !guardian_name){ msgEl.textContent='कृपया सभी फील्ड भरें'; return; }
 
-    function hintFromError(error, phase){
-      const m = (error?.message||'').toLowerCase();
-      const d = $('err');
-      let tips = [];
-      if(m.includes('permission denied') || m.includes('row-level security')){
-        tips.push('✔ RLS policy allow करें (schema '+SCHEMA+', table '+MEMBERS_TABLE+'):');
-        tips.push("SQL →\n  alter table "+MEMBERS_TABLE+" enable row level security;\n  create policy 'members_select' on "+MEMBERS_TABLE+" for select using (true);\n  create policy 'members_insert' on "+MEMBERS_TABLE+" for insert with check (true);");
-      }
-      if(m.includes('relation') && m.includes('does not exist')){
-        tips.push('✔ Table बनाइए:');
-        tips.push("SQL →\n  create table if not exists "+MEMBERS_TABLE+" (\n    membership_no text primary key,\n    farmer_name text,\n    guardian_name text\n  );");
-      }
-      if(m.includes('jwt') || m.includes('invalid token') || m.includes('anonymous')){
-        tips.push('✔ URL/ANON KEY चेक करें (Project Settings → API).');
-      }
-      if(!tips.length){
-        tips.push('✔ URL/KEY सही हैं? ✔ Table/columns नाम match कर रहे हैं? ✔ CSV/insert ठीक हुआ?');
-      }
-      d.textContent += '\n\nTips:\n' + tips.join('\n');
-    }
+  const dup = await tbl().select('membership_no').eq('membership_no', membership_no).maybeSingle();
+  if(dup.error){ msgEl.textContent='त्रुटि: SELECT विफल'; return; }
+  if(dup.data){ msgEl.textContent='यह सदस्य संख्या पहले से मौजूद है'; return; }
 
-    async function addMember(){
-      $('msg').textContent=''; $('err').textContent='';
-      if(!sb){ $('msg').textContent='Client not ready'; return; }
-      const membership_no = $('m_no').value.trim();
-      const farmer_name = $('m_name').value.trim().toUpperCase();
-      const guardian_name = $('m_father').value.trim().toUpperCase();
-      if(!membership_no || !farmer_name || !guardian_name){ $('msg').textContent='कृपया सभी फील्ड भरें'; return; }
+  const ins = await tbl().insert({ membership_no, farmer_name, guardian_name });
+  if(ins.error){ msgEl.textContent='त्रुटि: INSERT विफल (policies/columns जाँचें)'; return; }
 
-      try{
-        const ex = await tbl().select('membership_no').eq('membership_no', membership_no).maybeSingle();
-        if(ex.error){ showErr(ex.error); hintFromError(ex.error, 'select'); return; }
-        if(ex.data){ $('msg').textContent='यह सदस्य संख्या पहले से मौजूद है'; return; }
+  msgEl.textContent='जोड़ा गया ✔';
+  $('m_no').value=''; $('m_name').value=''; $('m_father').value='';
+  loadMembers();
+}
 
-        const ins = await tbl().insert({ membership_no, farmer_name, guardian_name });
-        if(ins.error){ showErr(ins.error); hintFromError(ins.error, 'insert'); return; }
+async function loadMembers(){
+  const list = $('list');
+  list.textContent = 'Loading…';
+  const q = await tbl().select('membership_no, farmer_name, guardian_name').order('membership_no', { ascending: true }).limit(50);
+  if(q.error){ list.textContent='लोड नहीं हो सका'; return; }
+  const data = q.data || [];
+  if(!data.length){ list.textContent='कोई रिकॉर्ड नहीं'; return; }
+  list.innerHTML = data.map(r=>`<div class="flex justify-between border-b border-white/10 py-2"><span>#${r.membership_no}</span><span>${r.farmer_name}</span><span>${r.guardian_name}</span></div>`).join('');
+}
 
-        $('msg').textContent='जोड़ा गया ✔';
-        $('m_no').value=''; $('m_name').value=''; $('m_father').value='';
-        loadMembers();
-      }catch(e){ showErr(e); }
-    }
-
-    async function loadMembers(){
-      $('list').textContent = 'Loading…'; $('err').textContent='';
-      if(!sb){ $('list').textContent='Client not ready'; return; }
-      try{
-        const q = await tbl()
-          .select('membership_no, farmer_name, guardian_name')
-          .order('membership_no', { ascending: true })
-          .limit(20);
-        if(q.error){ showErr(q.error); hintFromError(q.error, 'select'); $('list').textContent='Load error'; return; }
-        const data = q.data || [];
-        if(!data.length){ $('list').textContent='कोई रिकॉर्ड नहीं'; return; }
-        const rows = data.map(r=>`<div class="flex justify-between border-b border-white/10 py-2"><span>#${r.membership_no}</span><span>${r.farmer_name}</span><span>${r.guardian_name}</span></div>`).join('');
-        $('list').innerHTML = rows;
-      }catch(e){ showErr(e); $('list').textContent='Load error'; }
-    }
-
-    // Bootstrap after page ready AND library present
-    (function bootstrap(){
-      const init = () => {
-        try {
-          if(!window.supabase || !window.supabase.createClient){
-            $('status').textContent = 'Supabase JS not loaded';
-            $('status').className = 'bad mono';
-            return;
-          }
-          sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          $('status').textContent = 'Client init ✔';
-          $('status').className = 'ok mono';
-
-          // Bind handlers after client ready
-          $('btn_check').addEventListener('click', checkSetup);
-          $('btn_add').addEventListener('click', addMember);
-          $('refresh').addEventListener('click', loadMembers);
-
-          // Initial actions
-          checkSetup();
-          loadMembers();
-        } catch (e) {
-          $('status').textContent = 'Client init FAILED';
-          $('status').className = 'bad mono';
-          showErr(e);
-        }
-      };
-
-      if(document.readyState === 'complete' || document.readyState === 'interactive'){
-        // थोड़ी देर दें कि external script load हो जाए
-        setTimeout(init, 0);
-      } else {
-        window.addEventListener('DOMContentLoaded', init);
-      }
-    })();
-  </script>
+(function(){
+  function init(){
+    if(!window.supabase || !window.supabase.createClient) return;
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    $('btn_add').addEventListener('click', addMember);
+    $('refresh').addEventListener('click', loadMembers);
+    loadMembers();
+  }
+  if(document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(init,0);
+  else window.addEventListener('DOMContentLoaded', init);
+})();
+</script>
 </body>
 </html>
