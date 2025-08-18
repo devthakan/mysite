@@ -3,16 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ST Loan Application Form</title>
+  <title>ST Loan Application – Single Form</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     html, body { background:#0f172a; }
     .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.08); }
-    .step-active { background:#22c55e; color:#0f172a; }
-    .step-done { background:#4ade80; color:#0f172a; }
-    .step-upcoming { background:rgba(255,255,255,.15); color:#e5e7eb; }
-    .badge { font-size: .75rem; padding:.15rem .5rem; border-radius:999px; }
     .hidden { display:none; }
     input[type='date'] { color-scheme: dark; }
     .hint { font-size:.8rem; color:#94a3b8 }
@@ -23,235 +19,217 @@
 <body class="min-h-screen text-slate-100">
   <div class="max-w-5xl mx-auto p-4 md:p-8">
     <header class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold text-white">ST Lone Application Form</h1>
-      <p class="text-slate-300 mt-1">सदस्यता संख्या से नाम ऑटो-फिल + 3 स्टेप सबमिशन</p>
+      <h1 class="text-2xl md:text-3xl font-bold text-white">ST Loan Application Form</h1>
+      <p class="text-slate-300 mt-1">सदस्यता संख्या Lookup + एक ही पेज पर पूरा फ़ॉर्म</p>
     </header>
 
-    <nav class="flex items-center gap-3 mb-6">
-      <span id="p1" class="badge step-active">Step 1</span>
-      <span class="text-slate-400">—</span>
-      <span id="p2" class="badge step-upcoming">Step 2</span>
-      <span class="text-slate-400">—</span>
-      <span id="p3" class="badge step-upcoming">Step 3</span>
-    </nav>
-
     <form id="appForm" class="glass rounded-2xl p-4 md:p-6 border border-white/10" novalidate>
-      <!-- STEP 1: Membership + Applicant Details -->
-      <section id="step1">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 1: सदस्यता और आवेदक का विवरण</h2>
+      <!-- सदस्यता संख्या Lookup -->
+      <div class="mb-6">
+        <label class="block text-sm mb-1">अपना सदस्यता संख्या दर्ज करें</label>
+        <div class="flex gap-2 items-center">
+          <input id="member_no" inputmode="numeric" pattern="\d{1,12}" maxlength="12" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="उदा. 123456" required />
+          <button type="button" id="member_fetch" class="px-4 py-2 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Find</button>
+          <span id="member_status" class="hint ml-2"></span>
+        </div>
+        <p class="hint mt-1">सदस्यता मिलने पर नाम/पिता-पति का नाम अपने-आप भरकर लॉक हो जाएगा।</p>
+      </div>
 
-        <!-- सदस्यता संख्या Lookup -->
-        <div class="md:col-span-3 mb-5">
-          <label class="block text-sm mb-1">अपना सदस्यता संख्या दर्ज करें</label>
-          <div class="flex gap-2 items-center">
-            <input id="member_no" inputmode="numeric" pattern="\d{1,12}" maxlength="12" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="उदा. 123456" required />
-            <button type="button" id="member_fetch" class="px-4 py-2 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Find</button>
-            <span id="member_status" class="hint ml-2"></span>
-          </div>
-          <p class="hint mt-1">सदस्यता संख्या मिलने पर नाम और पिता/पति का नाम अपने-आप भरकर लॉक हो जाएगा।</p>
+      <!-- Applicant details -->
+      <h2 class="text-lg font-semibold mb-3">आवेदक का विवरण</h2>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm mb-1">कृषक का प्रकार</label>
+          <select id="kisan_type" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
+            <option value="">— चुनें —</option>
+            <option>LAGHU</option>
+            <option>SIMANT</option>
+            <option>ANY</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">वर्ग</label>
+          <select id="caste_cat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
+            <option value="">— चुनें —</option>
+            <option>SC</option>
+            <option>ST</option>
+            <option>OBC</option>
+            <option>GEN</option>
+            <option>OTHER</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">कृषक का नाम</label>
+          <input id="farmer_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">कृषक का प्रकार</label>
-            <select id="kisan_type" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>LAGHU</option>
-              <option>SIMANT</option>
-              <option>ANY</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वर्ग</label>
-            <select id="caste_cat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>SC</option>
-              <option>ST</option>
-              <option>OBC</option>
-              <option>GEN</option>
-              <option>OTHER</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">कृषक का नाम</label>
-            <input id="farmer_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">पिता / पति का नाम</label>
-            <input id="guardian_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जाति</label>
-            <input id="jaati" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">लिंग</label>
-            <select id="gender" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>MALE</option>
-              <option>FEMALE</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">रेवेन्यु विलेज का नाम</label>
-            <input id="rev_village" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">ग्राम पंचायत</label>
-            <input id="gram_panchayat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">बैंक खाता संख्या</label>
-            <input id="bank_ac" inputmode="numeric" pattern="\d{17}" maxlength="17" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">17 अंकों का होना चाहिए</p>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">आधार संख्या</label>
-            <input id="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">12 अंकों की आधार संख्या</p>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">मोबाइल नम्बर</label>
-            <input id="mobile" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">10 अंकों का मोबाइल नंबर</p>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">व्हाट्सएप नंबर</label>
-            <input id="whatsapp" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
-            <input id="jan_aadhaar" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
-            <input id="voter_id" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">पेन कार्ड (वैकल्पिक)</label>
-            <input id="pan" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" />
-            <p class="hint">उदा: ABCDE1234F</p>
-          </div>
+        <div>
+          <label class="block text-sm mb-1">पिता / पति का नाम</label>
+          <input id="guardian_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
         </div>
-        <div class="mt-6 flex justify-end gap-3">
-          <button type="button" id="next1" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">अगला (Step 2)</button>
+        <div>
+          <label class="block text-sm mb-1">जाति</label>
+          <input id="jaati" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
         </div>
-      </section>
-
-      <!-- STEP 2: Nominee -->
-      <section id="step2" class="hidden">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 2: नॉमिनी विवरण</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">नॉमिनी का नाम</label>
-            <input id="nominee_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="nominee_dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">कृषक से संबंध</label>
-            <select id="nominee_relation" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>WIFE</option>
-              <option>HUS</option>
-              <option>SON</option>
-              <option>DOU</option>
-              <option>BRO</option>
-              <option>SIS</option>
-              <option>OTHER</option>
-            </select>
-          </div>
+        <div>
+          <label class="block text-sm mb-1">लिंग</label>
+          <select id="gender" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
+            <option value="">— चुनें —</option>
+            <option>MALE</option>
+            <option>FEMALE</option>
+          </select>
         </div>
-        <div class="mt-6 flex justify-between gap-3">
-          <button type="button" class="px-5 py-3 rounded-xl bg-slate-700" id="back2">पिछला</button>
-          <button type="button" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold" id="next2">अगला (Step 3)</button>
+
+        <div>
+          <label class="block text-sm mb-1">जन्म तिथि</label>
+          <input id="dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
         </div>
-      </section>
+        <div>
+          <label class="block text-sm mb-1">रेवेन्यु विलेज का नाम</label>
+          <input id="rev_village" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">ग्राम पंचायत</label>
+          <input id="gram_panchayat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
 
-      <!-- STEP 3: Witnesses + OTP verification -->
-      <section id="step3" class="hidden">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 3: गवाह विवरण</h2>
-        <p class="hint mb-4">नोट: पहले Excel/CSV से Supabase में <strong>witness_master</strong> तालिका में गवाहों की आधार व नाम अपलोड करें। नीचे आधार डालते ही नाम खुद भरेगा। फिर OTP से सत्यापन करें।</p>
+        <div>
+          <label class="block text-sm mb-1">बैंक खाता संख्या</label>
+          <input id="bank_ac" inputmode="numeric" pattern="\d{17}" maxlength="17" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
+          <p class="hint">17 अंकों का होना चाहिए</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">आधार संख्या</label>
+          <input id="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
+          <p class="hint">12 अंकों की आधार संख्या</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">मोबाइल नम्बर</label>
+          <input id="mobile" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
+          <p class="hint">10 अंकों का मोबाइल नंबर</p>
+        </div>
 
-        <div class="grid md:grid-cols-2 gap-6">
-          <!-- Witness 1 -->
-          <div class="border border-white/10 rounded-2xl p-4">
-            <h3 class="font-semibold mb-3">गवाह 1</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm mb-1">आधार संख्या</label>
-                <div class="flex gap-2">
-                  <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
-                  <button type="button" id="w1_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
-                </div>
+        <div>
+          <label class="block text-sm mb-1">व्हाट्सएप नंबर</label>
+          <input id="whatsapp" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
+          <input id="jan_aadhaar" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
+          <input id="voter_id" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
+        </div>
+
+        <div>
+          <label class="block text-sm mb-1">पेन कार्ड (वैकल्पिक)</label>
+          <input id="pan" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" />
+          <p class="hint">उदा: ABCDE1234F</p>
+        </div>
+      </div>
+
+      <!-- Nominee details -->
+      <h2 class="text-lg font-semibold mb-3">नॉमिनी विवरण</h2>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm mb-1">नॉमिनी का नाम</label>
+          <input id="nominee_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जन्म तिथि</label>
+          <input id="nominee_dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">कृषक से संबंध</label>
+          <select id="nominee_relation" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
+            <option value="">— चुनें —</option>
+            <option>WIFE</option>
+            <option>HUS</option>
+            <option>SON</option>
+            <option>DOU</option>
+            <option>BRO</option>
+            <option>SIS</option>
+            <option>OTHER</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Witnesses -->
+      <h2 class="text-lg font-semibold mb-3">गवाह का विवरण</h2>
+      <p class="hint mb-4">गवाह Excel/CSV पहले से <strong>witness_master</strong> तालिका में हों। आधार डालकर Find करें, नाम/मोबाइल auto-fill होगा। OTP verify जरूरी है।</p>
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div class="border border-white/10 rounded-2xl p-4">
+          <h3 class="font-semibold mb-3">गवाह 1</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm mb-1">आधार संख्या</label>
+              <div class="flex gap-2">
+                <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
+                <button type="button" id="w1_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
               </div>
-              <div>
-                <label class="block text-sm mb-1">नाम</label>
-                <input id="w1_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">मोबाइल</label>
-                <input id="w1_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div class="flex gap-2 items-end">
-                <div class="flex-1">
-                  <label class="block text-sm mb-1">OTP</label>
-                  <input id="w1_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-                </div>
-                <button type="button" id="w1_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
-                <button type="button" id="w1_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
-              </div>
-              <p id="w1_status" class="hint" data-ok="0"></p>
             </div>
-          </div>
-          <!-- Witness 2 -->
-          <div class="border border-white/10 rounded-2xl p-4">
-            <h3 class="font-semibold mb-3">गवाह 2</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm mb-1">आधार संख्या</label>
-                <div class="flex gap-2">
-                  <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
-                  <button type="button" id="w2_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm mb-1">नाम</label>
-                <input id="w2_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">मोबाइल</label>
-                <input id="w2_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div class="flex gap-2 items-end">
-                <div class="flex-1">
-                  <label class="block text-sm mb-1">OTP</label>
-                  <input id="w2_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-                </div>
-                <button type="button" id="w2_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
-                <button type="button" id="w2_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
-              </div>
-              <p id="w2_status" class="hint" data-ok="0"></p>
+            <div>
+              <label class="block text-sm mb-1">नाम</label>
+              <input id="w1_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
             </div>
+            <div>
+              <label class="block text-sm mb-1">पिता/पति का नाम</label>
+              <input id="w1_guardian_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">मोबाइल</label>
+              <input id="w1_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div class="flex gap-2 items-end">
+              <div class="flex-1">
+                <label class="block text-sm mb-1">OTP</label>
+                <input id="w1_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
+              </div>
+              <button type="button" id="w1_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
+              <button type="button" id="w1_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
+            </div>
+            <p id="w1_status" class="hint" data-ok="0"></p>
           </div>
         </div>
-
-        <div class="mt-6 flex justify-between gap-3">
-          <button type="button" class="px-5 py-3 rounded-xl bg-slate-700" id="back3">पिछला</button>
-          <button type="submit" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold" id="submitBtn" disabled>सबमिट</button>
+        <div class="border border-white/10 rounded-2xl p-4">
+          <h3 class="font-semibold mb-3">गवाह 2</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm mb-1">आधार संख्या</label>
+              <div class="flex gap-2">
+                <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
+                <button type="button" id="w2_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">नाम</label>
+              <input id="w2_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">पिता/पति का नाम</label>
+              <input id="w2_guardian_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">मोबाइल</label>
+              <input id="w2_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div class="flex gap-2 items-end">
+              <div class="flex-1">
+                <label class="block text-sm mb-1">OTP</label>
+                <input id="w2_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
+              </div>
+              <button type="button" id="w2_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
+              <button type="button" id="w2_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
+            </div>
+            <p id="w2_status" class="hint" data-ok="0"></p>
+          </div>
         </div>
-      </section>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="submit" id="submitBtn" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold" disabled>सबमिट</button>
+      </div>
     </form>
 
     <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
@@ -279,19 +257,7 @@
       return sb.from(name);
     }
 
-    // === Step Navigation ===
-    const setStep = (n) => {
-      ['p1','p2','p3'].forEach((id,i)=>{
-        const el=$(id); el.classList.remove('step-active','step-done','step-upcoming');
-        if(i < n-1) el.classList.add('step-done');
-        else if(i===n-1) el.classList.add('step-active');
-        else el.classList.add('step-upcoming');
-      });
-      ['step1','step2','step3'].forEach(id=>hide($(id)));
-      show($('step'+n));
-    };
-
-    // === Membership Lookup gating ===
+    // === Membership Lookup ===
     let membershipOk = false;
     function lockNames(){
       $('farmer_name').readOnly = true; $('guardian_name').readOnly = true;
@@ -302,7 +268,6 @@
       $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked');
       $('farmer_name').value=''; $('guardian_name').value='';
     }
-
     async function fetchMember(){
       const no = $('member_no').value.trim();
       if(!no){ $('member_status').textContent='कृपया सदस्यता संख्या दर्ज करें'; membershipOk=false; return; }
@@ -311,23 +276,24 @@
       if(!q.data){ $('member_status').textContent='रिकॉर्ड नहीं मिला'; membershipOk=false; unlockNames(); return; }
       $('farmer_name').value = (q.data.farmer_name||'').toUpperCase();
       $('guardian_name').value = (q.data.guardian_name||'').toUpperCase();
-      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true;
+      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true; setSubmitEnabled();
     }
 
     // === Witness helpers ===
     function setSubmitEnabled(){
       const ok1 = $('w1_status').dataset.ok === '1';
       const ok2 = $('w2_status').dataset.ok === '1';
-      $('submitBtn').disabled = !(ok1 && ok2);
+      $('submitBtn').disabled = !(ok1 && ok2 && membershipOk);
     }
 
     async function fetchWitness(slot){
       const aadhaar = $(slot+'_aadhaar').value.trim();
       if(aadhaar.length !== 12){ toast('12 अंकों का आधार डालें'); return; }
-      const q = await fromTbl(WITNESS_TABLE).select('name,mobile').eq('aadhaar', aadhaar).maybeSingle();
+      const q = await fromTbl(WITNESS_TABLE).select('name,guardian_name,mobile').eq('aadhaar', aadhaar).maybeSingle();
       if(q.error){ console.error(q.error); toast('Lookup error'); return; }
       if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
       $(slot+'_name').value = q.data.name || '';
+      $(slot+'_guardian_name').value = q.data.guardian_name || '';
       $(slot+'_mobile').value = q.data.mobile || '';
       toast('गवाह मिला');
     }
@@ -362,9 +328,14 @@
     // === Submit ===
     async function submitApp(e){
       e.preventDefault();
-      if(!membershipOk){ toast('पहले सही सदस्यता संख्या verify करें'); return; }
-      if(!$('appForm').reportValidity()){ return; }
+      if(!membershipOk){ toast('पहले सदस्यता संख्या verify करें'); return; }
       if($('submitBtn').disabled){ toast('दोनों गवाह OTP सत्यापित जरूरी'); return; }
+
+      // Basic client validations
+      const ac=$('bank_ac').value.trim(), ad=$('aadhaar').value.trim(), mob=$('mobile').value.trim();
+      if(!(ac.length===17 && /^\d{17}$/.test(ac))){ toast('खाता 17 digits'); return; }
+      if(!(ad.length===12 && /^\d{12}$/.test(ad))){ toast('आधार 12 digits'); return; }
+      if(!(mob.length===10 && /^\d{10}$/.test(mob))){ toast('मोबाइल 10 digits'); return; }
 
       const payload = {
         membership_no: $('member_no').value.trim(),
@@ -390,23 +361,28 @@
         w1_aadhaar: $('w1_aadhaar').value,
         w1_name: $('w1_name').value,
         w1_mobile: $('w1_mobile').value,
+        w1_guardian_name: $('w1_guardian_name').value,
         w2_aadhaar: $('w2_aadhaar').value,
         w2_name: $('w2_name').value,
         w2_mobile: $('w2_mobile').value,
+        w2_guardian_name: $('w2_guardian_name').value,
         w1_verified: $('w1_status').dataset.ok === '1',
         w2_verified: $('w2_status').dataset.ok === '1',
         status: 'submitted'
       };
 
       const ins = await fromTbl(APPLICATIONS).insert(payload);
-      if(ins.error){ console.error(ins.error); toast('Save error'); return; }
+      if(ins.error){ console.error(ins.error); toast('Save error (policies/columns)'); return; }
       toast('फ़ॉर्म सेव हो गया ✔');
       e.target.reset();
       $('w1_name').value=''; $('w1_mobile').value=''; $('w2_name').value=''; $('w2_mobile').value='';
       $('w1_status').textContent=''; $('w2_status').textContent='';
       $('w1_status').dataset.ok='0'; $('w2_status').dataset.ok='0';
-      membershipOk=false; unlockNames(); $('member_status').textContent='';
-      setSubmitEnabled(); setStep(1); window.scrollTo({top:0,behavior:'smooth'});
+      membershipOk=false; $('member_status').textContent='';
+      // keep names unlocked for next entry
+      $('farmer_name').readOnly=false; $('guardian_name').readOnly=false;
+      $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked');
+      $('submitBtn').disabled = true;
     }
 
     // === Bootstrap ===
@@ -415,44 +391,20 @@
         if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Step nav
-        $('next1').onclick = async () => {
-          if(!membershipOk){ toast('सदस्यता संख्या verify करें'); return; }
-          if(!$('appForm').reportValidity()) return;
-          setStep(2);
-        };
-        $('back2').onclick = () => setStep(1);
-        $('next2').onclick = () => {
-          if(!$('nominee_name').value || !$('nominee_dob').value || !$('nominee_relation').value){ toast('नॉमिनी विवरण पूरा करें'); return; }
-          setStep(3);
-        };
-        $('back3').onclick = () => setStep(2);
-
         // Membership
         $('member_fetch').addEventListener('click', fetchMember);
-        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; unlockNames(); });
+        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; $('submitBtn').disabled=true; });
 
         // Witness events
         $('w1_fetch').onclick = () => fetchWitness('w1');
         $('w2_fetch').onclick = () => fetchWitness('w2');
-        $('w1_send_otp').onclick = () => {
-          const a=$('w1_aadhaar').value.trim(); const m=$('w1_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 1 का विवरण'); return; } sendOtp(a,m,'w1'); };
-        $('w2_send_otp').onclick = () => {
-          const a=$('w2_aadhaar').value.trim(); const m=$('w2_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 2 का विवरण'); return; } sendOtp(a,m,'w2'); };
-        $('w1_verify').onclick = async () => {
-          const ok = await verifyOtp($('w1_aadhaar').value.trim(), $('w1_otp').value.trim(), 'w1');
-          $('w1_status').textContent = ok ? 'गवाह 1 सत्यापित ✔' : 'OTP गलत';
-          $('w1_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
-        $('w2_verify').onclick = async () => {
-          const ok = await verifyOtp($('w2_aadhaar').value.trim(), $('w2_otp').value.trim(), 'w2');
-          $('w2_status').textContent = ok ? 'गवाह 2 सत्यापित ✔' : 'OTP गलत';
-          $('w2_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
+        $('w1_send_otp').onclick = () => { const a=$('w1_aadhaar').value.trim(), m=$('w1_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 1 का विवरण'); return; } sendOtp(a,m,'w1'); };
+        $('w2_send_otp').onclick = () => { const a=$('w2_aadhaar').value.trim(), m=$('w2_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 2 का विवरण'); return; } sendOtp(a,m,'w2'); };
+        $('w1_verify').onclick = async () => { const ok = await verifyOtp($('w1_aadhaar').value.trim(), $('w1_otp').value.trim(), 'w1'); $('w1_status').textContent = ok ? 'गवाह 1 सत्यापित ✔' : 'OTP गलत'; $('w1_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
+        $('w2_verify').onclick = async () => { const ok = await verifyOtp($('w2_aadhaar').value.trim(), $('w2_otp').value.trim(), 'w2'); $('w2_status').textContent = ok ? 'गवाह 2 सत्यापित ✔' : 'OTP गलत'; $('w2_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
 
         // Submit
         $('appForm').addEventListener('submit', submitApp);
-
-        // Init
-        setStep(1); setSubmitEnabled();
       };
       if(document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(init,0);
       else window.addEventListener('DOMContentLoaded', init);
