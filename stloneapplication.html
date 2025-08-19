@@ -243,19 +243,19 @@
 
   <script>
     /* ========= CONFIG भरें ========= */
-    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";  // <-- बदलें
-    const SUPABASE_KEY = "YOUR-ANON-KEY";                     // <-- बदलें
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";  // <-- बदलें
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                     // <-- बदलें
 
     // DOCX Template (Storage/Static) – अपनी सेटिंग के हिसाब से चुनें
     const TEMPLATE_SOURCE = 'storage';            // 'storage' | 'static'
     const TEMPLATE_BUCKET = 'templates';
     const TEMPLATE_PATH   = 'loan_template.docx';
-    const TEMPLATE_URL    = 'loan_template.docx'; // when TEMPLATE_SOURCE='static'
+    const TEMPLATE_URL    = 'https://sjfglhxjdyvcygunijvz.supabase.co/storage/v1/object/public/loan_template.docx/STAPPLICATIONFORM.docx'; // when TEMPLATE_SOURCE='static'
 
     // Infobip WhatsApp OTP (frontend से)
-    const INFOBIP_API_URL   = 'https://YOUR-SUBDOMAIN.api.infobip.com/whatsapp/1/message/template';
-    const INFOBIP_API_KEY   = 'App YOUR_INFOBIP_API_KEY'; // 'App ' prefix रखें
-    const SENDER_NUMBER     = '9170XXXXXXXX';
+    const INFOBIP_API_URL   = 'https://m3yjjw.api.infobip.com/whatsapp/1/message/template';
+    const INFOBIP_API_KEY   = 'App 064af5a596e9087c71b4fe5b7c389c7a-a975d894-d181-4b94-bdae-8ffc9a95b159'; // 'App ' prefix रखें
+    const SENDER_NUMBER     = '15557264173';
     const TEMPLATE_NAME     = 'otp';
     const TEMPLATE_LANGUAGE = 'hi';
     // OTP किसान के WhatsApp पर भेजना है
