@@ -1,488 +1,369 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ST Loan Application Form</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    html, body { background:#0f172a; }
-    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.08); }
-    .step-active { background:#22c55e; color:#0f172a; }
-    .step-done { background:#4ade80; color:#0f172a; }
-    .step-upcoming { background:rgba(255,255,255,.15); color:#e5e7eb; }
-    .badge { font-size: .75rem; padding:.15rem .5rem; border-radius:999px; }
-    .hidden { display:none; }
-    input[type='date'] { color-scheme: dark; }
-    .hint { font-size:.8rem; color:#94a3b8 }
-    .caps-only { text-transform: uppercase; }
-    .locked { background:rgba(2,6,23,.6); cursor:not-allowed; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KANOD G.S.S. | The Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #f8f9fc;
+            --text-color: #1c202a;
+            --primary-color: #2b3a67; /* गहरा नीला */
+            --accent-color-1: #4a00e0; /* बैंगनी */
+            --accent-color-2: #8e2de2; /* हल्का बैंगनी */
+            --whatsapp-color: #25D366;
+            --card-bg: #FFFFFF;
+            --border-color: #EaEBF0;
+            --font-heading: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+            --font-body: 'Inter', 'Noto Sans Devanagari', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+        
+        /* --- Header --- */
+        .header {
+            position: sticky;
+            top: 16px;
+            z-index: 100;
+            margin: 0 24px 24px 24px;
+        }
+        .header-container {
+            max-width: 1352px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
+        .login-btn {
+            background: linear-gradient(135deg, var(--accent-color-1), var(--accent-color-2));
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(142, 45, 226, 0.2);
+        }
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(142, 45, 226, 0.3);
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px 24px 24px;
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 24px;
+        }
+
+        .grid-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .grid-item.visible {
+             opacity: 1;
+             transform: translateY(0);
+        }
+
+        /* --- Individual Grid Item Styling --- */
+        .item-header { grid-column: 1 / 9; }
+        .item-clock { grid-column: 9 / 13; }
+        .item-stat1 { grid-column: 1 / 5; }
+        .item-stat2 { grid-column: 5 / 9; }
+        .item-stat3 { grid-column: 9 / 13; }
+        
+        .item-office-hours { grid-column: 1 / 5; }
+        .item-ration-dates { grid-column: 5 / 9; }
+        .item-whatsapp { grid-column: 9 / 13; }
+
+        /* Updated Grid Rows for Left Column */
+        .item-services { grid-column: 1 / 8; grid-row: span 3; }
+        .item-additional-links { grid-column: 1 / 8; grid-row: span 2; } /* New Box */
+        .item-intro { grid-column: 1 / 8; grid-row: span 2; }
+        
+        .item-team { grid-column: 8 / 13; grid-row: span 3; }
+        .item-schemes { grid-column: 8 / 13; grid-row: span 2; }
+        .item-footer { grid-column: 1 / -1; }
+
+        .item-header { background: linear-gradient(135deg, #f5f7fa, #e6e9f0); }
+        .item-header h1 { font-family: var(--font-heading); font-size: 3.5rem; line-height: 1.1; font-weight: 700; }
+        .item-header p { font-size: 1.1rem; color: #555; margin-top: 10px; }
+        
+        .item-clock { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #clock-time { font-family: var(--font-body); font-size: 3rem; font-weight: 700; color: var(--primary-color); }
+        #clock-date { font-size: 1rem; opacity: 0.7; }
+
+        .item-stat { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .item-stat .count {
+            font-family: var(--font-heading); font-size: 4rem; font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-color-1), var(--accent-color-2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .item-stat h3 { font-size: 1rem; font-weight: 500; }
+        
+        .info-box { display: flex; align-items: center; gap: 20px; }
+        .info-box .icon { font-size: 2.5rem; color: var(--primary-color); }
+        .info-box h3 { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 600; }
+        .info-box p { font-size: 1rem; color: #555; }
+        
+        .item-whatsapp {
+            background: var(--whatsapp-color); color: #fff;
+            display: flex; justify-content: center; align-items: center;
+            text-decoration: none; gap: 15px;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+        }
+        .item-whatsapp:hover { transform: scale(1.05) !important; box-shadow: 0 15px 30px rgba(37, 211, 102, 0.3); }
+        .item-whatsapp .icon { font-size: 2rem; }
+        .item-whatsapp span { font-size: 1.2rem; font-weight: 700; }
+
+        .item-services h2, .item-additional-links h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 20px; }
+        .services-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; list-style: none; }
+        .services-list li a {
+            display: block; padding: 16px; border-radius: 12px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            text-decoration: none; color: var(--text-color); font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .services-list li a:hover {
+             background: linear-gradient(135deg, var(--accent-color-1), var(--accent-color-2));
+             color: #fff; transform: scale(1.05);
+             border-color: transparent; box-shadow: 0 5px 15px rgba(142, 45, 226, 0.2);
+        }
+
+        .item-team h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 10px; }
+        .team-list { list-style: none; height: 90%; display: flex; flex-direction: column; justify-content: space-around; }
+        .team-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        
+        .item-schemes h2 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 10px; }
+        .schemes-list { list-style: none; }
+        .schemes-list li { padding: 4px 0; }
+        
+        .item-footer {
+            background-color: var(--primary-color); color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 20px;
+        }
+        .item-footer .contact { opacity: 0.8; }
+
+        @media (max-width: 1200px) {
+            .item-stat1, .item-stat2, .item-stat3 { grid-column: span 4 !important; }
+        }
+        @media (max-width: 1024px) {
+            .grid-item { grid-column: span 6 !important; }
+            .item-header, .item-services, .item-intro, .item-footer, .item-whatsapp, .item-additional-links { grid-column: span 12 !important; }
+        }
+        @media (max-width: 768px) {
+            .header { margin: 16px; top: 0; }
+            .dashboard-container { padding: 0 16px 16px 16px; }
+            .grid-item { grid-column: span 12 !important; grid-row: auto !important; }
+            .item-header h1 { font-size: 2.5rem; }
+            .services-list { grid-template-columns: 1fr; }
+            .info-box { flex-direction: column; align-items: flex-start; text-align: left; }
+        }
+
+    </style>
 </head>
-<body class="min-h-screen text-slate-100">
-  <div class="max-w-5xl mx-auto p-4 md:p-8">
-    <header class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold text-white">ST Lone Application Form</h1>
-      <p class="text-slate-300 mt-1">सदस्यता संख्या से नाम ऑटो-फिल + 3 स्टेप सबमिशन</p>
+<body>
+
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">कानोड़ GSSS</div>
+            <a href="#" class="login-btn">ऑफिशियल लॉगिन</a>
+        </div>
     </header>
 
-    <nav class="flex items-center gap-3 mb-6">
-      <span id="p1" class="badge step-active">Step 1</span>
-      <span class="text-slate-400">—</span>
-      <span id="p2" class="badge step-upcoming">Step 2</span>
-      <span class="text-slate-400">—</span>
-      <span id="p3" class="badge step-upcoming">Step 3</span>
-    </nav>
-
-    <form id="appForm" class="glass rounded-2xl p-4 md:p-6 border border-white/10" novalidate>
-      <!-- STEP 1: Membership + Applicant Details -->
-      <section id="step1">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 1: सदस्यता और आवेदक का विवरण</h2>
-
-        <!-- सदस्यता संख्या Lookup -->
-        <div class="md:col-span-3 mb-5">
-          <label class="block text-sm mb-1">अपना सदस्यता संख्या दर्ज करें</label>
-          <div class="flex gap-2 items-center">
-            <input id="member_no" inputmode="numeric" pattern="\d{1,12}" maxlength="12" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="उदा. 123456" required />
-            <button type="button" id="member_fetch" class="px-4 py-2 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Find</button>
-            <span id="member_status" class="hint ml-2"></span>
-          </div>
-          <p class="hint mt-1">सदस्यता संख्या मिलने पर नाम और पिता/पति का नाम अपने-आप भरकर लॉक हो जाएगा।</p>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">कृषक का प्रकार</label>
-            <select id="kisan_type" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>LAGHU</option>
-              <option>SIMANT</option>
-              <option>ANY</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वर्ग</label>
-            <select id="caste_cat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>SC</option>
-              <option>ST</option>
-              <option>OBC</option>
-              <option>GEN</option>
-              <option>OTHER</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">कृषक का नाम</label>
-            <input id="farmer_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">पिता / पति का नाम</label>
-            <input id="guardian_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only locked" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जाति</label>
-            <input id="jaati" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">लिंग</label>
-            <select id="gender" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>MALE</option>
-              <option>FEMALE</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">रेवेन्यु विलेज का नाम</label>
-            <input id="rev_village" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">ग्राम पंचायत</label>
-            <input id="gram_panchayat" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">बैंक खाता संख्या</label>
-            <input id="bank_ac" inputmode="numeric" pattern="\d{17}" maxlength="17" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">17 अंकों का होना चाहिए</p>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">आधार संख्या</label>
-            <input id="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">12 अंकों की आधार संख्या</p>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">मोबाइल नम्बर</label>
-            <input id="mobile" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-            <p class="hint">10 अंकों का मोबाइल नंबर</p>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">व्हाट्सएप नंबर</label>
-            <input id="whatsapp" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
-            <input id="jan_aadhaar" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
-            <input id="voter_id" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">पेन कार्ड (वैकल्पिक)</label>
-            <input id="pan" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" />
-            <p class="hint">उदा: ABCDE1234F</p>
-          </div>
-        </div>
-        <div class="mt-6 flex justify-end gap-3">
-          <button type="button" id="next1" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">अगला (Step 2)</button>
-        </div>
-      </section>
-
-      <!-- STEP 2: Nominee -->
-      <section id="step2" class="hidden">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 2: नॉमिनी विवरण</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">नॉमिनी का नाम</label>
-            <input id="nominee_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 caps-only" pattern="^[A-Z ]+$" title="Only capital letters A–Z and spaces" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="nominee_dob" type="date" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">कृषक से संबंध</label>
-            <select id="nominee_relation" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>WIFE</option>
-              <option>HUS</option>
-              <option>SON</option>
-              <option>DOU</option>
-              <option>BRO</option>
-              <option>SIS</option>
-              <option>OTHER</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-6 flex justify-between gap-3">
-          <button type="button" class="px-5 py-3 rounded-xl bg-slate-700" id="back2">पिछला</button>
-          <button type="button" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold" id="next2">अगला (Step 3)</button>
-        </div>
-      </section>
-
-      <!-- STEP 3: Witnesses + OTP verification -->
-      <section id="step3" class="hidden">
-        <h2 class="text-xl font-semibold mb-4">स्टेप 3: गवाह विवरण</h2>
-        <p class="hint mb-4">नोट: पहले Excel/CSV से Supabase में <strong>witness_master</strong> तालिका में गवाहों की आधार व नाम अपलोड करें। नीचे आधार डालते ही नाम खुद भरेगा। फिर OTP से सत्यापन करें।</p>
-
-        <div class="grid md:grid-cols-2 gap-6">
-          <!-- Witness 1 -->
-          <div class="border border-white/10 rounded-2xl p-4">
-            <h3 class="font-semibold mb-3">गवाह 1</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm mb-1">आधार संख्या</label>
-                <div class="flex gap-2">
-                  <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
-                  <button type="button" id="w1_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm mb-1">नाम</label>
-                <input id="w1_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">मोबाइल</label>
-                <input id="w1_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div class="flex gap-2 items-end">
-                <div class="flex-1">
-                  <label class="block text-sm mb-1">OTP</label>
-                  <input id="w1_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-                </div>
-                <button type="button" id="w1_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
-                <button type="button" id="w1_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
-              </div>
-              <p id="w1_status" class="hint" data-ok="0"></p>
+    <div class="dashboard-container">
+        <div class="bento-grid">
+            <div class="grid-item item-header">
+                <h1>कानोड़ ग्राम सेवा सहकारी समिति</h1>
+                <p>किसानों के सर्वांगीण विकास और आर्थिक समृद्धि के लिए समर्पित।</p>
             </div>
-          </div>
-          <!-- Witness 2 -->
-          <div class="border border-white/10 rounded-2xl p-4">
-            <h3 class="font-semibold mb-3">गवाह 2</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm mb-1">आधार संख्या</label>
-                <div class="flex gap-2">
-                  <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="12 अंकों का आधार" />
-                  <button type="button" id="w2_fetch" class="px-3 rounded-lg bg-slate-700">Find</button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm mb-1">नाम</label>
-                <input id="w2_name" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">मोबाइल</label>
-                <input id="w2_mobile" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" readonly />
-              </div>
-              <div class="flex gap-2 items-end">
-                <div class="flex-1">
-                  <label class="block text-sm mb-1">OTP</label>
-                  <input id="w2_otp" class="w-full bg-slate-800/70 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-                </div>
-                <button type="button" id="w2_send_otp" class="px-3 rounded-lg bg-emerald-600">Send OTP</button>
-                <button type="button" id="w2_verify" class="px-3 rounded-lg bg-indigo-600">Verify</button>
-              </div>
-              <p id="w2_status" class="hint" data-ok="0"></p>
+
+            <div class="grid-item item-clock">
+                <div id="clock-time">07:33:02</div>
+                <div id="clock-date">Saturday, August 16, 2025</div>
             </div>
-          </div>
+
+            <div class="grid-item item-stat item-stat1">
+                <div class="count" data-target="810">0</div>
+                <h3>कुल सदस्य</h3>
+            </div>
+            <div class="grid-item item-stat item-stat2">
+                <div class="count" data-target="1961">0</div>
+                <h3>ऋणी सदस्य</h3>
+            </div>
+            <div class="grid-item item-stat item-stat3">
+                <div class="count" data-target="1961">0</div>
+                <h3>स्थापना वर्ष</h3>
+            </div>
+            
+            <div class="grid-item item-office-hours info-box">
+                <div class="icon"><i class="fa-regular fa-clock"></i></div>
+                <div class="text">
+                    <h3>ऑफिस का समय</h3>
+                    <p>10:00 AM - 08:00 PM</p>
+                </div>
+            </div>
+            <div class="grid-item item-ration-dates info-box">
+                <div class="icon"><i class="fa-regular fa-calendar-days"></i></div>
+                <div class="text">
+                    <h3>राशन वितरण</h3>
+                    <p>हर महीने की 1-5 और 20 तारीख</p>
+                </div>
+            </div>
+            <a href="#" class="grid-item item-whatsapp">
+                <div class="icon"><i class="fa-brands fa-whatsapp"></i></div>
+                <span>ग्रुप से जुड़ें</span>
+            </a>
+
+            <div class="grid-item item-services">
+                <h2>सेवाएं और सूचनाएं</h2>
+                <ul class="services-list">
+                    <li><a href="lone-2024.html">2024 बकाया ऋण सूचना</a></li>
+                    <li><a href="#">ST Loan Application</a></li>
+                    <li><a href="#">मेम्बर हिस्सा राशि</a></li>
+                    <li><a href="#">रशीद चेक करे</a></li>
+                    <li><a href="#">मेम्बर पूरी जानकारी</a></li>
+                    <li><a href="#">जीवन सुरक्षा क्लेम</a></li>
+                    <li><a href="#">नए लोन आवेदन फॉर्म</a></li>
+                    <li><a href="#">GRA फॉर्म</a></li>
+                    <li><a href="stloneapplication.html">बकाया ST ऋण सूचि</a></li>
+                    <li><a href="#">PMFBY - 2024</a></li>
+                </ul>
+            </div>
+            
+            <div class="grid-item item-additional-links">
+                <h2>डाउनलोड मेटेरियल</h2>
+                <ul class="services-list">
+                    <li><a href="#">बटन 1</a></li>
+                    <li><a href="#">बटन 2</a></li>
+                    <li><a href="#">बटन 3</a></li>
+                    <li><a href="#">बटन 4</a></li>
+                </ul>
+            </div>
+
+            <div class="grid-item item-team">
+                <h2>समिति कार्यकारिणी</h2>
+                <ul class="team-list">
+                    <li><span>अध्यक्ष</span> <strong>तेजा राम जाजड़ा</strong></li>
+                    <li><span>व्यवस्थापक</span> <strong>जोगाराम लेगा</strong></li>
+                    <li><span>उपाध्यक्ष</span> <strong>टिकमा राम</strong></li>
+                    <li><span>सदस्य</span> <strong>देदा राम</strong></li>
+                    <li><span>सदस्य</span> <strong>तुलसा राम लेगा</strong></li>
+                    <li><span>सदस्य</span> <strong>देवेन्द्र लेगा</strong></li>
+                    <li><span>सदस्य</span> <strong>रावता राम</strong></li>
+                    <li><span>... एवं अन्य सदस्य</span></li>
+                </ul>
+            </div>
+            
+             <div class="grid-item item-schemes">
+                <h2>प्रमुख योजनाएं</h2>
+                <ul class="schemes-list">
+                    <li>→ सदस्यों को नये ऋण प्रदान करना</li>
+                    <li>→ सदस्यों का फसल बीमा करना</li>
+                    <li>→ सहकार सुरक्षा व एक्सीडेंट बीमा</li>
+                    <li>→ पशुओं पर ऋण प्रदान करना</li>
+                </ul>
+            </div>
+
+            <div class="grid-item item-intro">
+                <h2>समिति परिचय</h2>
+                <p>समिति में 1230 मेम्बर हैं, जिसमें से 810 मेम्बरों को ऋण प्रदान किया जाता है। यह सरकार का उपक्रम है, जो छोटे किसानों को फायदा पहुँचाता है।</p>
+                <p style="margin-top:10px; font-weight: 500;"><strong>रजिस्ट्रेशन:</strong> 424/C (23/03/1961)</p>
+            </div>
+
+            <div class="grid-item item-footer">
+                <div class="copyright">© 2025 KANOD G.S.S.S.</div>
+                <div class="contact">
+                    <strong>संपर्क:</strong> 8094251586 | kanodgsss@gmail.com
+                </div>
+            </div>
+
         </div>
+    </div>
 
-        <div class="mt-6 flex justify-between gap-3">
-          <button type="button" class="px-5 py-3 rounded-xl bg-slate-700" id="back3">पिछला</button>
-          <button type="submit" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold" id="submitBtn" disabled>सबमिट</button>
-        </div>
-      </section>
-    </form>
+    <script>
+        // --- Live Clock ---
+        const timeEl = document.getElementById('clock-time');
+        const dateEl = document.getElementById('clock-date');
+        function updateClock() {
+            const now = new Date();
+            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' };
+            const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' };
+            const timeString = now.toLocaleTimeString('en-GB', optionsTime);
+            const dateString = now.toLocaleDateString('en-US', optionsDate);
+            timeEl.textContent = timeString;
+            dateEl.textContent = dateString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-    <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
-  </div>
-
-  <script>
-    // === Supabase Config — अपनी असली values यहाँ भरें ===
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co"; // <-- बदलें
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                    // <-- बदलें
-    const SCHEMA = 'public';
-    const MEMBERS_TABLE = 'members';
-    const WITNESS_TABLE = 'witness_master';
-    const OTP_LOGS = 'otp_logs';
-    const APPLICATIONS = 'applications';
-
-    // === Utils ===
-    const $ = (id) => document.getElementById(id);
-    const show = (el) => el.classList.remove('hidden');
-    const hide = (el) => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2500); };
-
-    let sb = null;
-    function fromTbl(name){
-      if(SCHEMA && SCHEMA !== 'public' && typeof sb.schema === 'function') return sb.schema(SCHEMA).from(name);
-      return sb.from(name);
-    }
-
-    // === Step Navigation ===
-    const setStep = (n) => {
-      ['p1','p2','p3'].forEach((id,i)=>{
-        const el=$(id); el.classList.remove('step-active','step-done','step-upcoming');
-        if(i < n-1) el.classList.add('step-done');
-        else if(i===n-1) el.classList.add('step-active');
-        else el.classList.add('step-upcoming');
-      });
-      ['step1','step2','step3'].forEach(id=>hide($(id)));
-      show($('step'+n));
-    };
-
-    // === Membership Lookup gating ===
-    // केवल Step-1 के visible fields validate करें (hidden Step-2 required होने से Next block न हो)
-    function validateStep1(){
-      // Step-1 के आवश्यक फील्ड
-      const requiredIds = ['kisan_type','caste_cat','gender','dob'];
-      for(const id of requiredIds){
-        const el=$(id); if(!el) continue;
-        if(!el.value){ el.reportValidity?.(); toast('कृपया सभी आवश्यक फील्ड भरें'); return false; }
-      }
-      // Exact-length numeric checks (regex के बिना)
-      const isDigits = (s,len)=> s && s.length===len && [...s].every(ch=>ch>='0' && ch<='9');
-      const ac = $('bank_ac').value.trim();
-      if(!isDigits(ac,17)){ $('bank_ac').reportValidity?.(); toast('बैंक खाता संख्या 17 अंकों की होनी चाहिए'); return false; }
-      const ad = $('aadhaar').value.trim();
-      if(!isDigits(ad,12)){ $('aadhaar').reportValidity?.(); toast('आधार 12 अंकों का होना चाहिए'); return false; }
-      const mob = $('mobile').value.trim();
-      if(!isDigits(mob,10)){ $('mobile').reportValidity?.(); toast('मोबाइल 10 अंकों का होना चाहिए'); return false; }
-      return true;
-    }
-      }
-      return true;
-    }
-    let membershipOk = false;
-    function lockNames(){
-      $('farmer_name').readOnly = true; $('guardian_name').readOnly = true;
-      $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked');
-    }
-    function unlockNames(){
-      $('farmer_name').readOnly = false; $('guardian_name').readOnly = false;
-      $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked');
-      $('farmer_name').value=''; $('guardian_name').value='';
-    }
-
-    async function fetchMember(){
-      const no = $('member_no').value.trim();
-      if(!no){ $('member_status').textContent='कृपया सदस्यता संख्या दर्ज करें'; membershipOk=false; return; }
-      const q = await fromTbl(MEMBERS_TABLE).select('farmer_name,guardian_name').eq('membership_no', no).maybeSingle();
-      if(q.error){ console.error(q.error); $('member_status').textContent='Lookup error'; membershipOk=false; unlockNames(); return; }
-      if(!q.data){ $('member_status').textContent='रिकॉर्ड नहीं मिला'; membershipOk=false; unlockNames(); return; }
-      $('farmer_name').value = (q.data.farmer_name||'').toUpperCase();
-      $('guardian_name').value = (q.data.guardian_name||'').toUpperCase();
-      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true;
-    }
-
-    // === Witness helpers ===
-    function setSubmitEnabled(){
-      const ok1 = $('w1_status').dataset.ok === '1';
-      const ok2 = $('w2_status').dataset.ok === '1';
-      $('submitBtn').disabled = !(ok1 && ok2);
-    }
-
-    async function fetchWitness(slot){
-      const aadhaar = $(slot+'_aadhaar').value.trim();
-      if(aadhaar.length !== 12){ toast('12 अंकों का आधार डालें'); return; }
-      const q = await fromTbl(WITNESS_TABLE).select('name,mobile').eq('aadhaar', aadhaar).maybeSingle();
-      if(q.error){ console.error(q.error); toast('Lookup error'); return; }
-      if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
-      $(slot+'_name').value = q.data.name || '';
-      $(slot+'_mobile').value = q.data.mobile || '';
-      toast('गवाह मिला');
-    }
-
-    const generateOTP = () => Math.floor(100000 + Math.random()*900000).toString();
-    async function sendOtp(aadhaar, mobile, slot, channel='sms'){
-      const code = generateOTP();
-      const expires_at = new Date(Date.now()+5*60*1000).toISOString();
-      const ins = await fromTbl(OTP_LOGS).insert({
-        target_type: 'witness', slot, aadhaar,
-        mobile: channel==='sms' ? mobile : null,
-        whatsapp: channel==='whatsapp' ? mobile : null,
-        channel, code, expires_at
-      });
-      if(ins.error){ console.error(ins.error); toast('OTP save error'); return; }
-      toast(`डेमो OTP (${slot}): ${code}`); // dev only
-    }
-
-    async function verifyOtp(aadhaar, inputCode, slot){
-      const q = await fromTbl(OTP_LOGS)
-        .select('id,code,expires_at')
-        .eq('target_type','witness').eq('aadhaar',aadhaar).eq('slot',slot)
-        .order('created_at',{ascending:false}).limit(1);
-      if(q.error || !q.data?.length){ toast('OTP नहीं मिला'); return false; }
-      const row = q.data[0];
-      if(new Date(row.expires_at) < new Date()){ toast('OTP एक्सपायर'); return false; }
-      if(row.code !== inputCode){ toast('OTP गलत'); return false; }
-      await fromTbl(OTP_LOGS).update({ verified_at: new Date().toISOString() }).eq('id', row.id);
-      return true;
-    }
-
-    // === Submit ===
-    async function submitApp(e){
-      e.preventDefault();
-      if(!membershipOk){ toast('पहले सही सदस्यता संख्या verify करें'); return; }
-      if(!$('appForm').reportValidity()){ return; }
-      if($('submitBtn').disabled){ toast('दोनों गवाह OTP सत्यापित जरूरी'); return; }
-
-      const payload = {
-        membership_no: $('member_no').value.trim(),
-        kisan_type: $('kisan_type').value,
-        caste_cat: $('caste_cat').value,
-        farmer_name: $('farmer_name').value,
-        guardian_name: $('guardian_name').value,
-        jaati: $('jaati').value,
-        gender: $('gender').value,
-        dob: $('dob').value,
-        rev_village: $('rev_village').value,
-        gram_panchayat: $('gram_panchayat').value,
-        bank_ac: $('bank_ac').value,
-        aadhaar: $('aadhaar').value,
-        mobile: $('mobile').value,
-        whatsapp: $('whatsapp').value,
-        jan_aadhaar: $('jan_aadhaar').value,
-        voter_id: $('voter_id').value,
-        pan: $('pan').value?.toUpperCase(),
-        nominee_name: $('nominee_name').value,
-        nominee_dob: $('nominee_dob').value,
-        nominee_relation: $('nominee_relation').value,
-        w1_aadhaar: $('w1_aadhaar').value,
-        w1_name: $('w1_name').value,
-        w1_mobile: $('w1_mobile').value,
-        w2_aadhaar: $('w2_aadhaar').value,
-        w2_name: $('w2_name').value,
-        w2_mobile: $('w2_mobile').value,
-        w1_verified: $('w1_status').dataset.ok === '1',
-        w2_verified: $('w2_status').dataset.ok === '1',
-        status: 'submitted'
-      };
-
-      const ins = await fromTbl(APPLICATIONS).insert(payload);
-      if(ins.error){ console.error(ins.error); toast('Save error'); return; }
-      toast('फ़ॉर्म सेव हो गया ✔');
-      e.target.reset();
-      $('w1_name').value=''; $('w1_mobile').value=''; $('w2_name').value=''; $('w2_mobile').value='';
-      $('w1_status').textContent=''; $('w2_status').textContent='';
-      $('w1_status').dataset.ok='0'; $('w2_status').dataset.ok='0';
-      membershipOk=false; unlockNames(); $('member_status').textContent='';
-      setSubmitEnabled(); setStep(1); window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    // === Bootstrap ===
-    (function start(){
-      const init = () => {
-        if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
-        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Step nav
-        $('next1').onclick = async () => {
-          try{
-            if(!membershipOk){ toast('सदस्यता संख्या verify करें'); return; }
-            if(!validateStep1()) return; // केवल step-1 validation
-            setStep(2);
-          }catch(e){
-            console.error(e);
-            toast('Step 2 खोलने में समस्या: ' + (e?.message || e));
-          }
+        // --- Animated Counter ---
+        const animateCounter = (counter) => {
+            const target = +counter.getAttribute('data-target');
+            const updateCount = () => {
+                const count = +counter.innerText;
+                const inc = Math.ceil(target / 100);
+                if (count < target) {
+                    counter.innerText = Math.min(count + inc, target);
+                    setTimeout(updateCount, 15);
+                } else { counter.innerText = target; }
+            };
+            updateCount();
         };
-        $('back2').onclick = () => setStep(1);
-        $('next2').onclick = () => {
-          if(!$('nominee_name').value || !$('nominee_dob').value || !$('nominee_relation').value){ toast('नॉमिनी विवरण पूरा करें'); return; }
-          setStep(3);
-        };
-        $('back3').onclick = () => setStep(2);
 
-        // Membership
-        $('member_fetch').addEventListener('click', fetchMember);
-        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; unlockNames(); });
-
-        // Witness events
-        $('w1_fetch').onclick = () => fetchWitness('w1');
-        $('w2_fetch').onclick = () => fetchWitness('w2');
-        $('w1_send_otp').onclick = () => {
-          const a=$('w1_aadhaar').value.trim(); const m=$('w1_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 1 का विवरण'); return; } sendOtp(a,m,'w1'); };
-        $('w2_send_otp').onclick = () => {
-          const a=$('w2_aadhaar').value.trim(); const m=$('w2_mobile').value.trim(); if(a.length!==12||!m){ toast('पहले गवाह 2 का विवरण'); return; } sendOtp(a,m,'w2'); };
-        $('w1_verify').onclick = async () => {
-          const ok = await verifyOtp($('w1_aadhaar').value.trim(), $('w1_otp').value.trim(), 'w1');
-          $('w1_status').textContent = ok ? 'गवाह 1 सत्यापित ✔' : 'OTP गलत';
-          $('w1_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
-        $('w2_verify').onclick = async () => {
-          const ok = await verifyOtp($('w2_aadhaar').value.trim(), $('w2_otp').value.trim(), 'w2');
-          $('w2_status').textContent = ok ? 'गवाह 2 सत्यापित ✔' : 'OTP गलत';
-          $('w2_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled(); };
-
-        // Submit
-        $('appForm').addEventListener('submit', submitApp);
-
-        // Init
-        setStep(1); setSubmitEnabled();
-      };
-      if(document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(init,0);
-      else window.addEventListener('DOMContentLoaded', init);
-    })();
-  </script>
+        // --- Reveal on Scroll ---
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 50); // Staggered delay
+                    if(entry.target.classList.contains('item-stat')) {
+                        const counter = entry.target.querySelector('.count');
+                        if(counter && counter.innerText === '0') animateCounter(counter);
+                    }
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+        document.querySelectorAll('.grid-item').forEach(el => { revealObserver.observe(el); });
+    </script>
 </body>
 </html>
