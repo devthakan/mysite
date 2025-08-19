@@ -1,37 +1,16 @@
 <!doctype html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Download Filled ST Loan Form (PDF)</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Download Filled ST Loan Form (Google Doc → PDF)</title>
 
   <!-- UI -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- DOCX fill -->
-  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.43.0/build/docxtemplater.js"></script>
-
-  <!-- DOCX -> HTML -->
-  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-
-  <!-- HTML -> PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <!-- Backup webfont (Devanagari) -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
-
   <style>
-    /* OPTIONAL: अपना Word वाला font यहाँ जोड़ो (TTF/OTF public URL) */
-    @font-face{
-      font-family: 'FORMDEV';
-      src: url('https://YOUR-PROJECT.supabase.co/storage/v1/object/public/fonts/Mangal.ttf') format('truetype'); /* <-- FONT_URL (optional) */
-      font-weight: normal; font-style: normal; font-display: swap;
-    }
-
     html, body {
       background:
         radial-gradient(1200px 800px at 10% 10%, #22c55e26, transparent),
@@ -42,79 +21,89 @@
     .hidden { display:none; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
     .hint { font-size:.85rem; color:#94a3b8 }
-
-    /* A4 exact canvas for PDF */
-    #pdf_container{
-      width: 210mm;          /* A4 width */
-      min-height: 297mm;     /* A4 height */
-      margin: 0 auto;
-      background: #ffffff; color:#111827;
-      padding: 12mm;         /* जरूरत अनुसार बदले */
-      font-family: 'FORMDEV', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-      font-size: 12pt; line-height: 1.35;
-    }
-    @page{ size: A4; margin: 0; }
-    #pdf_container h1,h2,h3{ margin:0.25em 0; }
-    #pdf_container p{ margin:0.2em 0; }
-    #pdf_container table{ border-collapse:collapse; width:100%; }
-    #pdf_container th,#pdf_container td{ border:1px solid #e5e7eb; padding:6px 8px; font-size:11pt; }
   </style>
 </head>
 <body class="min-h-screen text-slate-100">
   <div class="max-w-4xl mx-auto p-4 md:p-8">
     <header class="mb-6 md:mb-10 flex items-center justify-between">
       <div>
-        <h1 class="text-2xl md:text-3xl font-extrabold">Download Filled Form (PDF)</h1>
+        <h1 class="text-2xl md:text-3xl font-extrabold">Download Filled Form (Google Doc → PDF)</h1>
         <p class="text-slate-300 mt-1">Application No. = आपका आधार नंबर</p>
       </div>
       <a href="index.html" class="text-sm text-emerald-400 hover:text-emerald-300">← निर्देश पेज</a>
     </header>
 
     <section class="glass rounded-2xl p-6 md:p-8 border border-white/10 shadow-2xl">
-      <label class="block text-sm mb-2">आधार नंबर दर्ज करें (Application No.)</label>
-      <div class="flex flex-col md:flex-row gap-3 md:items-center">
-        <input id="aadhaar_in" inputmode="numeric" maxlength="12" pattern="\d{12}"
-               class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy"
-               placeholder="12 अंकों का आधार" />
+      <div class="grid md:grid-cols-[1fr_auto] gap-3 md:items-end">
+        <div>
+          <label class="block text-sm mb-2">आधार नंबर दर्ज करें (Application No.)</label>
+          <input id="aadhaar_in" inputmode="numeric" maxlength="12" pattern="\d{12}"
+                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy"
+                 placeholder="12 अंकों का आधार"/>
+          <p class="hint mt-1">रिकॉर्ड Supabase की <code>applications</code> टेबल से उठेगा, फिर Google Doc में placeholders भरकर PDF बनेगा।</p>
+        </div>
         <button id="btn_download" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110">
           Find & Download PDF
         </button>
       </div>
-      <p class="hint mt-2">रिकॉर्ड <code>applications</code> से उठेगा → DOCX भरेगा → PDF बनेगा (client-side).</p>
 
       <div id="preview" class="hidden mt-6 border border-white/10 rounded-xl p-4 bg-slate-900/40">
         <h3 class="font-semibold mb-2">संक्षिप्त विवरण</h3>
         <div id="preview_body" class="text-slate-300 text-sm"></div>
       </div>
-    </section>
 
-    <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
+      <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
+    </section>
   </div>
 
-  <!-- Hidden container for HTML->PDF -->
-  <div id="pdf_container" class="hidden"></div>
-
   <script>
-    /* ====== CONFIG (भरें) ====== */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // <-- अपना
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                      // <-- अपना
+    /* ========= CONFIG (भरें) ========= */
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";  // <-- अपना
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                     // <-- अपना
+    const APPLICATIONS = "applications";
 
-    const APPLICATIONS = 'applications';
+    // Google Apps Script Web App URL (Deploy > Anyone with link)
+    const GDOC_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzVji-kOog_eeLxa_VuIFVJMiNa3gxeWWsVGCvTz_BGAjLC9pYIc3BZ7QQBMlIjY6ewxw/exec";
+    // आपके Google Docs template का FILE ID (docs.google.com/document/d/<ID>/edit)
+    const G_DOC_TEMPLATE_ID = "https://docs.google.com/document/d/1iI2PkeJTZJXSKwEo4hM9JPzZv-aozQCd1-7JXCFryoA/edit?usp=sharing";
 
-    // ✅ आपका Supabase public template URL:
-    const TEMPLATE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co/storage/v1/object/public/loan_template.docx/STAPPLICATIONFORM.docx";
+    // (Optional) डाउनलोड फ़ाइल का नाम pattern
+    const PDF_NAME = (row) => `Loan_Application_${row.membership_no || row.aadhaar}.pdf`;
 
-    /* ====== Helpers ====== */
-    const $ = (id) => document.getElementById(id);
-    const show = (el) => el.classList.remove('hidden');
-    const hide = (el) => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 3000); };
-    const digits = (s,len) => !!s && s.length===len && /^\d+$/.test(s);
+    /* ========= Helpers ========= */
+    const $ = id => document.getElementById(id);
+    const show = el => el.classList.remove('hidden');
+    const hide = el => el.classList.add('hidden');
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2800); };
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function buildDocDataFromRow(r){
-      // बेस मैप (keys = हमारे कोल्मन)
+    function renderPreview(r){
+      const html = `
+        <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+          <div><span class="text-slate-400">सदस्यता:</span> ${r.membership_no||'-'}</div>
+          <div><span class="text-slate-400">कृषक:</span> ${r.farmer_name||'-'}</div>
+          <div><span class="text-slate-400">पिता/पति:</span> ${r.guardian_name||'-'}</div>
+          <div><span class="text-slate-400">ग्राम पंचायत:</span> ${r.gram_panchayat||'-'}</div>
+          <div><span class="text-slate-400">मोबाइल:</span> ${r.mobile||'-'}</div>
+          <div><span class="text-slate-400">नॉमिनी:</span> ${r.nominee_name||'-'}</div>
+        </div>`;
+      $('preview_body').innerHTML = html;
+      show($('preview'));
+    }
+
+    async function fetchRowByAadhaar(aadhaar){
+      const q = await sb.from(APPLICATIONS)
+        .select('*')
+        .eq('aadhaar', aadhaar)
+        .order('created_at', { ascending:false })
+        .limit(1);
+      if(q.error) throw q.error;
+      return q.data?.[0] || null;
+    }
+
+    // === placeholders map: Google Doc में {{key}} उसी नाम से रखें ===
+    function buildPlaceholders(r){
       const base = {
         membership_no: r.membership_no || '',
         kisan_type: r.kisan_type || '',
@@ -148,12 +137,12 @@
         application_no: r.aadhaar || '' // Application No = Aadhaar
       };
 
-      // कुछ common aliases ताकि template के अलग नाम भी मैप हो जाएँ
+      // (Optional) कुछ aliases ताकि template में अलग नाम हों तो भी भर जाएँ
       const aliases = {};
       for (const [k,v] of Object.entries(base)){
-        aliases[k.toUpperCase()] = v; // UPPER
-        aliases[k.replace(/_/g,'')] = v; // underscores हटाकर
-        aliases[k.split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join('')] = v; // PascalCase
+        aliases[k.toUpperCase()] = v;
+        aliases[k.replace(/_/g,'')] = v;
+        aliases[k.split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join('')] = v;
       }
       aliases['NAME'] = base.farmer_name;
       aliases['APPLICANT_NAME'] = base.farmer_name;
@@ -167,146 +156,72 @@
       aliases['MEMBERSHIP_NO'] = base.membership_no;
       aliases['AADHAAR_NO'] = base.aadhaar;
       aliases['PAN_NO'] = base.pan;
-      aliases['JAATI'] = base.jaati; // खास: टेम्पलेट में 'जाति' के लिए
+      aliases['JAATI'] = base.jaati;
 
       return { ...base, ...aliases };
     }
 
-    async function getTemplateArrayBuffer(){
+    // Google Apps Script Web App को call:
+    async function createPdfFromGDoc(placeholders, filename){
+      // Content-Type 'text/plain' ताकि preflight (OPTIONS) से बचें
+      const res = await fetch(GDOC_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          templateId: G_DOC_TEMPLATE_ID,
+          data: placeholders,
+          filename: filename || 'Loan_Application.pdf'
+        })
+      });
+      let json;
+      try { json = await res.json(); } catch { throw new Error('INVALID_RESPONSE'); }
+      if(!json.ok) throw new Error(json.error || 'PDF_FAILED');
+
+      // base64 → Blob → Download
+      const b64 = json.pdfBase64;
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = json.filename || filename || 'Loan_Application.pdf';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function onDownloadClick(){
+      const aadhaar = $('aadhaar_in').value.trim();
+      if(!/^\d{12}$/.test(aadhaar)){ toast('12 अंकों का आधार दर्ज करें'); return; }
+
+      // 1) Supabase से row
+      let row = null;
       try{
-        const res = await fetch(TEMPLATE_URL, { cache: 'no-store', mode: 'cors' });
-        if(!res.ok) throw new Error('Template fetch failed: ' + res.status);
-        const blob = await res.blob();
-        return blob.arrayBuffer();
+        row = await fetchRowByAadhaar(aadhaar);
       }catch(e){
-        console.error('[Template Fetch Error]', e);
-        throw new Error('TEMPLATE_FETCH_FAILED');
+        console.error(e);
+        toast('डेटा पढ़ने में समस्या (policies/columns)');
+        return;
       }
-    }
-
-    function renderPreview(r){
-      const html = `
-        <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-          <div><span class="text-slate-400">सदस्यता:</span> ${r.membership_no||'-'}</div>
-          <div><span class="text-slate-400">कृषक:</span> ${r.farmer_name||'-'}</div>
-          <div><span class="text-slate-400">पिता/पति:</span> ${r.guardian_name||'-'}</div>
-          <div><span class="text-slate-400">ग्राम पंचायत:</span> ${r.gram_panchayat||'-'}</div>
-          <div><span class="text-slate-400">मोबाइल:</span> ${r.mobile||'-'}</div>
-          <div><span class="text-slate-400">नॉमिनी:</span> ${r.nominee_name||'-'}</div>
-        </div>`;
-      $('preview_body').innerHTML = html;
-      show($('preview'));
-    }
-
-    // एक कोशिश (delimiters = {{..}} या {..})
-    async function tryRenderWithDelims(arrayBuf, data, delims){
-      const zip = new window.PizZip(arrayBuf);
-      const doc = new window.docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-        delimiters: delims
-      });
-      doc.setData(data);
-      try{
-        doc.render();
-      }catch(err){
-        function replaceErrors(key, value) {
-          if (value instanceof Error) {
-            return Object.getOwnPropertyNames(value).reduce((error, key) => { error[key] = value[key]; return error; }, {});
-          }
-          return value;
-        }
-        console.error('[DocxTemplate Error]', JSON.stringify({ err }, replaceErrors));
-        throw new Error('DOCXTEMPLATER_RENDER_FAILED');
-      }
-      const outAb = doc.getZip().generate({ type: 'arraybuffer' });
-      const mammothResult = await window.mammoth.convertToHtml({ arrayBuffer: outAb }, {
-        styleMap: [
-          "p[style-name='Heading 1'] => h1:fresh",
-          "p[style-name='Heading 2'] => h2:fresh"
-        ]
-      });
-      if(mammothResult.messages?.length){ console.warn('[Mammoth Messages]', mammothResult.messages); }
-      return mammothResult.value;
-    }
-
-    // Auto-fallback: पहले {{..}}, fail हो तो {..}
-    async function fillDocxToHtml(dataForDocx){
-      const ab = await getTemplateArrayBuffer();
-      try{
-        return await tryRenderWithDelims(ab, dataForDocx, { start:'{{', end:'}}' });
-      }catch(e1){
-        console.warn('Retry with single braces…');
-        try{
-          return await tryRenderWithDelims(ab, dataForDocx, { start:'{', end:'}' });
-        }catch(e2){
-          console.error('[Render Failed Both Delims]', e1, e2);
-          throw new Error('DOCX_RENDER_FAILED_BOTH');
-        }
-      }
-    }
-
-    async function generateAndSavePdfFromHtml(htmlString, filename){
-      const container = $('pdf_container');
-      container.innerHTML = htmlString;
-      show(container);
-
-      // web fonts का इंतज़ार
-      if (document.fonts && document.fonts.ready) {
-        try { await document.fonts.ready; } catch(_) {}
-      }
-      await new Promise(r => setTimeout(r, 50)); // small settle
-
-      const opt = {
-        margin:       [0, 0, 0, 0],
-        filename:     filename || 'Loan_Application.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      await html2pdf().set(opt).from(container).save();
-
-      hide(container);
-      container.innerHTML = '';
-    }
-
-    async function findAndDownloadPDF(){
-      const ad = $('aadhaar_in').value.trim();
-      if(!digits(ad,12)){ toast('12 अंकों का आधार दर्ज करें'); return; }
-
-      // latest application by aadhaar
-      const q = await sb.from(APPLICATIONS)
-        .select('*')
-        .eq('aadhaar', ad)
-        .order('created_at', { ascending:false })
-        .limit(1);
-      if(q.error){ console.error(q.error); toast('डेटा पढ़ने में समस्या (policies/columns)'); return; }
-      const row = q.data?.[0];
       if(!row){ toast('रिकॉर्ड नहीं मिला'); return; }
-
       renderPreview(row);
 
+      // 2) placeholders map
+      const data = buildPlaceholders(row);
+      const fname = PDF_NAME(row);
+
+      // 3) Apps Script को भेजकर PDF डाउनलोड
       try{
-        const data = buildDocDataFromRow(row);
-        const html = await fillDocxToHtml(data);
-        const fname = `Loan_Application_${row.membership_no || row.aadhaar || 'FORM'}.pdf`;
-        await generateAndSavePdfFromHtml(html, fname);
+        await createPdfFromGDoc(data, fname);
         toast('PDF डाउनलोड हो गया ✔');
       }catch(e){
-        console.error('[DOCX render/convert error]', e);
-        if(String(e.message||'').includes('TEMPLATE_FETCH_FAILED')){
-          toast('Template लोड नहीं हुआ (URL public/CORS चेक करें)');
-        }else if(String(e.message||'').includes('DOCX_RENDER_FAILED_BOTH')){
-          toast('Template placeholders mismatch — Console देखें');
-        }else{
-          toast('DOCX render/convert error (Console देखें)');
-        }
+        console.error(e);
+        toast('PDF बनाने में समस्या (Console देखें)');
       }
     }
 
-    document.getElementById('btn_download').addEventListener('click', findAndDownloadPDF);
-    document.getElementById('aadhaar_in').addEventListener('keydown', e => {
-      if(e.key==='Enter'){ e.preventDefault(); findAndDownloadPDF(); }
+    // Events
+    $('btn_download').addEventListener('click', onDownloadClick);
+    $('aadhaar_in').addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); onDownloadClick(); }
     });
   </script>
 </body>
