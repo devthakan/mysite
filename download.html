@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Download Filled ST Loan Form (PDF)</title>
+
+  <!-- UI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- DOCX fill: PizZip + Docxtemplater -->
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.43.0/build/docxtemplater.js"></script>
+
+  <!-- DOCX -> HTML (browser): Mammoth -->
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- HTML -> PDF (browser): html2pdf (bundled with html2canvas + jsPDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    html, body { background:
+      radial-gradient(1200px 800px at 10% 10%, #22c55e26, transparent),
+      radial-gradient(900px 700px at 90% 20%, #6366f122, transparent),
+      #0b1220; }
+    .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.06); }
+    .hidden { display:none; }
+    .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
+    .hint { font-size:.85rem; color:#94a3b8 }
+    /* PDF render container – दिखाए बिना पेज में add करेंगे */
+    #pdf_container { background:white; color:#111827; padding:24px; }
+    /* Optional print styling */
+    #pdf_container h1,h2,h3{ margin:0.3em 0; }
+    #pdf_container p{ margin:0.25em 0; line-height:1.35; }
+    #pdf_container table{ border-collapse:collapse; width:100%; }
+    #pdf_container th,#pdf_container td{ border:1px solid #e5e7eb; padding:6px 8px; font-size:12.5px; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100">
+  <div class="max-w-4xl mx-auto p-4 md:p-8">
+    <header class="mb-6 md:mb-10 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold">Download Filled Form (PDF)</h1>
+        <p class="text-slate-300 mt-1">Application No. = आपका आधार नंबर</p>
+      </div>
+      <a href="index.html" class="text-sm text-emerald-400 hover:text-emerald-300">← निर्देश पेज</a>
+    </header>
+
+    <section class="glass rounded-2xl p-6 md:p-8 border border-white/10 shadow-2xl">
+      <label class="block text-sm mb-2">आधार नंबर दर्ज करें (Application No.)</label>
+      <div class="flex flex-col md:flex-row gap-3 md:items-center">
+        <input id="aadhaar_in" inputmode="numeric" maxlength="12" pattern="\d{12}"
+               class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy"
+               placeholder="12 अंकों का आधार" />
+        <button id="btn_download" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110">
+          Find & Download PDF
+        </button>
+      </div>
+      <p class="hint mt-2">रिकॉर्ड <code>applications</code> टेबल से उठेगा → DOCX template में भरकर → PDF बनकर डाउनलोड होगा (ब्राउज़र में, बिना सर्वर सेव).</p>
+
+      <!-- Optional preview -->
+      <div id="preview" class="hidden mt-6 border border-white/10 rounded-xl p-4 bg-slate-900/40">
+        <h3 class="font-semibold mb-2">संक्षिप्त विवरण</h3>
+        <div id="preview_body" class="text-slate-300 text-sm"></div>
+      </div>
+    </section>
+
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
+  </div>
+
+  <!-- Hidden container जहां Mammoth का HTML डालेँगे, फिर PDF बनाएँगे  -->
+  <div id="pdf_container" class="hidden"></div>
+
+  <script>
+    /* ====== CONFIG भरें ====== */
+    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";  // <-- भरें
+    const SUPABASE_KEY = "YOUR-ANON-KEY";                     // <-- भरें
+
+    // DOCX Template (Storage/Static)
+    const TEMPLATE_SOURCE = 'storage';            // 'storage' | 'static'
+    const TEMPLATE_BUCKET = 'templates';
+    const TEMPLATE_PATH   = 'loan_template.docx';
+    const TEMPLATE_URL    = 'loan_template.docx'; // when TEMPLATE_SOURCE='static'
+
+    const APPLICATIONS = 'applications';
+
+    /* ====== Helpers ====== */
+    const $ = (id) => document.getElementById(id);
+    const show = (el) => el.classList.remove('hidden');
+    const hide = (el) => el.classList.add('hidden');
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2500); };
+    const digits = (s,len) => !!s && s.length===len && /^\d+$/.test(s);
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function buildDocDataFromRow(r){
+      return {
+        membership_no: r.membership_no || '',
+        kisan_type: r.kisan_type || '',
+        caste_cat: r.caste_cat || '',
+        farmer_name: r.farmer_name || '',
+        guardian_name: r.guardian_name || '',
+        jaati: r.jaati || '',
+        gender: r.gender || '',
+        dob: r.dob || '',
+        rev_village: r.rev_village || '',
+        gram_panchayat: r.gram_panchayat || '',
+        bank_ac: r.bank_ac || '',
+        aadhaar: r.aadhaar || '',
+        mobile: r.mobile || '',
+        whatsapp: r.whatsapp || '',
+        jan_aadhaar: r.jan_aadhaar || '',
+        voter_id: r.voter_id || '',
+        pan: (r.pan || '').toUpperCase(),
+        nominee_name: r.nominee_name || '',
+        nominee_dob: r.nominee_dob || '',
+        nominee_relation: r.nominee_relation || '',
+        w1_aadhaar: r.w1_aadhaar || '',
+        w1_name: r.w1_name || '',
+        w1_guardian_name: r.w1_guardian_name || '',
+        w1_mobile: r.w1_mobile || '',
+        w2_aadhaar: r.w2_aadhaar || '',
+        w2_name: r.w2_name || '',
+        w2_guardian_name: r.w2_guardian_name || '',
+        w2_mobile: r.w2_mobile || '',
+        date_today: new Date().toLocaleDateString('en-GB')
+      };
+    }
+
+    async function getTemplateArrayBuffer(){
+      if(TEMPLATE_SOURCE === 'storage'){
+        const { data, error } = await sb.storage.from(TEMPLATE_BUCKET).download(TEMPLATE_PATH);
+        if(error){ throw error; }
+        return data.arrayBuffer();
+      } else {
+        const res = await fetch(TEMPLATE_URL);
+        if(!res.ok) throw new Error('Template fetch failed');
+        return res.arrayBuffer();
+      }
+    }
+
+    function renderPreview(r){
+      const html = `
+        <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+          <div><span class="text-slate-400">सदस्यता:</span> ${r.membership_no||'-'}</div>
+          <div><span class="text-slate-400">कृषक:</span> ${r.farmer_name||'-'}</div>
+          <div><span class="text-slate-400">पिता/पति:</span> ${r.guardian_name||'-'}</div>
+          <div><span class="text-slate-400">ग्राम पंचायत:</span> ${r.gram_panchayat||'-'}</div>
+          <div><span class="text-slate-400">मोबाइल:</span> ${r.mobile||'-'}</div>
+          <div><span class="text-slate-400">नॉमिनी:</span> ${r.nominee_name||'-'}</div>
+        </div>`;
+      $('preview_body').innerHTML = html;
+      show($('preview'));
+    }
+
+    // DOCX भरकर -> ArrayBuffer निकालकर -> Mammoth से HTML बनाना
+    async function fillDocxToHtml(dataForDocx){
+      const templateAb = await getTemplateArrayBuffer();
+      const zip = new window.PizZip(templateAb);
+      const doc = new window.docxtemplater(zip, { paragraphLoop:true, linebreaks:true });
+      doc.setData(dataForDocx);
+      doc.render();
+      const finalAb = doc.getZip().generate({ type: 'arraybuffer' });
+      const result = await window.mammoth.convertToHtml({ arrayBuffer: finalAb }, {
+        // optional style mapping
+        styleMap: [
+          "p[style-name='Heading 1'] => h1:fresh",
+          "p[style-name='Heading 2'] => h2:fresh"
+        ]
+      });
+      return result.value; // HTML string
+    }
+
+    async function generateAndSavePdfFromHtml(htmlString, filename){
+      const container = $('pdf_container');
+      container.innerHTML = htmlString;
+      show(container); // briefly show (optional), PDF बनेगा
+      const opt = {
+        margin:       [0.5, 0.6, 0.5, 0.6], // inches: top,right,bottom,left
+        filename:     filename || 'Loan_Application.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      await html2pdf().set(opt).from(container).save();
+      hide(container);
+      container.innerHTML = '';
+    }
+
+    async function findAndDownloadPDF(){
+      const ad = $('aadhaar_in').value.trim();
+      if(!digits(ad,12)){ toast('12 अंकों का आधार दर्ज करें'); return; }
+
+      // 1) fetch latest application by aadhaar
+      const q = await sb.from(APPLICATIONS)
+        .select('*')
+        .eq('aadhaar', ad)
+        .order('created_at', { ascending:false })
+        .limit(1);
+      if(q.error){ console.error(q.error); toast('डेटा पढ़ने में समस्या (policies/columns)'); return; }
+      const row = q.data?.[0];
+      if(!row){ toast('रिकॉर्ड नहीं मिला'); return; }
+
+      // preview (optional)
+      renderPreview(row);
+
+      // 2) DOCX → HTML (filled)
+      let html;
+      try{
+        const data = buildDocDataFromRow(row);
+        html = await fillDocxToHtml(data);
+      }catch(e){
+        console.error(e); toast('DOCX render/convert error'); return;
+      }
+
+      // 3) HTML → PDF (download)
+      try{
+        const fname = `Loan_Application_${row.membership_no || row.aadhaar || 'FORM'}.pdf`;
+        await generateAndSavePdfFromHtml(html, fname);
+        toast('PDF डाउनलोड हो गया ✔');
+      }catch(e){
+        console.error(e); toast('PDF generation error');
+      }
+    }
+
+    document.getElementById('btn_download').addEventListener('click', findAndDownloadPDF);
+    document.getElementById('aadhaar_in').addEventListener('keydown', e => {
+      if(e.key==='Enter'){ e.preventDefault(); findAndDownloadPDF(); }
+    });
+  </script>
+</body>
+</html>
