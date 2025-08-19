@@ -80,7 +80,7 @@
     const DL_KEY    = 'loan.download_url';
 
     function applyLinks(){
-      const a = localStorage.getItem(APPLY_KEY) || 'form.html';
+      const a = localStorage.getItem(APPLY_KEY) || 'stloneapplication.html';
       const d = localStorage.getItem(DL_KEY)    || 'download.html';
       document.getElementById('apply_btn').href    = a;
       document.getElementById('download_btn').href = d;
@@ -93,7 +93,7 @@
       document.getElementById('links_panel').classList.toggle('hidden');
     };
     document.getElementById('save_links').onclick = () => {
-      localStorage.setItem(APPLY_KEY,    document.getElementById('apply_url').value.trim() || 'form.html');
+      localStorage.setItem(APPLY_KEY,    document.getElementById('apply_url').value.trim() || 'stloneapplication.html');
       localStorage.setItem(DL_KEY,      document.getElementById('download_url').value.trim() || 'download.html');
       applyLinks();
       alert('लिंक सेव हो गए!');
