@@ -21,20 +21,43 @@
   <!-- HTML -> PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+  <!-- Backup webfont (Devanagari) -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    html, body { background:
-      radial-gradient(1200px 800px at 10% 10%, #22c55e26, transparent),
-      radial-gradient(900px 700px at 90% 20%, #6366f122, transparent),
-      #0b1220; }
+    /* OPTIONAL: अपना Word वाला font यहाँ जोड़ो (TTF/OTF public URL) */
+    @font-face{
+      font-family: 'FORMDEV';
+      src: url('https://YOUR-PROJECT.supabase.co/storage/v1/object/public/fonts/Mangal.ttf') format('truetype'); /* <-- FONT_URL (optional) */
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+
+    html, body {
+      background:
+        radial-gradient(1200px 800px at 10% 10%, #22c55e26, transparent),
+        radial-gradient(900px 700px at 90% 20%, #6366f122, transparent),
+        #0b1220;
+    }
     .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.06); }
     .hidden { display:none; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
     .hint { font-size:.85rem; color:#94a3b8 }
-    #pdf_container { background:white; color:#111827; padding:24px; }
-    #pdf_container h1,h2,h3{ margin:0.3em 0; }
-    #pdf_container p{ margin:0.25em 0; line-height:1.35; }
+
+    /* A4 exact canvas for PDF */
+    #pdf_container{
+      width: 210mm;          /* A4 width */
+      min-height: 297mm;     /* A4 height */
+      margin: 0 auto;
+      background: #ffffff; color:#111827;
+      padding: 12mm;         /* जरूरत अनुसार बदले */
+      font-family: 'FORMDEV', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 12pt; line-height: 1.35;
+    }
+    @page{ size: A4; margin: 0; }
+    #pdf_container h1,h2,h3{ margin:0.25em 0; }
+    #pdf_container p{ margin:0.2em 0; }
     #pdf_container table{ border-collapse:collapse; width:100%; }
-    #pdf_container th,#pdf_container td{ border:1px solid #e5e7eb; padding:6px 8px; font-size:12.5px; }
+    #pdf_container th,#pdf_container td{ border:1px solid #e5e7eb; padding:6px 8px; font-size:11pt; }
   </style>
 </head>
 <body class="min-h-screen text-slate-100">
@@ -57,7 +80,7 @@
           Find & Download PDF
         </button>
       </div>
-      <p class="hint mt-2">रिकॉर्ड <code>applications</code> से उठेगा → DOCX टेम्पलेट भरेगा → PDF बनेगा (ब्राउज़र में, बिना सर्वर सेव).</p>
+      <p class="hint mt-2">रिकॉर्ड <code>applications</code> से उठेगा → DOCX भरेगा → PDF बनेगा (client-side).</p>
 
       <div id="preview" class="hidden mt-6 border border-white/10 rounded-xl p-4 bg-slate-900/40">
         <h3 class="font-semibold mb-2">संक्षिप्त विवरण</h3>
@@ -74,11 +97,12 @@
   <script>
     /* ====== CONFIG (भरें) ====== */
     const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // <-- अपना
+    const SUPABASE_KEY = "
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                      // <-- अपना
 
     const APPLICATIONS = 'applications';
 
-    // ✅ आपका दिया हुआ पब्लिक टेम्पलेट URL (Supabase Storage):
+    // ✅ आपका Supabase public template URL:
     const TEMPLATE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co/storage/v1/object/public/loan_template.docx/STAPPLICATIONFORM.docx";
 
     /* ====== Helpers ====== */
@@ -91,7 +115,7 @@
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function buildDocDataFromRow(r){
-      // Base keys
+      // बेस मैप (keys = हमारे कोल्मन)
       const base = {
         membership_no: r.membership_no || '',
         kisan_type: r.kisan_type || '',
@@ -122,23 +146,20 @@
         w2_guardian_name: r.w2_guardian_name || '',
         w2_mobile: r.w2_mobile || '',
         date_today: new Date().toLocaleDateString('en-GB'),
-        application_no: r.aadhaar || '' // आपके केस में Application No = Aadhaar
+        application_no: r.aadhaar || '' // Application No = Aadhaar
       };
 
-      // 🔁 Common aliases (template compatibility बढ़ाने के लिए)
+      // कुछ common aliases ताकि template के अलग नाम भी मैप हो जाएँ
       const aliases = {};
       for (const [k,v] of Object.entries(base)){
-        aliases[k.toUpperCase()] = v;                     // UPPER_SNAKE
-        aliases[k.replace(/_/g,'')] = v;                  // without underscores
+        aliases[k.toUpperCase()] = v; // UPPER
+        aliases[k.replace(/_/g,'')] = v; // underscores हटाकर
         aliases[k.split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join('')] = v; // PascalCase
       }
-      // Extra likely names
       aliases['NAME'] = base.farmer_name;
       aliases['APPLICANT_NAME'] = base.farmer_name;
       aliases['FATHER_NAME'] = base.guardian_name;
       aliases['FATHER_HUSBAND_NAME'] = base.guardian_name;
-      aliases['GENDER'] = base.gender;
-      aliases['DOB'] = base.dob;
       aliases['REVENUE_VILLAGE'] = base.rev_village;
       aliases['GRAM_PANCHAYAT'] = base.gram_panchayat;
       aliases['MOBILE_NO'] = base.mobile;
@@ -147,6 +168,7 @@
       aliases['MEMBERSHIP_NO'] = base.membership_no;
       aliases['AADHAAR_NO'] = base.aadhaar;
       aliases['PAN_NO'] = base.pan;
+      aliases['JAATI'] = base.jaati; // खास: टेम्पलेट में 'जाति' के लिए
 
       return { ...base, ...aliases };
     }
@@ -156,7 +178,6 @@
         const res = await fetch(TEMPLATE_URL, { cache: 'no-store', mode: 'cors' });
         if(!res.ok) throw new Error('Template fetch failed: ' + res.status);
         const blob = await res.blob();
-        console.log('[Template] Blob size =', blob.size, 'bytes');
         return blob.arrayBuffer();
       }catch(e){
         console.error('[Template Fetch Error]', e);
@@ -190,12 +211,9 @@
       try{
         doc.render();
       }catch(err){
-        // Docxtemplater suggested error debug
         function replaceErrors(key, value) {
           if (value instanceof Error) {
-            return Object.getOwnPropertyNames(value).reduce((error, key) => {
-              error[key] = value[key]; return error;
-            }, {});
+            return Object.getOwnPropertyNames(value).reduce((error, key) => { error[key] = value[key]; return error; }, {});
           }
           return value;
         }
@@ -209,9 +227,7 @@
           "p[style-name='Heading 2'] => h2:fresh"
         ]
       });
-      if(mammothResult.messages?.length){
-        console.warn('[Mammoth Messages]', mammothResult.messages);
-      }
+      if(mammothResult.messages?.length){ console.warn('[Mammoth Messages]', mammothResult.messages); }
       return mammothResult.value;
     }
 
@@ -235,14 +251,22 @@
       const container = $('pdf_container');
       container.innerHTML = htmlString;
       show(container);
+
+      // web fonts का इंतज़ार
+      if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch(_) {}
+      }
+      await new Promise(r => setTimeout(r, 50)); // small settle
+
       const opt = {
-        margin:       [0.5, 0.6, 0.5, 0.6],
+        margin:       [0, 0, 0, 0],
         filename:     filename || 'Loan_Application.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       await html2pdf().set(opt).from(container).save();
+
       hide(container);
       container.innerHTML = '';
     }
@@ -251,7 +275,7 @@
       const ad = $('aadhaar_in').value.trim();
       if(!digits(ad,12)){ toast('12 अंकों का आधार दर्ज करें'); return; }
 
-      // fetch latest application
+      // latest application by aadhaar
       const q = await sb.from(APPLICATIONS)
         .select('*')
         .eq('aadhaar', ad)
@@ -263,7 +287,6 @@
 
       renderPreview(row);
 
-      // DOCX -> HTML -> PDF
       try{
         const data = buildDocDataFromRow(row);
         const html = await fillDocxToHtml(data);
