@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>कानोड़ समिति – ST Loan आवेदन</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans Devanagari', sans-serif;
+    }
+    .hidden { 
+      display: none; 
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <main class="flex flex-col justify-center items-center min-h-screen px-4 py-12">
+    
+    <div class="w-full max-w-5xl">
+      <header class="text-center mb-10">
+        <h2 class="text-base font-semibold text-emerald-600 tracking-wide uppercase">सेवाएं और सूचनाएं</h2>
+        <h1 class="mt-2 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">कानोड़ समिति — ST Loan आवेदन</h1>
+        <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-500">कृपया नीचे दिए विशेष निर्देश ध्यान से पढ़ें</p>
+      </header>
+
+      <section class="grid md:grid-cols-2 gap-6 md:gap-8 items-start">
+        
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-slate-200 h-full">
+          <h3 class="text-xl font-bold text-slate-900 mb-5">विशेष निर्देश</h3>
+          <ul class="space-y-4 text-slate-600 leading-relaxed">
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>पहले कानोड़ समिति के सदस्य बनें, तभी आप यह फॉर्म भर पाएँगे।</span></li>
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>समिति में ₹120 (सदस्यता + शेयर मनी) जमा कर स्थायी सदस्यता नम्बर लें—फिर फॉर्म भरें।</span></li>
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>फॉर्म <strong class="text-slate-800">ENGLISH CAPITAL LETTERS</strong> में भरें।</span></li>
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>फॉर्म के बाद एक <strong class="text-slate-800">Application No. (आधार नंबर)</strong> मिलेगा—इसे सेव करें और Download पेज में डालकर फॉर्म डाउनलोड करें।</span></li>
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>फॉर्म के साथ फोटो लगाएँ, पटवारी के सिग्नेचर करवाएँ, और आधार, बैंक डायरी, खेत की नकल, वारिश का आधार की कॉपी संलग्न करें।</span></li>
+            <li class="flex gap-3"><span class="text-emerald-500 mt-1">●</span><span>फॉर्म पर अपने सम्पूर्ण सिग्नेचर करें।</span></li>
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-slate-200 h-full text-center">
+          <h3 class="text-xl font-bold text-slate-900">आगे क्या करना है?</h3>
+          <p class="text-slate-500 mt-2">सदस्यता नम्बर मिलने के बाद आवेदन शुरू करें। अगर पहले आवेदन किया है, तो अपना फॉर्म डाउनलोड करें।</p>
+          
+          <div class="mt-8 flex flex-col gap-4">
+            <a id="apply_btn" href="form.html" class="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-emerald-500 text-white font-semibold shadow-sm hover:bg-emerald-600 transition-colors text-base">Apply – ST Loan Form</a>
+            <a id="download_btn" href="download.html" class="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-slate-700 text-white font-semibold shadow-sm hover:bg-slate-800 transition-colors text-base">Download Form</a>
+          </div>
+
+          <div class="mt-8 border-t border-slate-200 pt-6">
+            <button id="edit_links" class="text-sm font-semibold text-slate-600 hover:text-slate-900"></button>
+            <div id="links_panel" class="hidden text-left mt-4 space-y-3">
+              <label class="block text-sm font-medium text-slate-700">Apply लिंक
+                <input id="stloneapplication.html" class="mt-1 block w-full bg-slate-100 border border-slate-300 rounded-md p-2 text-slate-800 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="उदा. form.html या पूरा URL" />
+              </label>
+              <label class="block text-sm font-medium text-slate-700">Download लिंक
+                <input id="download.html" class="mt-1 block w-full bg-slate-100 border border-slate-300 rounded-md p-2 text-slate-800 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="उदा. download.html या पूरा URL" />
+              </label>
+              <div class="flex items-center gap-3">
+                <button id="save_links" class="px-4 py-1.5 rounded-md bg-emerald-500 text-white font-semibold text-sm hover:bg-emerald-600">Save</button>
+                <button id="reset_links" class="px-4 py-1.5 rounded-md bg-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-300">Reset</button>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <footer class="mt-12 text-center text-slate-400 text-sm">© कानोड़ समिति</footer>
+    </div>
+    
+  </main>
+
+  <script>
+    const APPLY_KEY = 'loan.apply_url';
+    const DL_KEY    = 'loan.download_url';
+
+    function applyLinks(){
+      const a = localStorage.getItem(APPLY_KEY) || 'form.html';
+      const d = localStorage.getItem(DL_KEY)    || 'download.html';
+      document.getElementById('apply_btn').href    = a;
+      document.getElementById('download_btn').href = d;
+      const au = document.getElementById('apply_url');
+      const du = document.getElementById('download_url');
+      if(au) au.value = a; if(du) du.value = d;
+    }
+
+    document.getElementById('edit_links').onclick = () => {
+      document.getElementById('links_panel').classList.toggle('hidden');
+    };
+    document.getElementById('save_links').onclick = () => {
+      localStorage.setItem(APPLY_KEY,    document.getElementById('apply_url').value.trim() || 'form.html');
+      localStorage.setItem(DL_KEY,      document.getElementById('download_url').value.trim() || 'download.html');
+      applyLinks();
+      alert('लिंक सेव हो गए!');
+    };
+    document.getElementById('reset_links').onclick = () => {
+      localStorage.removeItem(APPLY_KEY);
+      localStorage.removeItem(DL_KEY);
+      applyLinks();
+      alert('लिंक डिफ़ॉल्ट पर रीसेट हो गए!');
+    };
+
+    applyLinks();
+  </script>
+
+</body>
+</html>
