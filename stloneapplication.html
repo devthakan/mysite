@@ -169,6 +169,7 @@
 
       <!-- Witnesses -->
       <h2 class="text-lg font-semibold mb-3">गवाह का विवरण</h2>
+      <p class="hint mb-4">गवाह Excel/CSV पहले से <strong>witness_master</strong> तालिका में हों। आधार डालकर Find करें, नाम/मोबाइल auto-fill होगा। WhatsApp OTP verify जरूरी है।</p>
       <div class="grid md:grid-cols-2 gap-6 mb-6">
         <div class="border border-white/10 rounded-2xl p-4 bg-slate-900/40">
           <h3 class="font-semibold mb-3">गवाह 1</h3>
@@ -240,6 +241,7 @@
       </div>
 
       <div class="mt-6 flex flex-col md:flex-row md:justify-between gap-3">
+        <div class="text-sm text-slate-400">सबमिट के बाद स्क्रीन पर संदेश आएगा—<em>“आपका फॉर्म सेव हो गया”</em> और <strong>Application Number = आपका आधार नंबर</strong>। Download पेज में यह नंबर डालकर फॉर्म डाउनलोड करें।</div>
         <div class="flex gap-3">
           <button type="submit" id="submitBtn" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110" disabled>सबमिट</button>
         </div>
@@ -415,7 +417,7 @@
         $('w2_fetch').onclick = () => fetchWitness('w2');
 
         $('w1_send_otp').onclick = async () => {
-          const a=$('w1_aadhaar').value.trim();f
+          const a=$('w1_aadhaar').value.trim();
           const appAd=$('aadhaar').value.trim();
           const dest=$('whatsapp').value.trim();
           if(a.length!==12 || !dest){ toast('गवाह 1 का आधार/किसान WhatsApp नंबर'); return; }
