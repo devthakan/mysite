@@ -11,14 +11,14 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- DOCX fill: PizZip + Docxtemplater -->
+  <!-- DOCX fill -->
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.43.0/build/docxtemplater.js"></script>
 
-  <!-- DOCX -> HTML (browser): Mammoth -->
+  <!-- DOCX -> HTML -->
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 
-  <!-- HTML -> PDF (browser): html2pdf (bundled with html2canvas + jsPDF) -->
+  <!-- HTML -> PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -30,9 +30,7 @@
     .hidden { display:none; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
     .hint { font-size:.85rem; color:#94a3b8 }
-    /* PDF render container – दिखाए बिना पेज में add करेंगे */
     #pdf_container { background:white; color:#111827; padding:24px; }
-    /* Optional print styling */
     #pdf_container h1,h2,h3{ margin:0.3em 0; }
     #pdf_container p{ margin:0.25em 0; line-height:1.35; }
     #pdf_container table{ border-collapse:collapse; width:100%; }
@@ -59,9 +57,8 @@
           Find & Download PDF
         </button>
       </div>
-      <p class="hint mt-2">रिकॉर्ड <code>applications</code> टेबल से उठेगा → DOCX template में भरकर → PDF बनकर डाउनलोड होगा (ब्राउज़र में, बिना सर्वर सेव).</p>
+      <p class="hint mt-2">रिकॉर्ड <code>applications</code> से उठेगा → DOCX टेम्पलेट भरेगा → PDF बनेगा (ब्राउज़र में, बिना सर्वर सेव).</p>
 
-      <!-- Optional preview -->
       <div id="preview" class="hidden mt-6 border border-white/10 rounded-xl p-4 bg-slate-900/40">
         <h3 class="font-semibold mb-2">संक्षिप्त विवरण</h3>
         <div id="preview_body" class="text-slate-300 text-sm"></div>
@@ -71,33 +68,31 @@
     <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
   </div>
 
-  <!-- Hidden container जहां Mammoth का HTML डालेँगे, फिर PDF बनाएँगे  -->
+  <!-- Hidden container for HTML->PDF -->
   <div id="pdf_container" class="hidden"></div>
 
   <script>
-    /* ====== CONFIG भरें ====== */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";  // <-- भरें
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                     // <-- भरें
-
-    // DOCX Template (Storage/Static)
-    const TEMPLATE_SOURCE = 'storage';            // 'storage' | 'static'
-    const TEMPLATE_BUCKET = 'loan_template.docx';
-    const TEMPLATE_PATH   = 'STAPPLICATIONFORM.docx';
-    const TEMPLATE_URL    = 'https://sjfglhxjdyvcygunijvz.supabase.co/storage/v1/object/public/loan_template.docx/STAPPLICATIONFORM.docx'; // when TEMPLATE_SOURCE='static'
+    /* ====== CONFIG (भरें) ====== */
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // <-- अपना
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                      // <-- अपना
 
     const APPLICATIONS = 'applications';
+
+    // ✅ आपका दिया हुआ पब्लिक टेम्पलेट URL (Supabase Storage):
+    const TEMPLATE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co/storage/v1/object/public/loan_template.docx/STAPPLICATIONFORM.docx";
 
     /* ====== Helpers ====== */
     const $ = (id) => document.getElementById(id);
     const show = (el) => el.classList.remove('hidden');
     const hide = (el) => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2500); };
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 3000); };
     const digits = (s,len) => !!s && s.length===len && /^\d+$/.test(s);
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function buildDocDataFromRow(r){
-      return {
+      // Base keys
+      const base = {
         membership_no: r.membership_no || '',
         kisan_type: r.kisan_type || '',
         caste_cat: r.caste_cat || '',
@@ -126,19 +121,46 @@
         w2_name: r.w2_name || '',
         w2_guardian_name: r.w2_guardian_name || '',
         w2_mobile: r.w2_mobile || '',
-        date_today: new Date().toLocaleDateString('en-GB')
+        date_today: new Date().toLocaleDateString('en-GB'),
+        application_no: r.aadhaar || '' // आपके केस में Application No = Aadhaar
       };
+
+      // 🔁 Common aliases (template compatibility बढ़ाने के लिए)
+      const aliases = {};
+      for (const [k,v] of Object.entries(base)){
+        aliases[k.toUpperCase()] = v;                     // UPPER_SNAKE
+        aliases[k.replace(/_/g,'')] = v;                  // without underscores
+        aliases[k.split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join('')] = v; // PascalCase
+      }
+      // Extra likely names
+      aliases['NAME'] = base.farmer_name;
+      aliases['APPLICANT_NAME'] = base.farmer_name;
+      aliases['FATHER_NAME'] = base.guardian_name;
+      aliases['FATHER_HUSBAND_NAME'] = base.guardian_name;
+      aliases['GENDER'] = base.gender;
+      aliases['DOB'] = base.dob;
+      aliases['REVENUE_VILLAGE'] = base.rev_village;
+      aliases['GRAM_PANCHAYAT'] = base.gram_panchayat;
+      aliases['MOBILE_NO'] = base.mobile;
+      aliases['WHATSAPP_NO'] = base.whatsapp;
+      aliases['APPLICATION_NO'] = base.application_no;
+      aliases['MEMBERSHIP_NO'] = base.membership_no;
+      aliases['AADHAAR_NO'] = base.aadhaar;
+      aliases['PAN_NO'] = base.pan;
+
+      return { ...base, ...aliases };
     }
 
     async function getTemplateArrayBuffer(){
-      if(TEMPLATE_SOURCE === 'storage'){
-        const { data, error } = await sb.storage.from(TEMPLATE_BUCKET).download(TEMPLATE_PATH);
-        if(error){ throw error; }
-        return data.arrayBuffer();
-      } else {
-        const res = await fetch(TEMPLATE_URL);
-        if(!res.ok) throw new Error('Template fetch failed');
-        return res.arrayBuffer();
+      try{
+        const res = await fetch(TEMPLATE_URL, { cache: 'no-store', mode: 'cors' });
+        if(!res.ok) throw new Error('Template fetch failed: ' + res.status);
+        const blob = await res.blob();
+        console.log('[Template] Blob size =', blob.size, 'bytes');
+        return blob.arrayBuffer();
+      }catch(e){
+        console.error('[Template Fetch Error]', e);
+        throw new Error('TEMPLATE_FETCH_FAILED');
       }
     }
 
@@ -156,30 +178,65 @@
       show($('preview'));
     }
 
-    // DOCX भरकर -> ArrayBuffer निकालकर -> Mammoth से HTML बनाना
-    async function fillDocxToHtml(dataForDocx){
-      const templateAb = await getTemplateArrayBuffer();
-      const zip = new window.PizZip(templateAb);
-      const doc = new window.docxtemplater(zip, { paragraphLoop:true, linebreaks:true });
-      doc.setData(dataForDocx);
-      doc.render();
-      const finalAb = doc.getZip().generate({ type: 'arraybuffer' });
-      const result = await window.mammoth.convertToHtml({ arrayBuffer: finalAb }, {
-        // optional style mapping
+    // एक कोशिश (delimiters = {{..}} या {..})
+    async function tryRenderWithDelims(arrayBuf, data, delims){
+      const zip = new window.PizZip(arrayBuf);
+      const doc = new window.docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+        delimiters: delims
+      });
+      doc.setData(data);
+      try{
+        doc.render();
+      }catch(err){
+        // Docxtemplater suggested error debug
+        function replaceErrors(key, value) {
+          if (value instanceof Error) {
+            return Object.getOwnPropertyNames(value).reduce((error, key) => {
+              error[key] = value[key]; return error;
+            }, {});
+          }
+          return value;
+        }
+        console.error('[DocxTemplate Error]', JSON.stringify({ err }, replaceErrors));
+        throw new Error('DOCXTEMPLATER_RENDER_FAILED');
+      }
+      const outAb = doc.getZip().generate({ type: 'arraybuffer' });
+      const mammothResult = await window.mammoth.convertToHtml({ arrayBuffer: outAb }, {
         styleMap: [
           "p[style-name='Heading 1'] => h1:fresh",
           "p[style-name='Heading 2'] => h2:fresh"
         ]
       });
-      return result.value; // HTML string
+      if(mammothResult.messages?.length){
+        console.warn('[Mammoth Messages]', mammothResult.messages);
+      }
+      return mammothResult.value;
+    }
+
+    // Auto-fallback: पहले {{..}}, fail हो तो {..}
+    async function fillDocxToHtml(dataForDocx){
+      const ab = await getTemplateArrayBuffer();
+      try{
+        return await tryRenderWithDelims(ab, dataForDocx, { start:'{{', end:'}}' });
+      }catch(e1){
+        console.warn('Retry with single braces…');
+        try{
+          return await tryRenderWithDelims(ab, dataForDocx, { start:'{', end:'}' });
+        }catch(e2){
+          console.error('[Render Failed Both Delims]', e1, e2);
+          throw new Error('DOCX_RENDER_FAILED_BOTH');
+        }
+      }
     }
 
     async function generateAndSavePdfFromHtml(htmlString, filename){
       const container = $('pdf_container');
       container.innerHTML = htmlString;
-      show(container); // briefly show (optional), PDF बनेगा
+      show(container);
       const opt = {
-        margin:       [0.5, 0.6, 0.5, 0.6], // inches: top,right,bottom,left
+        margin:       [0.5, 0.6, 0.5, 0.6],
         filename:     filename || 'Loan_Application.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
@@ -194,7 +251,7 @@
       const ad = $('aadhaar_in').value.trim();
       if(!digits(ad,12)){ toast('12 अंकों का आधार दर्ज करें'); return; }
 
-      // 1) fetch latest application by aadhaar
+      // fetch latest application
       const q = await sb.from(APPLICATIONS)
         .select('*')
         .eq('aadhaar', ad)
@@ -204,25 +261,24 @@
       const row = q.data?.[0];
       if(!row){ toast('रिकॉर्ड नहीं मिला'); return; }
 
-      // preview (optional)
       renderPreview(row);
 
-      // 2) DOCX → HTML (filled)
-      let html;
+      // DOCX -> HTML -> PDF
       try{
         const data = buildDocDataFromRow(row);
-        html = await fillDocxToHtml(data);
-      }catch(e){
-        console.error(e); toast('DOCX render/convert error'); return;
-      }
-
-      // 3) HTML → PDF (download)
-      try{
+        const html = await fillDocxToHtml(data);
         const fname = `Loan_Application_${row.membership_no || row.aadhaar || 'FORM'}.pdf`;
         await generateAndSavePdfFromHtml(html, fname);
         toast('PDF डाउनलोड हो गया ✔');
       }catch(e){
-        console.error(e); toast('PDF generation error');
+        console.error('[DOCX render/convert error]', e);
+        if(String(e.message||'').includes('TEMPLATE_FETCH_FAILED')){
+          toast('Template लोड नहीं हुआ (URL public/CORS चेक करें)');
+        }else if(String(e.message||'').includes('DOCX_RENDER_FAILED_BOTH')){
+          toast('Template placeholders mismatch — Console देखें');
+        }else{
+          toast('DOCX render/convert error (Console देखें)');
+        }
       }
     }
 
