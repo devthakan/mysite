@@ -57,15 +57,16 @@
   </div>
 
   <script>
-    /* ========= CONFIG (भरें) ========= */
+    /* ========= CONFIG (ये 2 अपनी प्रोजेक्ट से भरो) ========= */
     const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";  // <-- अपना
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                     // <-- अपना
     const APPLICATIONS = "applications";
 
-    // Google Apps Script Web App URL (Deploy > Anyone with link)
-    const GDOC_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzVji-kOog_eeLxa_VuIFVJMiNa3gxeWWsVGCvTz_BGAjLC9pYIc3BZ7QQBMlIjY6ewxw/exec";
-    // आपके Google Docs template का FILE ID (docs.google.com/document/d/<ID>/edit)
+    /* ==== तुम्हारा Google Doc template और Apps Script Web App (तुम्हारे दिए हुए) ==== */
+    // Google Doc Template FILE ID (docs.google.com/document/d/<ID>/edit)
     const G_DOC_TEMPLATE_ID = "1iI2PkeJTZJXSKwEo4hM9JPzZv-aozQCd1-7JXCFryoA";
+    // Apps Script Web App URL (Execute as: Me, Access: Anyone with link)
+    const GDOC_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzVji-kOog_eeLxa_VuIFVJMiNa3gxeWWsVGCvTz_BGAjLC9pYIc3BZ7QQBMlIjY6ewxw/exec";
 
     // (Optional) डाउनलोड फ़ाइल का नाम pattern
     const PDF_NAME = (row) => `Loan_Application_${row.membership_no || row.aadhaar}.pdf`;
@@ -74,7 +75,7 @@
     const $ = id => document.getElementById(id);
     const show = el => el.classList.remove('hidden');
     const hide = el => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2800); };
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 3000); };
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -102,7 +103,7 @@
       return q.data?.[0] || null;
     }
 
-    // === placeholders map: Google Doc में {{key}} उसी नाम से रखें ===
+    // === placeholders map: Google Doc में {{key}} इसी नाम से रखें ===
     function buildPlaceholders(r){
       const base = {
         membership_no: r.membership_no || '',
@@ -174,8 +175,14 @@
         })
       });
       let json;
-      try { json = await res.json(); } catch { throw new Error('INVALID_RESPONSE'); }
-      if(!json.ok) throw new Error(json.error || 'PDF_FAILED');
+      try { json = await res.json(); } catch (e) {
+        console.error('Invalid JSON from Apps Script:', e);
+        throw new Error('INVALID_RESPONSE');
+      }
+      if(!json.ok){
+        console.error('Apps Script error:', json.error);
+        throw new Error(json.error || 'PDF_FAILED');
+      }
 
       // base64 → Blob → Download
       const b64 = json.pdfBase64;
