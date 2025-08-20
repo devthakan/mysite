@@ -358,51 +358,76 @@
 
     /* ===== सदस्यता Lookup ===== */
     $('btn_find_member').addEventListener('click', async ()=>{
-      const mem = $('membership_no').value.trim();
-      if(!mem){ toast('सदस्यता संख्या दर्ज करें'); return; }
-      waitOn();
-      try{
-        const { data, error } = await sb.from(TABLE_MEMBERS)
-          .select('name, father_name')
-          .eq('membership_no', mem)
-          .maybeSingle();
-        if(error) throw error;
-        if(!data){ toast('सदस्य नहीं मिला'); return; }
-        $('farmer_name').value = upperAZ(data.name);
-        $('guardian_name').value = upperAZ(data.father_name);
-      }catch(e){ console.error(e); toast('Lookup error'); }
-      finally{ waitOff(); }
-    });
+  const memRaw = $('membership_no').value || '';
+  const mem = memRaw.trim().toUpperCase(); // अगर DB में uppercase stored है
+  if(!mem){ toast('सदस्यता संख्या दर्ज करें'); return; }
+
+  waitOn();
+  try{
+    const { data, error } = await sb
+      .from(TABLE_MEMBERS)
+      .select('name, father_name, "fathername"') // fallback अलग नाम के लिए
+      .eq('membership_no', mem)                  // << ilike/order हटाया
+      .limit(1)
+      .maybeSingle();
+
+    if(error){ console.error(error); throw error; }
+    if(!data){ toast('सदस्य नहीं मिला'); return; }
+
+    const name = data.name ?? data.NAME;
+    const father = data.father_name ?? data.fathername ?? data.FATHER_NAME;
+
+    $('farmer_name').value = (name || '').toString().toUpperCase();
+    $('guardian_name').value = (father || '').toString().toUpperCase();
+  }catch(e){
+    console.error('Member lookup error:', e);
+    toast('Lookup error (Members)');
+  }finally{ waitOff(); }
+});
 
     /* ===== Witness registry find ===== */
     async function findWitness(which){
-      const aadhaar = $(which+'_aadhaar').value = onlyDigits($(which+'_aadhaar').value);
-      if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार (गवाह)'); return; }
+  const aEl = $(which+'_aadhaar');
+  aEl.value = onlyDigits(aEl.value);
+  const aadhaar = aEl.value;
 
-      // Duplicate checks
-      const appA = $('aadhaar').value.trim();
-      const other = which === 'w1' ? $('w2_aadhaar').value.trim() : $('w1_aadhaar').value.trim();
-      if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
-      if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
+  if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार (गवाह)'); return; }
 
-      waitOn();
-      try{
-        const { data, error } = await sb.from(TABLE_WITNESS_REG)
-          .select('name, guardian_name, mobile')
-          .eq('aadhaar', aadhaar)
-          .maybeSingle();
-        if(error) throw error;
-        const badge = $(which+'_found_badge');
-        if(!data){ setFoundBadge(badge, false); return; }
-        setFoundBadge(badge, true);
-        $(which+'_name').value = upperAZ(data.name);
-        $(which+'_guardian_name').value = upperAZ(data.guardian_name);
-        $(which+'_mobile').value = onlyDigits(data.mobile);
-      }catch(e){ console.error(e); toast('Witness lookup error'); }
-      finally{ waitOff(); }
-    }
-    $('btn_w1_find').onclick = ()=>findWitness('w1');
-    $('btn_w2_find').onclick = ()=>findWitness('w2');
+  // duplicate checks
+  const appA = $('aadhaar').value.trim();
+  const other = which === 'w1' ? $('w2_aadhaar').value.trim() : $('w1_aadhaar').value.trim();
+  if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
+  if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
+
+  waitOn();
+  try{
+    const { data, error } = await sb
+      .from(TABLE_WITNESS_REG)
+      .select('name, guardian_name, mobile, "father_name"') // fallback
+      .eq('aadhaar', aadhaar)                               // << order हटाया
+      .limit(1)
+      .maybeSingle();
+
+    if(error){ console.error(error); throw error; }
+
+    const badge = $(which+'_found_badge');
+    if(!data){ setFoundBadge(badge, false); return; }
+    setFoundBadge(badge, true);
+
+    const name = data.name ?? data.NAME;
+    const gname = data.guardian_name ?? data.father_name ?? data.FATHER_NAME;
+    const mobile = data.mobile ?? data.MOBILE;
+
+    $(which+'_name').value = upperAZ(name || '');
+    $(which+'_guardian_name').value = upperAZ(gname || '');
+    $(which+'_mobile').value = onlyDigits(mobile || '');
+  }catch(e){
+    console.error('Witness lookup error:', e);
+    toast('Lookup error (Witness)');
+  }finally{ waitOff(); }
+}
+$('btn_w1_find').onclick = ()=>findWitness('w1');
+$('btn_w2_find').onclick = ()=>findWitness('w2');
 
     /* ===== OTP via Edge Functions ===== */
     async function sendOtp(mobile, context){
