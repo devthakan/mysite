@@ -1,565 +1,493 @@
 <!doctype html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ST Loan Application – Apply</title>
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    html, body {
-      background:
-        radial-gradient(1200px 800px at 10% 10%, #22c55e26, transparent),
-        radial-gradient(900px 700px at 90% 20%, #6366f122, transparent),
-        #0b1220;
-    }
+    html, body { background:
+      radial-gradient(1200px 800px at 10% 10%, #0ea5e94d, transparent),
+      radial-gradient(900px 700px at 90% 20%, #22c55e33, transparent),
+      #0b1220; }
     .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.06); }
     .hidden { display:none; }
+    input[type='date'] { color-scheme: dark; }
+    .hint { font-size:.8rem; color:#94a3b8 }
+    .caps-only { text-transform: uppercase; }
+    .locked { background:rgba(2,6,23,.6); cursor:not-allowed; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
-    .badge { font-size:.75rem; padding:.2rem .5rem; border-radius:999px; }
-    .badge-ok { background:#22c55e; color:#0b1220; }
-    .badge-warn { background:#f59e0b; color:#111827; }
-    .badge-err { background:#ef4444; color:#111827; }
-    input.upper { text-transform: uppercase; }
-
-    /* Success overlay */
-    #ok_overlay { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center;
-      background:rgba(2,6,23,.86); backdrop-filter: blur(6px);}
-    #ok_overlay.show { display:flex; }
-    .ok-card { background:rgba(15,23,42,.9); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; width:min(520px, 92%); text-align:center;}
-    .ok-tick { width:64px; height:64px; border-radius:999px; background:#22c55e; display:inline-flex; align-items:center; justify-content:center; color:#0b1220; font-weight:800; font-size:40px; margin-bottom:10px; }
-
-    /* Wait overlay (send/verify/save) */
-    #wait_overlay { position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center;
-      background:rgba(2,6,23,.55); backdrop-filter: blur(4px);}
-    #wait_overlay.show { display:flex; }
-    .spinner { width:46px; height:46px; border:4px solid rgba(255,255,255,.18); border-top-color:#22c55e; border-radius:999px; animation:spin .9s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg);} }
-
-    /* Toast */
-    #toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,.8); color:#fff; padding:10px 14px; border-radius:10px; display:none; }
-    #toast.show { display:block; }
+    /* Success Modal */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50; }
+    .pop { animation: pop .28s ease-out both; }
+    @keyframes pop{ from{ transform:scale(.9); opacity:0 } to{ transform:scale(1); opacity:1 } }
+    /* Check animation */
+    .check svg circle { stroke-dasharray: 157; stroke-dashoffset: 157; animation: dash 0.6s ease-out forwards; }
+    .check svg path { stroke-dasharray: 50; stroke-dashoffset: 50; animation: dash 0.4s 0.4s ease-out forwards; }
+    @keyframes dash{ to{ stroke-dashoffset: 0; } }
+    /* Confetti */
+    .confetti{ position:fixed; top:-10px; width:8px; height:14px; opacity:.9; transform:rotate(15deg); animation: fall 1.8s linear forwards; z-index:60; }
+    @keyframes fall{ to{ transform: translateY(110vh) rotate(360deg); opacity:1; } }
   </style>
 </head>
 <body class="min-h-screen text-slate-100">
-  <div class="max-w-5xl mx-auto p-4 md:p-8">
-    <header class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-extrabold">ST Loan Application Form</h1>
+  <div class="max-w-6xl mx-auto p-4 md:p-8">
+    <header class="mb-6 md:mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold">ST Loan Application</h1>
+        <p class="text-slate-300 mt-1">सदस्यता Lookup · WhatsApp OTP · सुरक्षित सबमिशन</p>
+      </div>
+      <a href="index.html" class="text-sm text-emerald-400 hover:text-emerald-300">← निर्देश</a>
     </header>
 
-    <form id="appForm" class="glass rounded-2xl p-5 md:p-7 border border-white/10">
-      <!-- सदस्यता Lookup -->
-      <section class="mb-6">
-        <div class="grid md:grid-cols-[220px_1fr_auto] gap-3 md:items-end">
-          <div>
-            <label class="block text-sm mb-1">सदस्यता संख्या</label>
-            <input id="membership_no" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy uppercase"
-                   placeholder="MEMBERSHIP NO" pattern="[A-Z0-9-]+" />
-          </div>
-          <div class="text-sm text-slate-300">
-            <span class="badge badge-warn">पहले सदस्यता Verify करें</span>
-          </div>
-          <button type="button" id="btn_find_member" class="px-4 py-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold hover:brightness-110">
-            सदस्य खोजें
-          </button>
+    <form id="appForm" class="glass rounded-2xl p-5 md:p-7 border border-white/10 shadow-2xl" novalidate>
+      <!-- सदस्यता संख्या Lookup -->
+      <div class="mb-6">
+        <label class="block text-sm mb-1">अपना सदस्यता संख्या दर्ज करें</label>
+        <div class="flex gap-2 items-center">
+          <input id="member_no" inputmode="numeric" pattern="\d{1,12}" maxlength="12" class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" placeholder="उदा. 123456" required />
+          <button type="button" id="member_fetch" class="px-4 py-2 rounded-xl bg-indigo-500 text-slate-900 font-semibold hover:brightness-110 transition">Find</button>
+          <span id="member_status" class="hint ml-2"></span>
         </div>
-
-        <div class="grid md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label class="block text-sm mb-1">कृषक का नाम</label>
-            <input id="farmer_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">पिता / पति का नाम</label>
-            <input id="guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-        </div>
-      </section>
+        <p class="hint mt-1">सदस्यता मिलने पर "कृषक का नाम" और "पिता/पति का नाम" अपने-आप भरकर लॉक हो जाएगा।</p>
+      </div>
 
       <!-- Applicant details -->
-      <section class="mb-6">
-        <h2 class="text-lg font-semibold mb-3">आवेदक विवरण</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">कृषक का प्रकार</label>
-            <select id="kisan_type" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>LAGHU</option><option>SIMANT</option><option>ANY</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वर्ग</label>
-            <select id="caste_cat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>SC</option><option>ST</option><option>OBC</option><option>GEN</option><option>OTHER</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" required />
-          </div>
+      <h2 class="text-lg font-semibold mb-3">आवेदक का विवरण</h2>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm mb-1">कृषक का प्रकार</label>
+          <select id="kisan_type" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
+            <option value="">— चुनें —</option>
+            <option>LAGHU</option>
+            <option>SIMANT</option>
+            <option>ANY</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">वर्ग</label>
+          <select id="caste_cat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
+            <option value="">— चुनें —</option>
+            <option>SC</option>
+            <option>ST</option>
+            <option>OBC</option>
+            <option>GEN</option>
+            <option>OTHER</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">कृषक का नाम</label>
+          <input id="farmer_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only locked focusy" pattern="^[A-Z ]+$" readonly />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">पिता / पति का नाम</label>
+          <input id="guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only locked focusy" pattern="^[A-Z ]+$" readonly />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जाति</label>
+          <input id="jaati" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy" pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">लिंग</label>
+          <select id="gender" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
+            <option value="">— चुनें —</option>
+            <option>MALE</option>
+            <option>FEMALE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जन्म तिथि</label>
+          <input id="dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">रेवेन्यु विलेज का नाम</label>
+          <input id="rev_village" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy" pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">ग्राम पंचायत</label>
+          <input id="gram_panchayat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy" pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">बैंक खाता संख्या</label>
+          <input id="bank_ac" inputmode="numeric" pattern="\d{17}" maxlength="17" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
+          <p class="hint">17 अंकों का होना चाहिए</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">आधार संख्या</label>
+          <input id="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
+          <p class="hint">12 अंकों की आधार संख्या</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">मोबाइल नम्बर</label>
+          <input id="mobile" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
+          <p class="hint">10 अंकों का मोबाइल नंबर</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">व्हाट्सएप नंबर</label>
+          <input id="whatsapp" inputmode="numeric" pattern="\d{10}" maxlength="10" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
+          <input id="jan_aadhaar" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
+          <input id="voter_id" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">पेन कार्ड (वैकल्पिक)</label>
+          <input id="pan" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" />
+          <p class="hint">उदा: ABCDE1234F</p>
+        </div>
+      </div>
 
-          <div>
-            <label class="block text-sm mb-1">जाति</label>
-            <input id="jaati" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">लिंग</label>
-            <select id="gender" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase" required>
-              <option value="">— चुनें —</option>
-              <option>MALE</option><option>FEMALE</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">रेवेन्यु विलेज</label>
-            <input id="rev_village" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" />
-          </div>
+      <!-- Nominee details -->
+      <h2 class="text-lg font-semibold mb-3">नॉमिनी विवरण</h2>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm mb-1">नॉमिनी का नाम</label>
+          <input id="nominee_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy" pattern="^[A-Z ]+$" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">जन्म तिथि</label>
+          <input id="nominee_dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">कृषक से संबंध</label>
+          <select id="nominee_relation" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
+            <option value="">— चुनें —</option>
+            <option>WIFE</option>
+            <option>HUS</option>
+            <option>SON</option>
+            <option>DOU</option>
+            <option>BRO</option>
+            <option>SIS</option>
+            <option>OTHER</option>
+          </select>
+        </div>
+      </div>
 
-          <div>
-            <label class="block text-sm mb-1">ग्राम पंचायत</label>
-            <input id="gram_panchayat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">बैंक खाता संख्या</label>
-            <input id="bank_ac" inputmode="numeric" pattern="\\d{17}" maxlength="17" minlength="17"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">आधार संख्या</label>
-            <input id="aadhaar" inputmode="numeric" pattern="\\d{12}" maxlength="12" minlength="12"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" required />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">मोबाइल नम्बर</label>
-            <input id="mobile" inputmode="numeric" pattern="[6-9]\\d{9}" maxlength="10" minlength="10"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" required />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">व्हाट्सएप नंबर (OTP)</label>
-            <div class="flex gap-2">
-              <input id="whatsapp" inputmode="numeric" pattern="[6-9]\\d{9}" maxlength="10" minlength="10"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" required />
-              <button type="button" id="btn_otp_app_send"
-                      class="px-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">Send OTP</button>
+      <!-- Witnesses -->
+      <h2 class="text-lg font-semibold mb-3">गवाह का विवरण</h2>
+      <p class="hint mb-4">गवाह Excel/CSV पहले से <strong>witness_master</strong> तालिका में हों। आधार डालकर Find करें, नाम/मोबाइल auto-fill होगा। WhatsApp OTP verify जरूरी है।</p>
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div class="border border-white/10 rounded-2xl p-4 bg-slate-900/40">
+          <h3 class="font-semibold mb-3">गवाह 1</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm mb-1">आधार संख्या</label>
+              <div class="flex gap-2">
+                <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" placeholder="12 अंकों का आधार" />
+                <button type="button" id="w1_fetch" class="px-3 rounded-lg bg-slate-700 hover:bg-slate-600">Find</button>
+              </div>
             </div>
-            <div class="flex gap-2 mt-2">
-              <input id="otp_app" inputmode="numeric" maxlength="6" pattern="\\d{6}"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="Enter OTP" />
-              <button type="button" id="btn_otp_app_verify"
-                      class="px-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Verify</button>
-              <span id="badge_app" class="badge hidden">Pending</span>
+            <div>
+              <label class="block text-sm mb-1">नाम</label>
+              <input id="w1_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
             </div>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
-            <input id="jan_aadhaar" inputmode="numeric" maxlength="12"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
-            <input id="voter_id" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z0-9 ]+" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">PAN (वैकल्पिक)</label>
-            <input id="pan" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z0-9]+" />
+            <div>
+              <label class="block text-sm mb-1">पिता/पति का नाम</label>
+              <input id="w1_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">मोबाइल</label>
+              <input id="w1_mobile" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div class="flex gap-2 items-end">
+              <div class="flex-1">
+                <label class="block text-sm mb-1">OTP</label>
+                <input id="w1_otp" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
+              </div>
+              <button type="button" id="w1_send_otp" class="px-3 rounded-lg bg-emerald-600 hover:brightness-110">Send OTP</button>
+              <button type="button" id="w1_verify" class="px-3 rounded-lg bg-indigo-600 hover:brightness-110">Verify</button>
+            </div>
+            <p id="w1_status" class="hint" data-ok="0"></p>
           </div>
         </div>
-      </section>
 
-      <!-- Nominee -->
-      <section class="mb-6">
-        <h2 class="text-lg font-semibold mb-3">नॉमिनी</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm mb-1">नॉमिनी का नाम</label>
-            <input id="nominee_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">जन्म तिथि</label>
-            <input id="nominee_dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">संबंध</label>
-            <select id="nominee_relation" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase">
-              <option value="">— चुनें —</option>
-              <option>WIFE</option><option>HUS</option><option>SON</option><option>DOU</option>
-              <option>BRO</option><option>SIS</option><option>OTHER</option>
-            </select>
+        <div class="border border-white/10 rounded-2xl p-4 bg-slate-900/40">
+          <h3 class="font-semibold mb-3">गवाह 2</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm mb-1">आधार संख्या</label>
+              <div class="flex gap-2">
+                <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}" class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" placeholder="12 अंकों का आधार" />
+                <button type="button" id="w2_fetch" class="px-3 rounded-lg bg-slate-700 hover:bg-slate-600">Find</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">नाम</label>
+              <input id="w2_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">पिता/पति का नाम</label>
+              <input id="w2_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">मोबाइल</label>
+              <input id="w2_mobile" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
+            </div>
+            <div class="flex gap-2 items-end">
+              <div class="flex-1">
+                <label class="block text-sm mb-1">OTP</label>
+                <input id="w2_otp" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
+              </div>
+              <button type="button" id="w2_send_otp" class="px-3 rounded-lg bg-emerald-600 hover:brightness-110">Send OTP</button>
+              <button type="button" id="w2_verify" class="px-3 rounded-lg bg-indigo-600 hover:brightness-110">Verify</button>
+            </div>
+            <p id="w2_status" class="hint" data-ok="0"></p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Witness 1 -->
-      <section class="mb-6">
-        <h2 class="text-lg font-semibold mb-3">गवाह 1</h2>
-        <div class="grid md:grid-cols-[240px_auto_auto] gap-3 md:items-end">
-          <div>
-            <label class="block text-sm mb-1">आधार संख्या</label>
-            <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\\d{12}"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" />
-          </div>
-          <button type="button" id="btn_w1_find" class="px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-600">Find</button>
-          <span id="w1_found_badge" class="badge hidden">Not Found</span>
+      <div class="mt-6 flex flex-col md:flex-row md:justify-between gap-3">
+        <div class="text-sm text-slate-400">सबमिट के बाद स्क्रीन पर संदेश आएगा—<em>“आपका फॉर्म सेव हो गया”</em> और <strong>Application Number = आपका आधार नंबर</strong>। Download पेज में यह नंबर डालकर फॉर्म डाउनलोड करें।</div>
+        <div class="flex gap-3">
+          <button type="submit" id="submitBtn" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110" disabled>सबमिट</button>
         </div>
-        <div class="grid md:grid-cols-2 gap-4 mt-3">
-          <div>
-            <label class="block text-sm mb-1">नाम</label>
-            <input id="w1_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">पिता का नाम</label>
-            <input id="w1_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">मोबाइल</label>
-            <div class="flex gap-2">
-              <input id="w1_mobile" inputmode="numeric" maxlength="10" pattern="[6-9]\\d{9}"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-              <button type="button" id="btn_otp_w1_send"
-                      class="px-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">Send OTP</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">OTP Verify</label>
-            <div class="flex gap-2">
-              <input id="w1_otp" inputmode="numeric" maxlength="6" pattern="\\d{6}"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="Enter OTP" />
-              <button type="button" id="btn_otp_w1_verify"
-                      class="px-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Verify</button>
-              <span id="badge_w1" class="badge hidden">Pending</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Witness 2 -->
-      <section class="mb-6">
-        <h2 class="text-lg font-semibold mb-3">गवाह 2</h2>
-        <div class="grid md:grid-cols-[240px_auto_auto] gap-3 md:items-end">
-          <div>
-            <label class="block text-sm mb-1">आधार संख्या</label>
-            <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\\d{12}"
-                   class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" />
-          </div>
-          <button type="button" id="btn_w2_find" class="px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-600">Find</button>
-          <span id="w2_found_badge" class="badge hidden">Not Found</span>
-        </div>
-        <div class="grid md:grid-cols-2 gap-4 mt-3">
-          <div>
-            <label class="block text-sm mb-1">नाम</label>
-            <input id="w2_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">पिता का नाम</label>
-            <input id="w2_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 upper" pattern="[A-Z ]+" readonly />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">मोबाइल</label>
-            <div class="flex gap-2">
-              <input id="w2_mobile" inputmode="numeric" maxlength="10" pattern="[6-9]\\d{9}"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-              <button type="button" id="btn_otp_w2_send"
-                      class="px-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold">Send OTP</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">OTP Verify</label>
-            <div class="flex gap-2">
-              <input id="w2_otp" inputmode="numeric" maxlength="6" pattern="\\d{6}"
-                     class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="Enter OTP" />
-              <button type="button" id="btn_otp_w2_verify"
-                      class="px-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold">Verify</button>
-              <span id="badge_w2" class="badge hidden">Pending</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="mt-6 flex gap-3">
-        <button type="button" id="btn_submit" class="px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110">
-          Submit Application
-        </button>
-        <span id="submit_note" class="text-slate-300 text-sm">सब OTP verify होने पर ही सबमिट होगा</span>
       </div>
     </form>
-  </div>
 
-  <!-- Success overlay -->
-  <div id="ok_overlay">
-    <div class="ok-card">
-      <div class="ok-tick">✓</div>
-      <div class="text-xl font-bold text-white">आपका फॉर्म सुरक्षित हो गया</div>
-      <div class="text-slate-300 mt-1">आपका Application No. (Aadhaar): <span id="ok_appno" class="font-semibold text-emerald-400"></span></div>
-      <a href="download.html" class="inline-block mt-4 px-4 py-2 rounded-lg bg-white text-slate-900 font-semibold">Download Page</a>
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
+
+    <!-- Success Modal -->
+    <div id="success_modal" class="hidden modal-backdrop">
+      <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-md pop text-center">
+        <div class="check mx-auto mb-4">
+          <svg width="84" height="84" viewBox="0 0 84 84" fill="none">
+            <circle cx="42" cy="42" r="25" stroke="#22c55e" stroke-width="4" fill="none" />
+            <path d="M32 43.5 L40 51 L54 35" stroke="#22c55e" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold">आपका फॉर्म सेव हो गया 🎉</h3>
+        <p class="text-slate-300 mt-2">Application Number (आधार): <span id="success_app_no" class="font-semibold text-emerald-400"></span></p>
+        <p class="text-slate-400 text-sm mt-1">इसे सुरक्षित रखें। Download पेज पर यह नंबर डालकर अपना फ़ॉर्म डाउनलोड करें।</p>
+        <div class="mt-5 flex justify-center gap-3">
+          <a id="go_download" href="download.html" class="px-4 py-2 rounded-lg bg-indigo-500 text-slate-900 font-semibold">Download पेज</a>
+          <button id="success_close" class="px-4 py-2 rounded-lg bg-slate-700">ठीक है</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Wait overlay -->
-  <div id="wait_overlay"><div class="spinner"></div></div>
-
-  <div id="toast"></div>
-
   <script>
-    /* ===== CONFIG: अपने प्रोजेक्ट के अनुसार बदलें ===== */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // <-- अपना
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                      // <-- अपना
-    const TABLE_MEMBERS = "members";               // membership_no, name, father_name
-    const TABLE_WITNESS_REG = "witness_registry";  // aadhaar, name, guardian_name, mobile
-    const TABLE_APPLICATIONS = "applications";     // final save
+    /* ========= CONFIG ========= */
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
 
-    // Edge Functions (secrets वहीं हैं)
-    const FN_SEND_OTP = "send-otp";
-    const FN_VERIFY_OTP = "verify-otp";
+    const DOWNLOAD_URL = localStorage.getItem('loan.download_url') || 'download.html';
 
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Tables
+    const MEMBERS_TABLE = 'members';
+    const WITNESS_TABLE = 'witness_master';
+    const APPLICATIONS  = 'applications';
 
-    /* ===== Helpers ===== */
-    const $ = id => document.getElementById(id);
-    const show = el => el.classList.remove('hidden');
-    const hide = el => el.classList.add('hidden');
-    const toast = (msg)=>{ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2400); };
-    const waitOn = ()=> $('wait_overlay').classList.add('show');
-    const waitOff = ()=> $('wait_overlay').classList.remove('show');
-    const okOn = (appno)=>{ $('ok_appno').textContent = appno; $('ok_overlay').classList.add('show'); }
+    // Edge Functions
+    const FN_SEND_OTP = 'send-otp';
+    const FN_VERIFY_OTP = 'verify-otp';
 
-    const onlyDigits = (s) => (s||"").replace(/\D+/g,'');
-    const upperAZ = (s) => (s||"").toUpperCase().replace(/[^A-Z ]+/g,'').trim();
+    /* ========= Helpers ========= */
+    const $ = (id) => document.getElementById(id);
+    const show = (el) => el.classList.remove('hidden');
+    const hide = (el) => el.classList.add('hidden');
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2400); };
+    const onlyDigits = (s) => (s||'').replace(/\D+/g,'');
+    const upperAZ = (s) => (s||'').toUpperCase().replace(/[^A-Z ]+/g,'').trim();
     const validAadhaar = s => /^\d{12}$/.test(s||"");
     const validMobile  = s => /^[6-9]\d{9}$/.test(s||"");
-    const validBank17  = s => /^\d{17}$/.test(s||"");
 
-    // Enforce uppercase on certain inputs
-    ['farmer_name','guardian_name','jaati','rev_village','gram_panchayat',
-     'voter_id','pan','nominee_name','w1_name','w1_guardian_name','w2_name','w2_guardian_name'
-    ].forEach(id=>{
-      const el = $(id); if(!el) return;
-      el.addEventListener('input', ()=>{ el.value = upperAZ(el.value); });
-    });
+    let sb = null;
+    function fromTbl(name){ return sb.from(name); }
 
-    // Status flags
-    let isAppVerified = false, isW1Verified = false, isW2Verified = false;
+    /* ========= Membership Lookup ========= */
+    let membershipOk = false;
+    function lockNames(){ $('farmer_name').readOnly = true; $('guardian_name').readOnly = true; $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked'); }
+    function unlockNames(){ $('farmer_name').readOnly = false; $('guardian_name').readOnly = false; $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked'); $('farmer_name').value=''; $('guardian_name').value=''; }
 
-    function setBadge(el, ok){
-      el.className = 'badge ' + (ok ? 'badge-ok' : 'badge-err');
-      el.textContent = ok ? 'Verified' : 'Failed';
-      show(el);
-    }
-    function setFoundBadge(el, ok){
-      el.className = 'badge ' + (ok ? 'badge-ok' : 'badge-err');
-      el.textContent = ok ? 'Found' : 'Not Found';
-      show(el);
-    }
+    async function fetchMember(){
+      const no = $('member_no').value.trim();
+      if(!no){ $('member_status').textContent='कृपया सदस्यता संख्या दर्ज करें'; membershipOk=false; return; }
 
-    /* ===== सदस्यता Lookup ===== */
-    $('btn_find_member').addEventListener('click', async ()=>{
-  const memRaw = $('membership_no').value || '';
-  const mem = memRaw.trim().toUpperCase(); // अगर DB में uppercase stored है
-  if(!mem){ toast('सदस्यता संख्या दर्ज करें'); return; }
+      // fallback select: name/farmer_name and father_name/guardian_name
+      const q = await fromTbl(MEMBERS_TABLE)
+        .select('name, father_name, farmer_name, guardian_name')
+        .eq('membership_no', no)
+        .limit(1)
+        .maybeSingle();
 
-  waitOn();
-  try{
-    const { data, error } = await sb
-      .from(TABLE_MEMBERS)
-      .select('name, father_name, "fathername"') // fallback अलग नाम के लिए
-      .eq('membership_no', mem)                  // << ilike/order हटाया
-      .limit(1)
-      .maybeSingle();
-
-    if(error){ console.error(error); throw error; }
-    if(!data){ toast('सदस्य नहीं मिला'); return; }
-
-    const name = data.name ?? data.NAME;
-    const father = data.father_name ?? data.fathername ?? data.FATHER_NAME;
-
-    $('farmer_name').value = (name || '').toString().toUpperCase();
-    $('guardian_name').value = (father || '').toString().toUpperCase();
-  }catch(e){
-    console.error('Member lookup error:', e);
-    toast('Lookup error (Members)');
-  }finally{ waitOff(); }
-});
-
-    /* ===== Witness registry find ===== */
-    async function findWitness(which){
-  const aEl = $(which+'_aadhaar');
-  aEl.value = onlyDigits(aEl.value);
-  const aadhaar = aEl.value;
-
-  if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार (गवाह)'); return; }
-
-  // duplicate checks
-  const appA = $('aadhaar').value.trim();
-  const other = which === 'w1' ? $('w2_aadhaar').value.trim() : $('w1_aadhaar').value.trim();
-  if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
-  if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
-
-  waitOn();
-  try{
-    const { data, error } = await sb
-      .from(TABLE_WITNESS_REG)
-      .select('name, guardian_name, mobile, "father_name"') // fallback
-      .eq('aadhaar', aadhaar)                               // << order हटाया
-      .limit(1)
-      .maybeSingle();
-
-    if(error){ console.error(error); throw error; }
-
-    const badge = $(which+'_found_badge');
-    if(!data){ setFoundBadge(badge, false); return; }
-    setFoundBadge(badge, true);
-
-    const name = data.name ?? data.NAME;
-    const gname = data.guardian_name ?? data.father_name ?? data.FATHER_NAME;
-    const mobile = data.mobile ?? data.MOBILE;
-
-    $(which+'_name').value = upperAZ(name || '');
-    $(which+'_guardian_name').value = upperAZ(gname || '');
-    $(which+'_mobile').value = onlyDigits(mobile || '');
-  }catch(e){
-    console.error('Witness lookup error:', e);
-    toast('Lookup error (Witness)');
-  }finally{ waitOff(); }
-}
-$('btn_w1_find').onclick = ()=>findWitness('w1');
-$('btn_w2_find').onclick = ()=>findWitness('w2');
-
-    /* ===== OTP via Edge Functions ===== */
-    async function sendOtp(mobile, context){
-      if(!validMobile(mobile)) throw new Error('INVALID_MOBILE');
-      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body:{ mobile, context }});
-      if(error || !data?.ok) throw new Error(data?.error || error?.message || 'OTP_SEND_FAILED');
-      return true;
-    }
-    async function verifyOtp(mobile, otp, context){
-      if(!validMobile(mobile) || !/^\d{6}$/.test(otp)) throw new Error('INVALID_OTP');
-      const { data, error } = await sb.functions.invoke(FN_VERIFY_OTP, { body:{ mobile, otp, context }});
-      if(error || !data?.ok) throw new Error(data?.error || error?.message || 'OTP_VERIFY_FAILED');
-      return true;
-    }
-
-    // Applicant OTP
-    $('btn_otp_app_send').onclick = async ()=>{
-      const m = $('whatsapp').value = onlyDigits($('whatsapp').value);
-      try{ waitOn(); await sendOtp(m, 'applicant'); toast('OTP भेज दी गई'); }
-      catch(e){ console.error(e); toast('OTP नहीं भेजी गई'); }
-      finally{ waitOff(); }
-    };
-    $('btn_otp_app_verify').onclick = async ()=>{
-      const m = $('whatsapp').value = onlyDigits($('whatsapp').value);
-      const otp = $('otp_app').value = onlyDigits($('otp_app').value);
-      try{ waitOn(); await verifyOtp(m, otp, 'applicant'); isAppVerified = true; setBadge($('badge_app'), true); toast('Applicant Verified'); }
-      catch(e){ console.error(e); isAppVerified = false; setBadge($('badge_app'), false); toast('Wrong/Expired OTP'); }
-      finally{ waitOff(); }
-    };
-
-    // Witness 1 OTP
-    $('btn_otp_w1_send').onclick = async ()=>{
-      const m = $('w1_mobile').value = onlyDigits($('w1_mobile').value);
-      if(!$('w1_name').value){ toast('पहले गवाह 1 FIND करें'); return; }
-      try{ waitOn(); await sendOtp(m, 'w1'); toast('OTP भेज दी गई'); }
-      catch(e){ console.error(e); toast('OTP नहीं भेजी गई'); }
-      finally{ waitOff(); }
-    };
-    $('btn_otp_w1_verify').onclick = async ()=>{
-      const m = $('w1_mobile').value = onlyDigits($('w1_mobile').value);
-      const otp = $('w1_otp').value = onlyDigits($('w1_otp').value);
-      try{ waitOn(); await verifyOtp(m, otp, 'w1'); isW1Verified = true; setBadge($('badge_w1'), true); toast('गवाह 1 Verified'); }
-      catch(e){ console.error(e); isW1Verified = false; setBadge($('badge_w1'), false); toast('Wrong/Expired OTP'); }
-      finally{ waitOff(); }
-    };
-
-    // Witness 2 OTP
-    $('btn_otp_w2_send').onclick = async ()=>{
-      const m = $('w2_mobile').value = onlyDigits($('w2_mobile').value);
-      if(!$('w2_name').value){ toast('पहले गवाह 2 FIND करें'); return; }
-      try{ waitOn(); await sendOtp(m, 'w2'); toast('OTP भेज दी गई'); }
-      catch(e){ console.error(e); toast('OTP नहीं भेजी गई'); }
-      finally{ waitOff(); }
-    };
-    $('btn_otp_w2_verify').onclick = async ()=>{
-      const m = $('w2_mobile').value = onlyDigits($('w2_mobile').value);
-      const otp = $('w2_otp').value = onlyDigits($('w2_otp').value);
-      try{ waitOn(); await verifyOtp(m, otp, 'w2'); isW2Verified = true; setBadge($('badge_w2'), true); toast('गवाह 2 Verified'); }
-      catch(e){ console.error(e); isW2Verified = false; setBadge($('badge_w2'), false); toast('Wrong/Expired OTP'); }
-      finally{ waitOff(); }
-    };
-
-    /* ===== Submit ===== */
-    $('btn_submit').addEventListener('click', async ()=>{
-      // Basic validations
-      const bank = $('bank_ac').value = onlyDigits($('bank_ac').value);
-      const aad  = $('aadhaar').value = onlyDigits($('aadhaar').value);
-      const mob  = $('mobile').value = onlyDigits($('mobile').value);
-      const w1a  = $('w1_aadhaar').value = onlyDigits($('w1_aadhaar').value);
-      const w2a  = $('w2_aadhaar').value = onlyDigits($('w2_aadhaar').value);
-
-      if(!validBank17(bank)){ toast('17 अंकों का बैंक खाता'); return; }
-      if(!validAadhaar(aad)){ toast('12 अंकों का आधार'); return; }
-      if(!validMobile(mob)){ toast('मान्य मोबाइल'); return; }
-      if(w1a && !validAadhaar(w1a)){ toast('गवाह 1 आधार 12 अंकों का'); return; }
-      if(w2a && !validAadhaar(w2a)){ toast('गवाह 2 आधार 12 अंकों का'); return; }
-      if(aad === w1a || aad === w2a){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
-      if(w1a && w2a && w1a === w2a){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
-
-      if(!isAppVerified || !isW1Verified || !isW2Verified){
-        toast('पहले सभी OTP Verify करें'); return;
+      if(q.error){
+        console.error(q.error);
+        $('member_status').textContent='Lookup error';
+        membershipOk=false; unlockNames(); return;
+      }
+      if(!q.data){
+        $('member_status').textContent='रिकॉर्ड नहीं मिला';
+        membershipOk=false; unlockNames(); return;
       }
 
-      // Build row
-      const row = {
-        membership_no: $('membership_no').value.trim(),
-        farmer_name: $('farmer_name').value.trim(),
-        guardian_name: $('guardian_name').value.trim(),
+      const nm = q.data.farmer_name ?? q.data.name ?? '';
+      const fn = q.data.guardian_name ?? q.data.father_name ?? '';
+      $('farmer_name').value = upperAZ(nm);
+      $('guardian_name').value = upperAZ(fn);
+      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true; setSubmitEnabled();
+    }
 
-        kisan_type: $('kisan_type').value,
-        caste_cat: $('caste_cat').value,
-        dob: $('dob').value,
-        jaati: $('jaati').value.trim(),
-        gender: $('gender').value,
-        rev_village: $('rev_village').value.trim(),
-        gram_panchayat: $('gram_panchayat').value.trim(),
-        bank_ac: bank,
-        aadhaar: aad,
-        mobile: mob,
-        whatsapp: onlyDigits($('whatsapp').value),
-        jan_aadhaar: onlyDigits($('jan_aadhaar').value),
-        voter_id: $('voter_id').value.trim(),
-        pan: $('pan').value.trim(),
+    /* ========= Witness Lookup ========= */
+    function setSubmitEnabled(){
+      const ok1 = $('w1_status').dataset.ok === '1';
+      const ok2 = $('w2_status').dataset.ok === '1';
+      $('submitBtn').disabled = !(ok1 && ok2 && membershipOk);
+    }
 
-        nominee_name: $('nominee_name').value.trim(),
-        nominee_dob: $('nominee_dob').value,
-        nominee_relation: $('nominee_relation').value,
+    async function fetchWitness(slot){
+      const aadhaar = onlyDigits($(slot+'_aadhaar').value);
+      $(slot+'_aadhaar').value = aadhaar;
+      if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
 
-        w1_aadhaar: w1a,
-        w1_name: $('w1_name').value.trim(),
-        w1_guardian_name: $('w1_guardian_name').value.trim(),
-        w1_mobile: onlyDigits($('w1_mobile').value),
+      // duplicate checks
+      const appA = onlyDigits($('aadhaar').value);
+      const other = slot === 'w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
+      if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
+      if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
 
-        w2_aadhaar: w2a,
-        w2_name: $('w2_name').value.trim(),
-        w2_guardian_name: $('w2_guardian_name').value.trim(),
-        w2_mobile: onlyDigits($('w2_mobile').value),
+      const q = await fromTbl(WITNESS_TABLE)
+        .select('name, guardian_name, father_name, mobile')
+        .eq('aadhaar', aadhaar)
+        .limit(1)
+        .maybeSingle();
 
-        otp_applicant_verified: isAppVerified,
-        otp_w1_verified: isW1Verified,
-        otp_w2_verified: isW2Verified
+      if(q.error){ console.error(q.error); toast('Lookup error'); return; }
+      if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
+
+      const name = q.data.name ?? '';
+      const gname = q.data.guardian_name ?? q.data.father_name ?? '';
+      const mobile = onlyDigits(q.data.mobile ?? '');
+
+      $(slot+'_name').value = upperAZ(name);
+      $(slot+'_guardian_name').value = upperAZ(gname);
+      $(slot+'_mobile').value = mobile;
+      toast('गवाह मिला');
+    }
+
+    /* ========= OTP via EDGE FUNCTIONS ========= */
+    async function sendOtpEdge(mobile, context){
+      const m = onlyDigits(mobile);
+      if(!validMobile(m)){ toast('मान्य मोबाइल नहीं'); return false; }
+      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body: { mobile: m, context }});
+      if(error || !data?.ok){ console.error(error||data); toast('OTP भेजने में समस्या'); return false; }
+      toast('OTP भेज दी गई'); return true;
+    }
+
+    async function verifyOtpEdge(mobile, otp, context){
+      const m = onlyDigits(mobile);
+      const o = onlyDigits(otp);
+      if(!validMobile(m) || !/^\d{6}$/.test(o)){ toast('OTP इनपुट सही करें'); return false; }
+      const { data, error } = await sb.functions.invoke(FN_VERIFY_OTP, { body: { mobile: m, otp: o, context }});
+      if(error || !data?.ok){ console.error(error||data); toast('OTP गलत/एक्सपायर'); return false; }
+      toast('Verified ✔'); return true;
+    }
+
+    /* ========= Success UI ========= */
+    function confettiBurst(){
+      const colors = ['#22c55e','#a3e635','#34d399','#60a5fa','#f472b6','#f59e0b'];
+      for(let i=0;i<60;i++){
+        const s = document.createElement('div'); s.className='confetti';
+        s.style.left = Math.random()*100+'vw'; s.style.background = colors[Math.floor(Math.random()*colors.length)];
+        s.style.transform = `rotate(${Math.random()*360}deg)`; s.style.animationDuration = (1.4 + Math.random()*0.8)+'s';
+        document.body.appendChild(s); setTimeout(()=>s.remove(), 2200);
+      }
+    }
+    function openSuccess(appNo){ $('success_app_no').textContent = appNo || ''; $('go_download').href = DOWNLOAD_URL; show($('success_modal')); confettiBurst(); }
+    function closeSuccess(){ hide($('success_modal')); }
+
+    /* ========= Submit ========= */
+    async function submitApp(e){
+      e.preventDefault();
+      if(!membershipOk){ toast('पहले सदस्यता संख्या verify करें'); return; }
+
+      const ac=onlyDigits($('bank_ac').value), ad=onlyDigits($('aadhaar').value), mob=onlyDigits($('mobile').value);
+      if(!/^\d{17}$/.test(ac)){ toast('खाता 17 digits'); return; }
+      if(!validAadhaar(ad)){ toast('आधार 12 digits'); return; }
+      if(!/^\d{10}$/.test(mob)){ toast('मोबाइल 10 digits'); return; }
+
+      const w1a = onlyDigits($('w1_aadhaar').value), w2a = onlyDigits($('w2_aadhaar').value);
+      if(w1a && ad && w1a===ad){ toast('आवेदक खुद गवाह नहीं हो सकता (गवाह 1)'); return; }
+      if(w2a && ad && w2a===ad){ toast('आवेदक खुद गवाह नहीं हो सकता (गवाह 2)'); return; }
+      if(w1a && w2a && w1a===w2a){ toast('एक ही व्यक्ति दो बार गवाह नहीं हो सकता'); return; }
+      if($('w1_status').dataset.ok!=='1' || $('w2_status').dataset.ok!=='1'){ toast('दोनों गवाह OTP सत्यापित जरूरी'); return; }
+
+      const payload = {
+        membership_no: $('member_no').value.trim(),
+        kisan_type: $('kisan_type').value, caste_cat: $('caste_cat').value,
+        farmer_name: $('farmer_name').value, guardian_name: $('guardian_name').value, jaati: $('jaati').value,
+        gender: $('gender').value, dob: $('dob').value, rev_village: $('rev_village').value, gram_panchayat: $('gram_panchayat').value,
+        bank_ac: ac, aadhaar: ad, mobile: mob, whatsapp: onlyDigits($('whatsapp').value),
+        jan_aadhaar: $('jan_aadhaar').value, voter_id: $('voter_id').value, pan: ($('pan').value||'').toUpperCase(),
+        nominee_name: $('nominee_name').value, nominee_dob: $('nominee_dob').value, nominee_relation: $('nominee_relation').value,
+        w1_aadhaar: w1a, w1_name: $('w1_name').value, w1_guardian_name: $('w1_guardian_name').value, w1_mobile: onlyDigits($('w1_mobile').value),
+        w2_aadhaar: w2a, w2_name: $('w2_name').value, w2_guardian_name: $('w2_guardian_name').value, w2_mobile: onlyDigits($('w2_mobile').value),
+        w1_verified: $('w1_status').dataset.ok==='1',
+        w2_verified: $('w2_status').dataset.ok==='1',
+        status: 'submitted'
       };
 
-      // Save
-      waitOn();
-      try{
-        const { error } = await sb.from(TABLE_APPLICATIONS).insert([row]);
-        if(error) throw error;
-        okOn(aad); // success overlay
-      }catch(e){ console.error(e); toast('Save error'); }
-      finally{ waitOff(); }
-    });
+      const ins = await fromTbl(APPLICATIONS).insert(payload);
+      if(ins.error){ console.error(ins.error); toast('Save error (policies/columns)'); return; }
+
+      openSuccess(ad);
+
+      // reset
+      e.target.reset();
+      $('w1_status').textContent=''; $('w2_status').textContent='';
+      $('w1_status').dataset.ok='0'; $('w2_status').dataset.ok='0';
+      membershipOk=false; $('member_status').textContent='';
+      $('farmer_name').readOnly=false; $('guardian_name').readOnly=false;
+      $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked');
+      $('submitBtn').disabled = true;
+    }
+
+    /* ========= Bootstrap ========= */
+    (function start(){
+      const init = () => {
+        if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        $('member_fetch').addEventListener('click', fetchMember);
+        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; $('submitBtn').disabled=true; });
+
+        $('w1_fetch').onclick = () => fetchWitness('w1');
+        $('w2_fetch').onclick = () => fetchWitness('w2');
+
+        // OTP buttons (now via Edge Functions, to witness mobile)
+        $('w1_send_otp').onclick = async () => {
+          const mobile = onlyDigits($('w1_mobile').value);
+          if(!validMobile(mobile)){ toast('गवाह 1 का मोबाइल मान्य नहीं'); return; }
+          await sendOtpEdge(mobile, 'w1');
+        };
+        $('w2_send_otp').onclick = async () => {
+          const mobile = onlyDigits($('w2_mobile').value);
+          if(!validMobile(mobile)){ toast('गवाह 2 का मोबाइल मान्य नहीं'); return; }
+          await sendOtpEdge(mobile, 'w2');
+        };
+        $('w1_verify').onclick = async () => {
+          const ok = await verifyOtpEdge($('w1_mobile').value, $('w1_otp').value, 'w1');
+          $('w1_status').textContent = ok ? 'गवाह 1 सत्यापित ✔' : 'OTP गलत/एक्सपायर';
+          $('w1_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled();
+        };
+        $('w2_verify').onclick = async () => {
+          const ok = await verifyOtpEdge($('w2_mobile').value, $('w2_otp').value, 'w2');
+          $('w2_status').textContent = ok ? 'गवाह 2 सत्यापित ✔' : 'OTP गलत/एक्सपायर';
+          $('w2_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled();
+        };
+
+        $('appForm').addEventListener('submit', submitApp);
+        $('success_close').addEventListener('click', closeSuccess);
+        $('go_download').href = DOWNLOAD_URL;
+      };
+      if(document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(init,0);
+      else window.addEventListener('DOMContentLoaded', init);
+    })();
   </script>
 </body>
 </html>
