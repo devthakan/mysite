@@ -18,15 +18,12 @@
     .caps-only { text-transform: uppercase; }
     .locked { background:rgba(2,6,23,.6); cursor:not-allowed; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
-    /* Success Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50; }
     .pop { animation: pop .28s ease-out both; }
     @keyframes pop{ from{ transform:scale(.9); opacity:0 } to{ transform:scale(1); opacity:1 } }
-    /* Check animation */
     .check svg circle { stroke-dasharray: 157; stroke-dashoffset: 157; animation: dash 0.6s ease-out forwards; }
     .check svg path { stroke-dasharray: 50; stroke-dashoffset: 50; animation: dash 0.4s 0.4s ease-out forwards; }
     @keyframes dash{ to{ stroke-dashoffset: 0; } }
-    /* Confetti */
     .confetti{ position:fixed; top:-10px; width:8px; height:14px; opacity:.9; transform:rotate(15deg); animation: fall 1.8s linear forwards; z-index:60; }
     @keyframes fall{ to{ transform: translateY(110vh) rotate(360deg); opacity:1; } }
   </style>
@@ -221,7 +218,7 @@
               <input id="w2_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
             </div>
             <div>
-              <label class="block text-sm mb-1">पिता/पति का नाम</label>
+              <label class="block text-sm mb-1">পिता/पति का नाम</label>
               <input id="w2_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
             </div>
             <div>
@@ -273,124 +270,94 @@
 
   <script>
     /* ========= CONFIG ========= */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co"; // अपना
+    const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY"; // अपना (anon), service role कभी नहीं
 
     const DOWNLOAD_URL = localStorage.getItem('loan.download_url') || 'download.html';
-
-    // Tables
     const MEMBERS_TABLE = 'members';
     const WITNESS_TABLE = 'witness_master';
     const APPLICATIONS  = 'applications';
 
     // Edge Functions
-    const FN_SEND_OTP = 'send-otp';
-    const FN_VERIFY_OTP = 'verify-otp';
+    const FN_SEND_OTP   = 'send-otp';
+    const FN_VERIFY_OTP = 'verify-otp'; // मान रहा हूँ यह भी डिप्लॉय है
 
     /* ========= Helpers ========= */
     const $ = (id) => document.getElementById(id);
     const show = (el) => el.classList.remove('hidden');
     const hide = (el) => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2400); };
+    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2600); };
     const onlyDigits = (s) => (s||'').replace(/\D+/g,'');
     const upperAZ = (s) => (s||'').toUpperCase().replace(/[^A-Z ]+/g,'').trim();
     const validAadhaar = s => /^\d{12}$/.test(s||"");
-    const validMobile  = s => /^[6-9]\d{9}$/.test(s||"");
+    const validMobile10 = s => /^[6-9]\d{9}$/.test(s||"");
 
     let sb = null;
     function fromTbl(name){ return sb.from(name); }
 
     /* ========= Membership Lookup ========= */
     let membershipOk = false;
-// Debug helper (add once)
-function toastDetail(prefix, err){
-  const msg = [err?.code, err?.message, err?.details, err?.hint].filter(Boolean).join(' | ');
-  toast(`${prefix}: ${msg || 'unknown'}`.slice(0,180));
-}
+    function lockNames(){ $('farmer_name').readOnly = true; $('guardian_name').readOnly = true; $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked'); }
+    function unlockNames(){ $('farmer_name').readOnly = false; $('guardian_name').readOnly = false; $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked'); $('farmer_name').value=''; $('guardian_name').value=''; }
 
-async function fetchMember(){
-  const raw = $('member_no').value.trim();
-  if(!raw){
-    $('member_status').textContent = 'कृपया सदस्यता संख्या दर्ज करें';
-    membershipOk = false;
-    return;
-  }
+    function toastDetail(prefix, err){
+      const msg = [err?.code, err?.message, err?.details, err?.hint].filter(Boolean).join(' | ');
+      toast(`${prefix}: ${msg || 'unknown'}`.slice(0,180));
+    }
 
-  // हम पहले STRING से try करेंगे (TEXT कॉलम हो तो), फिर NUMERIC fallback
-  let res = await fromTbl(MEMBERS_TABLE)
-    .select('farmer_name, guardian_name')
-    .eq('membership_no', raw)       // STRING eq
-    .limit(1)
-    .maybeSingle();
+    async function fetchMember(){
+      const raw = $('member_no').value.trim();
+      if(!raw){ $('member_status').textContent='कृपया सदस्यता संख्या दर्ज करें'; membershipOk=false; return; }
+      let res = await fromTbl(MEMBERS_TABLE).select('farmer_name, guardian_name').eq('membership_no', raw).limit(1).maybeSingle();
+      if((!res.data && !res.error) && /^\d+$/.test(raw)){
+        res = await fromTbl(MEMBERS_TABLE).select('farmer_name, guardian_name').eq('membership_no', Number(raw)).limit(1).maybeSingle();
+      }
+      if(res.error){ console.error(res.error); $('member_status').textContent='Lookup error'; toastDetail('Members lookup', res.error); membershipOk=false; unlockNames(); return; }
+      if(!res.data){ $('member_status').textContent='रिकॉर्ड नहीं मिला'; membershipOk=false; unlockNames(); return; }
+      $('farmer_name').value = upperAZ(res.data.farmer_name||'');
+      $('guardian_name').value = upperAZ(res.data.guardian_name||'');
+      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true; setSubmitEnabled();
+    }
 
-  if((!res.data && !res.error) && /^\d+$/.test(raw)){
-    // NUMERIC fallback (अगर कॉलम integer/numeric है)
-    const num = Number(raw);
-    res = await fromTbl(MEMBERS_TABLE)
-      .select('farmer_name, guardian_name')
-      .eq('membership_no', num)     // NUMERIC eq
-      .limit(1)
-      .maybeSingle();
-  }
-
-  if(res.error){
-    console.error(res.error);
-    $('member_status').textContent = 'Lookup error';
-    toastDetail('Members lookup', res.error);   // 👉 असली वजह यहां दिखेगी
-    membershipOk = false; unlockNames(); return;
-  }
-  if(!res.data){
-    $('member_status').textContent = 'रिकॉर्ड नहीं मिला';
-    membershipOk = false; unlockNames(); return;
-  }
-
-  $('farmer_name').value   = (res.data.farmer_name || '').toUpperCase();
-  $('guardian_name').value = (res.data.guardian_name || '').toUpperCase();
-  lockNames();
-  $('member_status').textContent = 'मिला ✔';
-  membershipOk = true; setSubmitEnabled();
-}
     /* ========= Witness Lookup ========= */
+    function setSubmitEnabled(){ const ok1 = $('w1_status').dataset.ok === '1'; const ok2 = $('w2_status').dataset.ok === '1'; $('submitBtn').disabled = !(ok1 && ok2 && membershipOk); }
+
     async function fetchWitness(slot){
-  const aadhaar = onlyDigits($(slot+'_aadhaar').value);
-  $(slot+'_aadhaar').value = aadhaar;
-  if(!/^\d{12}$/.test(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
+      const aadhaar = onlyDigits($(slot+'_aadhaar').value);
+      $(slot+'_aadhaar').value = aadhaar;
+      if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
+      const appA  = onlyDigits($('aadhaar').value);
+      const other = slot==='w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
+      if(aadhaar===appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
+      if(other && aadhaar===other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
+      const q = await fromTbl(WITNESS_TABLE).select('name, guardian_name, mobile').eq('aadhaar', aadhaar).limit(1).maybeSingle();
+      if(q.error){ console.error(q.error); toastDetail('Witness lookup', q.error); return; }
+      if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
+      $(slot+'_name').value = upperAZ(q.data.name||'');
+      $(slot+'_guardian_name').value = upperAZ(q.data.guardian_name||'');
+      $(slot+'_mobile').value = onlyDigits(q.data.mobile||'');
+      toast('गवाह मिला');
+    }
 
-  const appA  = onlyDigits($('aadhaar').value);
-  const other = slot === 'w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
-  if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
-  if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
+    /* ========= OTP via Edge Functions ========= */
+    function toE164(m){ const d=onlyDigits(m||''); if(d.length===10) return '+91'+d; if(d.length===12 && d.startsWith('91')) return '+'+d; if((m||'').startsWith('+')) return m; return '+91'+d; }
 
-  const q = await fromTbl(WITNESS_TABLE)
-    .select('name, guardian_name, mobile')
-    .eq('aadhaar', aadhaar)
-    .limit(1)
-    .maybeSingle();
-
-  if(q.error){ console.error(q.error); toastDetail('Witness lookup', q.error); return; }
-  if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
-
-  $(slot+'_name').value          = (q.data.name || '').toUpperCase();
-  $(slot+'_guardian_name').value = (q.data.guardian_name || '').toUpperCase();
-  $(slot+'_mobile').value        = onlyDigits(q.data.mobile || '');
-  toast('गवाह मिला');
-}
-
-    /* ========= OTP via EDGE FUNCTIONS ========= */
     async function sendOtpEdge(mobile, context){
-      const m = onlyDigits(mobile);
-      if(!validMobile(m)){ toast('मान्य मोबाइल नहीं'); return false; }
-      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body: { mobile: m, context }});
-      if(error || !data?.ok){ console.error(error||data); toast('OTP भेजने में समस्या'); return false; }
+      const to = toE164(mobile);
+      if(!/^\+?\d{11,15}$/.test(to)){ toast('मान्य मोबाइल नहीं'); return false; }
+      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body: { mobile: to, context }});
+      if(error){ console.error('send-otp error', error); toast(`OTP भेजने में समस्या [${error.status||'ERR'}] ${error.message||''}`); return false; }
+      if(!data?.ok){ console.error('send-otp resp', data); toast(`OTP भेजने में समस्या ${data?.reason?`(${data.reason})`:''}`); return false; }
       toast('OTP भेज दी गई'); return true;
     }
 
     async function verifyOtpEdge(mobile, otp, context){
-      const m = onlyDigits(mobile);
-      const o = onlyDigits(otp);
-      if(!validMobile(m) || !/^\d{6}$/.test(o)){ toast('OTP इनपुट सही करें'); return false; }
-      const { data, error } = await sb.functions.invoke(FN_VERIFY_OTP, { body: { mobile: m, otp: o, context }});
-      if(error || !data?.ok){ console.error(error||data); toast('OTP गलत/एक्सपायर'); return false; }
+      const to = toE164(mobile);
+      const code = onlyDigits(otp);
+      if(!/^\+?\d{11,15}$/.test(to) || !/^\d{6}$/.test(code)){ toast('OTP इनपुट सही करें'); return false; }
+      const { data, error } = await sb.functions.invoke(FN_VERIFY_OTP, { body: { mobile: to, otp: code, context }});
+      if(error){ console.error('verify-otp error', error); toast(`OTP गलत/एक्सपायर [${error.status||'ERR'}] ${error.message||''}`); return false; }
+      if(!data?.ok){ console.error('verify-otp resp', data); toast(`OTP गलत/एक्सपायर ${data?.reason?`(${data.reason})`:''}`); return false; }
       toast('Verified ✔'); return true;
     }
 
@@ -411,12 +378,10 @@ async function fetchMember(){
     async function submitApp(e){
       e.preventDefault();
       if(!membershipOk){ toast('पहले सदस्यता संख्या verify करें'); return; }
-
       const ac=onlyDigits($('bank_ac').value), ad=onlyDigits($('aadhaar').value), mob=onlyDigits($('mobile').value);
       if(!/^\d{17}$/.test(ac)){ toast('खाता 17 digits'); return; }
       if(!validAadhaar(ad)){ toast('आधार 12 digits'); return; }
       if(!/^\d{10}$/.test(mob)){ toast('मोबाइल 10 digits'); return; }
-
       const w1a = onlyDigits($('w1_aadhaar').value), w2a = onlyDigits($('w2_aadhaar').value);
       if(w1a && ad && w1a===ad){ toast('आवेदक खुद गवाह नहीं हो सकता (गवाह 1)'); return; }
       if(w2a && ad && w2a===ad){ toast('आवेदक खुद गवाह नहीं हो सकता (गवाह 2)'); return; }
@@ -424,8 +389,7 @@ async function fetchMember(){
       if($('w1_status').dataset.ok!=='1' || $('w2_status').dataset.ok!=='1'){ toast('दोनों गवाह OTP सत्यापित जरूरी'); return; }
 
       const payload = {
-        membership_no: $('member_no').value.trim(),
-        kisan_type: $('kisan_type').value, caste_cat: $('caste_cat').value,
+        membership_no: $('member_no').value.trim(), kisan_type: $('kisan_type').value, caste_cat: $('caste_cat').value,
         farmer_name: $('farmer_name').value, guardian_name: $('guardian_name').value, jaati: $('jaati').value,
         gender: $('gender').value, dob: $('dob').value, rev_village: $('rev_village').value, gram_panchayat: $('gram_panchayat').value,
         bank_ac: ac, aadhaar: ad, mobile: mob, whatsapp: onlyDigits($('whatsapp').value),
@@ -433,9 +397,7 @@ async function fetchMember(){
         nominee_name: $('nominee_name').value, nominee_dob: $('nominee_dob').value, nominee_relation: $('nominee_relation').value,
         w1_aadhaar: w1a, w1_name: $('w1_name').value, w1_guardian_name: $('w1_guardian_name').value, w1_mobile: onlyDigits($('w1_mobile').value),
         w2_aadhaar: w2a, w2_name: $('w2_name').value, w2_guardian_name: $('w2_guardian_name').value, w2_mobile: onlyDigits($('w2_mobile').value),
-        w1_verified: $('w1_status').dataset.ok==='1',
-        w2_verified: $('w2_status').dataset.ok==='1',
-        status: 'submitted'
+        w1_verified: $('w1_status').dataset.ok==='1', w2_verified: $('w2_status').dataset.ok==='1', status: 'submitted'
       };
 
       const ins = await fromTbl(APPLICATIONS).insert(payload);
@@ -455,9 +417,15 @@ async function fetchMember(){
 
     /* ========= Bootstrap ========= */
     (function start(){
-      const init = () => {
+      const init = async () => {
         if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 🔐 अगर send-otp को verify-jwt ON के साथ deploy किया है, तो anonymous sign-in करें
+        try{
+          const { error } = await sb.auth.signInAnonymously();
+          if(error){ console.error(error); toast('Auth error (anonymous)'); }
+        }catch(e){ console.error(e); }
 
         $('member_fetch').addEventListener('click', fetchMember);
         $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; $('submitBtn').disabled=true; });
@@ -465,16 +433,15 @@ async function fetchMember(){
         $('w1_fetch').onclick = () => fetchWitness('w1');
         $('w2_fetch').onclick = () => fetchWitness('w2');
 
-        // OTP buttons (now via Edge Functions, to witness mobile)
         $('w1_send_otp').onclick = async () => {
-          const mobile = onlyDigits($('w1_mobile').value);
-          if(!validMobile(mobile)){ toast('गवाह 1 का मोबाइल मान्य नहीं'); return; }
-          await sendOtpEdge(mobile, 'w1');
+          const m = onlyDigits($('w1_mobile').value);
+          if(!validMobile10(m)){ toast('गवाह 1 का मोबाइल मान्य नहीं'); return; }
+          await sendOtpEdge(m, 'w1');
         };
         $('w2_send_otp').onclick = async () => {
-          const mobile = onlyDigits($('w2_mobile').value);
-          if(!validMobile(mobile)){ toast('गवाह 2 का मोबाइल मान्य नहीं'); return; }
-          await sendOtpEdge(mobile, 'w2');
+          const m = onlyDigits($('w2_mobile').value);
+          if(!validMobile10(m)){ toast('गवाह 2 का मोबाइल मान्य नहीं'); return; }
+          await sendOtpEdge(m, 'w2');
         };
         $('w1_verify').onclick = async () => {
           const ok = await verifyOtpEdge($('w1_mobile').value, $('w1_otp').value, 'w1');
