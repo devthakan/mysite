@@ -305,34 +305,44 @@
     function lockNames(){ $('farmer_name').readOnly = true; $('guardian_name').readOnly = true; $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked'); }
     function unlockNames(){ $('farmer_name').readOnly = false; $('guardian_name').readOnly = false; $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked'); $('farmer_name').value=''; $('guardian_name').value=''; }
 
-    async function fetchMember(){
-      const no = $('member_no').value.trim();
-      if(!no){ $('member_status').textContent='कृपया सदस्यता संख्या दर्ज करें'; membershipOk=false; return; }
+async function fetchMember(){
+  const raw = $('member_no').value.trim();
+  if(!raw){
+    $('member_status').textContent = 'कृपया सदस्यता संख्या दर्ज करें';
+    membershipOk = false;
+    return;
+  }
 
-      // fallback select: name/farmer_name and father_name/guardian_name
-      const q = await fromTbl(MEMBERS_TABLE)
-        .select('name, father_name, farmer_name, guardian_name')
-        .eq('membership_no', no)
-        .limit(1)
-        .maybeSingle();
+  // अगर membership_no column numeric है, तो number भेजें:
+  const key = /^\d+$/.test(raw) ? parseInt(raw, 10) : raw;
 
-      if(q.error){
-        console.error(q.error);
-        $('member_status').textContent='Lookup error';
-        membershipOk=false; unlockNames(); return;
-      }
-      if(!q.data){
-        $('member_status').textContent='रिकॉर्ड नहीं मिला';
-        membershipOk=false; unlockNames(); return;
-      }
+  const q = await fromTbl(MEMBERS_TABLE)
+    .select('farmer_name, guardian_name')   // ✅ सिर्फ मौजूद कॉलम
+    .eq('membership_no', key)               // ✅ numeric तो number जाएगा
+    .limit(1)
+    .maybeSingle();
 
-      const nm = q.data.farmer_name ?? q.data.name ?? '';
-      const fn = q.data.guardian_name ?? q.data.father_name ?? '';
-      $('farmer_name').value = upperAZ(nm);
-      $('guardian_name').value = upperAZ(fn);
-      lockNames(); $('member_status').textContent='मिला ✔'; membershipOk=true; setSubmitEnabled();
-    }
+  if(q.error){
+    console.error(q.error);
+    $('member_status').textContent = 'Lookup error';
+    membershipOk = false;
+    unlockNames();
+    return;
+  }
+  if(!q.data){
+    $('member_status').textContent = 'रिकॉर्ड नहीं मिला';
+    membershipOk = false;
+    unlockNames();
+    return;
+  }
 
+  $('farmer_name').value   = (q.data.farmer_name || '').toUpperCase();
+  $('guardian_name').value = (q.data.guardian_name || '').toUpperCase();
+  lockNames();
+  $('member_status').textContent = 'मिला ✔';
+  membershipOk = true;
+  setSubmitEnabled();
+}
     /* ========= Witness Lookup ========= */
     function setSubmitEnabled(){
       const ok1 = $('w1_status').dataset.ok === '1';
@@ -341,35 +351,30 @@
     }
 
     async function fetchWitness(slot){
-      const aadhaar = onlyDigits($(slot+'_aadhaar').value);
-      $(slot+'_aadhaar').value = aadhaar;
-      if(!validAadhaar(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
+  const aadhaar = onlyDigits($(slot+'_aadhaar').value);
+  $(slot+'_aadhaar').value = aadhaar;
+  if(!/^\d{12}$/.test(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
 
-      // duplicate checks
-      const appA = onlyDigits($('aadhaar').value);
-      const other = slot === 'w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
-      if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
-      if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
+  // duplicate checks
+  const appA  = onlyDigits($('aadhaar').value);
+  const other = slot === 'w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
+  if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
+  if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
 
-      const q = await fromTbl(WITNESS_TABLE)
-        .select('name, guardian_name, father_name, mobile')
-        .eq('aadhaar', aadhaar)
-        .limit(1)
-        .maybeSingle();
+  const q = await fromTbl(WITNESS_TABLE)
+    .select('name, guardian_name, mobile')  // ✅ सिर्फ मौजूद कॉलम
+    .eq('aadhaar', aadhaar)
+    .limit(1)
+    .maybeSingle();
 
-      if(q.error){ console.error(q.error); toast('Lookup error'); return; }
-      if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
+  if(q.error){ console.error(q.error); toast('Lookup error'); return; }
+  if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
 
-      const name = q.data.name ?? '';
-      const gname = q.data.guardian_name ?? q.data.father_name ?? '';
-      const mobile = onlyDigits(q.data.mobile ?? '');
-
-      $(slot+'_name').value = upperAZ(name);
-      $(slot+'_guardian_name').value = upperAZ(gname);
-      $(slot+'_mobile').value = mobile;
-      toast('गवाह मिला');
-    }
-
+  $(slot+'_name').value          = (q.data.name || '').toUpperCase();
+  $(slot+'_guardian_name').value = (q.data.guardian_name || '').toUpperCase();
+  $(slot+'_mobile').value        = onlyDigits(q.data.mobile || '');
+  toast('गवाह मिला');
+}
     /* ========= OTP via EDGE FUNCTIONS ========= */
     async function sendOtpEdge(mobile, context){
       const m = onlyDigits(mobile);
