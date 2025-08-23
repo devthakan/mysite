@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>किसान – हिस्सा राशि देखें</title>
+  <title>किसान – हिस्सा राशि खोज</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -16,23 +16,12 @@
     .glass { backdrop-filter: blur(16px); background: rgba(255,255,255,0.06); }
     .hidden{ display:none; }
     .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
-    .btn { transition: filter .15s ease; }
-    .btn:disabled{ opacity:.7; cursor:not-allowed; filter: saturate(.6); }
-    .shimmer {
-      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 37%, rgba(255,255,255,0.05) 63%);
-      background-size: 400% 100%;
-      animation: shimmer 1.2s linear infinite;
-    }
-    @keyframes shimmer { 0% { background-position: 100% 0 } 100% { background-position: 0 0 } }
   </style>
 </head>
 <body class="min-h-screen text-slate-100">
-  <div class="max-w-5xl mx-auto p-4 md:p-8">
-    <header class="mb-6 md:mb-8 flex items-center justify-between">
-      <h1 class="text-2xl md:text-3xl font-extrabold">किसान – हिस्सा राशि देखें</h1>
-      <nav class="text-sm">
-        <a href="index.html" class="text-emerald-400 hover:text-emerald-300">होम</a>
-      </nav>
+  <div class="max-w-4xl mx-auto p-4 md:p-8">
+    <header class="mb-6 md:mb-8">
+      <h1 class="text-2xl md:text-3xl font-extrabold">किसान – हिस्सा राशि खोज</h1>
     </header>
 
     <section class="glass rounded-2xl p-5 md:p-7 border border-white/10 shadow-2xl">
@@ -43,58 +32,33 @@
                  class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy"
                  placeholder="उदा. 00012345678901234" />
         </div>
-        <div class="flex gap-2">
-          <button id="findBtn" class="btn px-5 py-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold hover:brightness-110">खोजें</button>
-          <button id="resetBtn" class="btn px-5 py-3 rounded-xl bg-slate-700 hover:brightness-110">रीसेट</button>
-        </div>
+        <button id="findBtn" class="px-5 py-3 rounded-xl bg-indigo-500 text-slate-900 font-semibold hover:brightness-110">
+          खोजें
+        </button>
       </div>
 
       <p id="status" class="mt-3 text-sm text-slate-300"></p>
 
-      <div id="result_card" class="hidden mt-6 border border-white/10 rounded-2xl p-4 bg-slate-900/40">
-        <h3 class="font-semibold text-lg mb-3">परिणाम</h3>
-
-        <div id="skeleton" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="h-10 rounded-lg shimmer"></div>
-          <div class="h-10 rounded-lg shimmer"></div>
-          <div class="h-10 rounded-lg shimmer"></div>
-          <div class="h-10 rounded-lg shimmer"></div>
-          <div class="h-10 rounded-lg shimmer md:col-span-2"></div>
-        </div>
-
-        <div id="result" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="card" class="hidden mt-6 border border-white/10 rounded-2xl p-4 bg-slate-900/40">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><div class="text-slate-400 text-xs mb-1">APP. NO.</div><div id="r_app" class="text-base md:text-lg font-semibold"></div></div>
           <div><div class="text-slate-400 text-xs mb-1">CUSTOMER NAME</div><div id="r_cust" class="text-base md:text-lg font-semibold"></div></div>
           <div><div class="text-slate-400 text-xs mb-1">FATHER NAME</div><div id="r_father" class="text-base md:text-lg font-semibold"></div></div>
           <div><div class="text-slate-400 text-xs mb-1">SB A/C NO.</div><div id="r_ac" class="text-base md:text-lg font-semibold"></div></div>
           <div class="md:col-span-2"><div class="text-slate-400 text-xs mb-1">SHARE CAPITAL</div><div id="r_share" class="text-xl font-extrabold text-emerald-400"></div></div>
         </div>
-      </div>
-
-      <div id="multi" class="hidden mt-6 border border-white/10 rounded-2xl overflow-x-auto">
-        <table class="min-w-full">
-          <thead class="bg-slate-900/60 text-left text-xs uppercase tracking-wider">
-            <tr>
-              <th class="px-4 py-3">APP. NO.</th>
-              <th class="px-4 py-3">CUSTOMER NAME</th>
-              <th class="px-4 py-3">FATHER NAME</th>
-              <th class="px-4 py-3">SB A/C NO.</th>
-              <th class="px-4 py-3">SHARE CAPITAL</th>
-            </tr>
-          </thead>
-          <tbody id="multi_tbody" class="divide-y divide-white/10"></tbody>
-        </table>
+        <p id="more" class="text-xs text-slate-400 mt-3 hidden"></p>
       </div>
     </section>
   </div>
 
   <script>
-    /* ==== कॉन्फ़िग ==== */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // अपनी वैल्यू
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                    // अपनी वैल्यू (anon)
-    const SHARE_TABLE  = "share_capital";
+    /* ==== CONFIG ==== */
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";  // ← अपनी वैल्यू
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                   // ← अपनी वैल्यू (anon)
+    const TABLE = "share_capital";
 
-    // ⚠️ DB में कॉलम के नाम यही exact होने चाहिए (Excel header भी यही रखें)
+    // DB के कॉलम नाम बिल्कुल ऐसे ही:
     const COLS = {
       app_no:        "APP. NO.",
       customer_name: "CUSTOMER NAME",
@@ -103,118 +67,66 @@
       share_capital: "SHARE CAPITAL"
     };
 
-    /* ==== हेल्पर्स ==== */
+    /* ==== Helpers ==== */
     let sb = null;
     const $ = (id) => document.getElementById(id);
     const show = (el) => el.classList.remove("hidden");
     const hide = (el) => el.classList.add("hidden");
     const setStatus = (msg) => { $("status").textContent = msg || ""; };
 
-    const cleanAC = (s) => String(s||"").replace(/\D+/g, "");
-    function rupee(x){
-      if(x === null || x === undefined) return "";
-      const n = Number(x);
-      if(Number.isFinite(n)){
-        return n.toLocaleString("en-IN", { style:"currency", currency:"INR", maximumFractionDigits:2 });
-      }
-      return String(x);
-    }
-    // PostgREST identifier quoting: "NAME WITH SPACE"
-    const q = (id) => `"${String(id).replace(/"/g, '""')}"`;
+    const cleanAC = (s) => String(s||"").replace(/\D+/g,""); // सिर्फ digits
+    const quote = (name) => `"${String(name).replace(/"/g,'""')}"`; // PostgREST select के लिए
 
     function fillCard(row){
       $("r_app").textContent    = row[COLS.app_no] ?? "";
-      $("r_cust").textContent   = (row[COLS.customer_name] || "").toString().toUpperCase();
-      $("r_father").textContent = (row[COLS.father_name] || "").toString().toUpperCase();
+      $("r_cust").textContent   = (row[COLS.customer_name]||"").toString().toUpperCase();
+      $("r_father").textContent = (row[COLS.father_name]||"").toString().toUpperCase();
       $("r_ac").textContent     = row[COLS.sb_ac_no] ?? "";
-      $("r_share").textContent  = rupee(row[COLS.share_capital]);
-    }
-
-    function fillMulti(rows){
-      const tb = $("multi_tbody");
-      tb.innerHTML = "";
-      rows.forEach(r=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="px-4 py-2">${r[COLS.app_no] ?? ""}</td>
-          <td class="px-4 py-2">${(r[COLS.customer_name]||"").toString().toUpperCase()}</td>
-          <td class="px-4 py-2">${(r[COLS.father_name]||"").toString().toUpperCase()}</td>
-          <td class="px-4 py-2">${r[COLS.sb_ac_no] ?? ""}</td>
-          <td class="px-4 py-2">${rupee(r[COLS.share_capital])}</td>
-        `;
-        tb.appendChild(tr);
-      });
-    }
-
-    function toggleLoading(on){
-      if(on){
-        show($("result_card"));
-        show($("skeleton"));
-        hide($("result"));
-        hide($("multi"));
-      }else{
-        hide($("skeleton"));
-        show($("result"));
-      }
+      $("r_share").textContent  = row[COLS.share_capital] ?? "";
     }
 
     async function findByAccount(){
-      setStatus("");
-      hide($("result_card"));
-      hide($("multi"));
+      hide($("card")); $("more").classList.add("hidden"); setStatus("");
 
       const ac = cleanAC($("ac").value);
-      if(ac.length !== 17){
-        setStatus("कृपया 17 अंकों का SB A/C No. दर्ज करें");
-        $("ac").focus();
-        return;
-      }
+      if(ac.length !== 17){ setStatus("कृपया 17 अंकों का SB A/C No. दर्ज करें"); $("ac").focus(); return; }
 
       try{
-        toggleLoading(true);
-
-        // select में सभी quoted identifiers, और filter भी quoted नाम पर
+        // select सूची में हर कॉलम को quote करें (क्योंकि नामों में space/dot हैं)
         const selectList = [
-          COLS.app_no, COLS.customer_name, COLS.father_name,
-          COLS.sb_ac_no, COLS.share_capital
-        ].map(q).join(", ");
+          COLS.app_no, COLS.customer_name, COLS.father_name, COLS.sb_ac_no, COLS.share_capital
+        ].map(quote).join(", ");
 
-        const qres = await sb
-          .from(SHARE_TABLE)
+        // 🔧 महत्वपूर्ण: filter में column नाम को **quoted** पास करें ताकि PostgREST सही पढ़े
+        const colQuoted = quote(COLS.sb_ac_no);
+
+        const q = await sb
+          .from(TABLE)
           .select(selectList)
-          .filter(q(COLS.sb_ac_no), 'eq', ac)
+          .filter(colQuoted, "eq", ac)     // <<— यही fix
           .limit(20);
 
-        toggleLoading(false);
-
-        if(qres.error){ console.error(qres.error); setStatus("डेटा पढ़ने में समस्या"); return; }
-        const rows = qres.data || [];
+        if(q.error){ console.error(q.error); setStatus("डेटा पढ़ने में समस्या"); return; }
+        const rows = q.data || [];
         if(rows.length === 0){ setStatus("रिकॉर्ड नहीं मिला"); return; }
 
-        show($("result_card")); fillCard(rows[0]);
-        if(rows.length > 1){ show($("multi")); fillMulti(rows); }
+        fillCard(rows[0]); show($("card"));
+        if(rows.length > 1){
+          $("more").textContent = `नोट: ${rows.length-1} और मिलान हैं।`;
+          $("more").classList.remove("hidden");
+        }
       }catch(e){
-        console.error(e);
-        toggleLoading(false);
-        setStatus("तकनीकी समस्या");
+        console.error(e); setStatus("तकनीकी समस्या");
       }
-    }
-
-    function resetAll(){
-      $("ac").value = "";
-      setStatus("");
-      hide($("result_card"));
-      hide($("multi"));
     }
 
     (function boot(){
-      const init = async () => {
+      const init = () => {
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         $("findBtn").addEventListener("click", findByAccount);
-        $("resetBtn").addEventListener("click", resetAll);
-        $("ac").addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); findByAccount(); } });
+        $("ac").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); findByAccount(); } });
       };
-      if(document.readyState === "complete" || document.readyState === "interactive") setTimeout(init,0);
+      if(document.readyState==="complete"||document.readyState==="interactive") setTimeout(init,0);
       else window.addEventListener("DOMContentLoaded", init);
     })();
   </script>
