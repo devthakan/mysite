@@ -386,31 +386,38 @@
     }
 
     /* ========= OTP via EDGE FUNCTIONS ========= */
-    function toE164(m){
-      const d = onlyDigits(m||'');
-      if(d.length===10) return '+91'+d;
-      if(d.length===12 && d.startsWith('91')) return '+'+d;
-      if((m||'').startsWith('+')) return m;
-      return '+91'+d;
-    }
+function toE164(m){
+  const d = (m||'').replace(/\D+/g,'');
+  if(d.length===10) return '+91'+d;
+  if(d.length===12 && d.startsWith('91')) return '+'+d;
+  if((m||'').startsWith('+')) return m;
+  return '+91'+d;
+}
 
-    async function sendOtpEdge(mobile, context){
-      const to = toE164(mobile);
-      if(!/^\+?\d{11,15}$/.test(to)){ toast('मान्य मोबाइल नहीं'); return false; }
-      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body: { mobile: to, context }});
-      if(error){
-        console.error('send-otp error', error);
-        toast(`OTP भेजने में समस्या (${error.message||'ERR'})`);
-        return false;
-      }
-      if(!data?.ok){
-        console.error('send-otp resp', data);
-        toast(`OTP भेजने में समस्या ${data?.reason?`(${data.reason})`:''}`);
-        return false;
-      }
-      toast('OTP भेज दी गई'); 
-      return true;
-    }
+async function sendOtpEdge(mobile, context){
+  const to = toE164(mobile);
+  if(!/^\+?\d{11,15}$/.test(to)){ toast('मान्य मोबाइल नहीं'); return false; }
+
+  // invoke + extra network info
+  const { data, error } = await sb.functions.invoke('send-otp', {
+    body: { mobile: to, context }
+  });
+
+  if(error){
+    console.error('send-otp error:', error);
+    // सबसे common: 401 (JWT), 404 (function name), 5xx
+    toast(`OTP भेजने में समस्या [${error.status || 'ERR'}] ${error.message || ''}`);
+    return false;
+  }
+  if(!data?.ok){
+    console.error('send-otp resp:', data);
+    // हम server से reason/detail भेज रहे हैं: infobip_fail / db_insert / exception
+    toast(`OTP भेजने में समस्या ${data.reason ? '('+data.reason+')' : ''}`);
+    return false;
+  }
+  toast('OTP भेज दी गई');
+  return true;
+}
 
     async function verifyOtpEdge(mobile, otp, context){
       const to = toE164(mobile);
@@ -493,32 +500,25 @@
     /* ========= Bootstrap ========= */
     (function start(){
       const init = async () => {
-        if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
-        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  if(!window.supabase || !window.supabase.createClient){ toast('Supabase JS load error'); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 🔐 Anonymous JWT (अगर आपने functions को verify-jwt ON के साथ deploy किया है)
-        try {
-          const { error } = await sb.auth.signInAnonymously();
-          if(error){ console.error(error); toast('Auth error (anonymous)'); }
-        } catch(e){ console.error(e); }
+  // 🔐 anonymous JWT (जरूरी जब functions verify-jwt ON हैं)
+  const { data: s, error: authErr } = await sb.auth.signInAnonymously();
+  if(authErr){ console.error(authErr); toast('Auth error (anonymous)'); }
 
-        $('member_fetch').addEventListener('click', fetchMember);
-        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; $('submitBtn').disabled=true; });
-
-        $('w1_fetch').onclick = () => fetchWitness('w1');
-        $('w2_fetch').onclick = () => fetchWitness('w2');
-
-        // OTP buttons (Edge Functions)
-        $('w1_send_otp').onclick = async () => {
-          const mobile = onlyDigits($('w1_mobile').value);
-          if(!validMobile10(mobile)){ toast('गवाह 1 का मोबाइल मान्य नहीं'); return; }
-          await sendOtpEdge(mobile, 'w1');
-        };
-        $('w2_send_otp').onclick = async () => {
-          const mobile = onlyDigits($('w2_mobile').value);
-          if(!validMobile10(mobile)){ toast('गवाह 2 का मोबाइल मान्य नहीं'); return; }
-          await sendOtpEdge(mobile, 'w2');
-        };
+  // ... इसके बाद ही handlers अटैच करो
+  $('member_fetch').addEventListener('click', fetchMember);
+  $('w1_fetch').onclick = () => fetchWitness('w1');
+  $('w2_fetch').onclick = () => fetchWitness('w2');
+  $('w1_send_otp').onclick = async () => {
+    const m = ($('w1_mobile').value||'').replace(/\D+/g,''); if(m.length!==10){ toast('गवाह 1 का मोबाइल मान्य नहीं'); return; }
+    await sendOtpEdge(m, 'w1');
+  };
+  $('w2_send_otp').onclick = async () => {
+    const m = ($('w2_mobile').value||'').replace(/\D+/g,''); if(m.length!==10){ toast('गवाह 2 का मोबाइल मान्य नहीं'); return; }
+    await sendOtpEdge(m, 'w2');
+  };
         $('w1_verify').onclick = async () => {
           const ok = await verifyOtpEdge($('w1_mobile').value, $('w1_otp').value, 'w1');
           $('w1_status').textContent = ok ? 'गवाह 1 सत्यापित ✔' : 'OTP गलत/एक्सपायर';
