@@ -302,8 +302,11 @@
 
     /* ========= Membership Lookup ========= */
     let membershipOk = false;
-    function lockNames(){ $('farmer_name').readOnly = true; $('guardian_name').readOnly = true; $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked'); }
-    function unlockNames(){ $('farmer_name').readOnly = false; $('guardian_name').readOnly = false; $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked'); $('farmer_name').value=''; $('guardian_name').value=''; }
+// Debug helper (add once)
+function toastDetail(prefix, err){
+  const msg = [err?.code, err?.message, err?.details, err?.hint].filter(Boolean).join(' | ');
+  toast(`${prefix}: ${msg || 'unknown'}`.slice(0,180));
+}
 
 async function fetchMember(){
   const raw = $('member_no').value.trim();
@@ -313,61 +316,58 @@ async function fetchMember(){
     return;
   }
 
-  // अगर membership_no column numeric है, तो number भेजें:
-  const key = /^\d+$/.test(raw) ? parseInt(raw, 10) : raw;
-
-  const q = await fromTbl(MEMBERS_TABLE)
-    .select('farmer_name, guardian_name')   // ✅ सिर्फ मौजूद कॉलम
-    .eq('membership_no', key)               // ✅ numeric तो number जाएगा
+  // हम पहले STRING से try करेंगे (TEXT कॉलम हो तो), फिर NUMERIC fallback
+  let res = await fromTbl(MEMBERS_TABLE)
+    .select('farmer_name, guardian_name')
+    .eq('membership_no', raw)       // STRING eq
     .limit(1)
     .maybeSingle();
 
-  if(q.error){
-    console.error(q.error);
-    $('member_status').textContent = 'Lookup error';
-    membershipOk = false;
-    unlockNames();
-    return;
-  }
-  if(!q.data){
-    $('member_status').textContent = 'रिकॉर्ड नहीं मिला';
-    membershipOk = false;
-    unlockNames();
-    return;
+  if((!res.data && !res.error) && /^\d+$/.test(raw)){
+    // NUMERIC fallback (अगर कॉलम integer/numeric है)
+    const num = Number(raw);
+    res = await fromTbl(MEMBERS_TABLE)
+      .select('farmer_name, guardian_name')
+      .eq('membership_no', num)     // NUMERIC eq
+      .limit(1)
+      .maybeSingle();
   }
 
-  $('farmer_name').value   = (q.data.farmer_name || '').toUpperCase();
-  $('guardian_name').value = (q.data.guardian_name || '').toUpperCase();
+  if(res.error){
+    console.error(res.error);
+    $('member_status').textContent = 'Lookup error';
+    toastDetail('Members lookup', res.error);   // 👉 असली वजह यहां दिखेगी
+    membershipOk = false; unlockNames(); return;
+  }
+  if(!res.data){
+    $('member_status').textContent = 'रिकॉर्ड नहीं मिला';
+    membershipOk = false; unlockNames(); return;
+  }
+
+  $('farmer_name').value   = (res.data.farmer_name || '').toUpperCase();
+  $('guardian_name').value = (res.data.guardian_name || '').toUpperCase();
   lockNames();
   $('member_status').textContent = 'मिला ✔';
-  membershipOk = true;
-  setSubmitEnabled();
+  membershipOk = true; setSubmitEnabled();
 }
     /* ========= Witness Lookup ========= */
-    function setSubmitEnabled(){
-      const ok1 = $('w1_status').dataset.ok === '1';
-      const ok2 = $('w2_status').dataset.ok === '1';
-      $('submitBtn').disabled = !(ok1 && ok2 && membershipOk);
-    }
-
     async function fetchWitness(slot){
   const aadhaar = onlyDigits($(slot+'_aadhaar').value);
   $(slot+'_aadhaar').value = aadhaar;
   if(!/^\d{12}$/.test(aadhaar)){ toast('12 अंकों का आधार डालें'); return; }
 
-  // duplicate checks
   const appA  = onlyDigits($('aadhaar').value);
   const other = slot === 'w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
   if(aadhaar === appA){ toast('गवाह का आधार आवेदक जैसा नहीं हो सकता'); return; }
   if(other && aadhaar === other){ toast('दोनों गवाहों के आधार अलग होने चाहिए'); return; }
 
   const q = await fromTbl(WITNESS_TABLE)
-    .select('name, guardian_name, mobile')  // ✅ सिर्फ मौजूद कॉलम
+    .select('name, guardian_name, mobile')
     .eq('aadhaar', aadhaar)
     .limit(1)
     .maybeSingle();
 
-  if(q.error){ console.error(q.error); toast('Lookup error'); return; }
+  if(q.error){ console.error(q.error); toastDetail('Witness lookup', q.error); return; }
   if(!q.data){ toast('गवाह रिकॉर्ड नहीं मिला'); return; }
 
   $(slot+'_name').value          = (q.data.name || '').toUpperCase();
@@ -375,6 +375,7 @@ async function fetchMember(){
   $(slot+'_mobile').value        = onlyDigits(q.data.mobile || '');
   toast('गवाह मिला');
 }
+
     /* ========= OTP via EDGE FUNCTIONS ========= */
     async function sendOtpEdge(mobile, context){
       const m = onlyDigits(mobile);
