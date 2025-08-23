@@ -90,8 +90,8 @@
 
   <script>
     /* ==== कॉन्फ़िग ==== */
-    const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";   // अपनी वैल्यू
-    const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY";                    // अपनी वैल्यू (anon)
+    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // अपनी वैल्यू
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                    // अपनी वैल्यू (anon)
     const SHARE_TABLE  = "share_capital";
 
     // ⚠️ DB में कॉलम के नाम यही exact होने चाहिए (Excel header भी यही रखें)
