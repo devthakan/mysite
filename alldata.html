@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>कानोड़ GSSS — सदस्य खोज (Form UI)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#0b1223; --panel:#0f172a; --panel2:#111827; --muted:#9aa9c2; --text:#e6eaf1;
+    --accent:#22d3ee; --accent2:#60a5fa; --border:#1f2937; --chip:#2a3753;
+  }
+  *{box-sizing:border-box} html,body{margin:0;background:radial-gradient(1200px 400px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 300px at 90% -20%,rgba(96,165,250,.07),transparent),var(--bg);font-family:"Inter","Noto Sans Devanagari",system-ui;color:var(--text)}
+  a{color:inherit;text-decoration:none}
+
+  .container{max-width:1100px;margin:28px auto;padding:0 16px}
+  .hero{display:flex;gap:16px;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.0));border:1px solid var(--border);border-radius:20px;padding:18px 16px}
+  .title{font-size:clamp(20px,2.6vw,28px);font-weight:800;letter-spacing:.2px}
+  .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+  .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(34,211,238,.12);color:#a5f3fc;border:1px solid rgba(34,211,238,.25);border-radius:999px;font-size:12px;font-weight:700;padding:6px 10px}
+
+  .searchCard{margin-top:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:860px){.grid3{grid-template-columns:1fr}}
+  .label{font-size:12px;color:var(--muted);margin:2px 2px 6px}
+  .input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0a1120;color:var(--text);outline:none}
+  .input:focus{border-color:#334155;box-shadow:0 0 0 4px rgba(96,165,250,.12)}
+  .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(180deg,#111827,#0b1223);font-weight:800;cursor:pointer}
+  .btnPrimary{background:linear-gradient(135deg,rgba(34,211,238,.25),rgba(96,165,250,.2));border-color:rgba(34,211,238,.35)}
+  .btnGhost{background:transparent}
+  .count{margin-left:auto;color:var(--muted);font-size:13px;align-self:center}
+  .note{font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* Cards (Form-like) */
+  .results{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0}
+  .card{background:linear-gradient(180deg,#0c1426,#0a1120);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .cardHead{display:flex;gap:14px;align-items:center;padding:12px 12px;border-bottom:1px solid #0f2136}
+  .avatar{width:64px;height:64px;border-radius:14px;object-fit:cover;background:#0a1120;border:1px solid var(--border)}
+  .headText{display:flex;flex-direction:column;gap:4px}
+  .name{font-weight:800;font-size:16px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:12px}
+  .openLink{margin-left:auto}
+  .openLink a{display:inline-block;border:1px solid var(--border);padding:8px 12px;border-radius:10px;font-weight:700}
+
+  .cardBody{padding:12px}
+  .formGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (max-width:760px){.formGrid{grid-template-columns:1fr}}
+  .f{display:flex;flex-direction:column}
+  .f label{font-size:12px;color:var(--muted);margin:0 2px 6px}
+  .ro{padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:#071024;font-size:14px;min-height:42px;display:flex;align-items:center}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed #334155;border-radius:14px}
+  .loader{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#a5f3fc;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .footer{margin:10px 0 24px;color:var(--muted);font-size:12px;text-align:center}
+  .pill{display:inline-block;padding:4px 8px;border:1px dashed #334155;border-radius:999px;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="hero">
+    <div>
+      <div class="badge">किसान डेटा सर्च • Form-UI</div>
+      <div class="title">कानोड़ ग्राम सेवा सहकारी समिति — सदस्य खोज</div>
+      <div class="subtitle">आधार नंबर, 17 अंकों का अकाउंट (TEXT), या नाम से खोजें। फोटो Google Drive लिंक से ऑटो दिखेगी।</div>
+    </div>
+  </div>
+
+  <div class="searchCard">
+    <div class="grid3">
+      <div>
+        <div class="label">आधार नंबर</div>
+        <input id="aadhaar" class="input mono" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="उदा: 542783962691"/>
+      </div>
+      <div>
+        <div class="label">अकाउंट नंबर (17 अंक)</div>
+        <input id="account" class="input mono" inputmode="numeric" maxlength="20" placeholder="उदा: 14004116920004840"/>
+      </div>
+      <div>
+        <div class="label">नाम (आंशिक/पूरा)</div>
+        <input id="name" class="input" placeholder="उदा: Bannu Devi / राम"/>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="btnSearch" class="btn btnPrimary">खोजें</button>
+      <button id="btnClear" class="btn btnGhost">रीसेट</button>
+      <div class="count" id="count">—</div>
+    </div>
+    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च लागू होगा।</div>
+  </div>
+
+  <div id="results" class="results">
+    <div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>
+  </div>
+
+  <div class="footer">
+    Supabase में <span class="pill">Aadhar Number</span> व <span class="pill">Account Number</span> का टाइप <b>TEXT</b> रखें।
+  </div>
+</div>
+
+<script>
+/* ===== CONFIG: अपनी वैल्यू डालें ===== */
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";   // ← अपना Supabase URL
+const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";                 // ← अपना ANON KEY
+const TABLE_NAME = "All Farmer data";                    // ← टेबल नाम
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ===== Utils ===== */
+function txt(v){ return (v ?? "").toString().trim(); }
+function driveLinkToImg(url){
+  if(!url) return "";
+  try{
+    const m = url.match(/\/d\/([a-zA-Z0-9_-]{10,})\//);
+    const id = m ? m[1] : (new URL(url).searchParams.get("id") || "");
+    return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
+  }catch(e){ return url; }
+}
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+function field(label, value, mono=false){
+  const w = el("div","f");
+  w.appendChild(el("label","",label));
+  const v = el("div","ro"+(mono?" mono":""));
+  v.textContent = value ?? "—";
+  w.appendChild(v);
+  return w;
+}
+
+/* ===== UI refs ===== */
+const $aadhaar = document.getElementById("aadhaar");
+const $account = document.getElementById("account");
+const $name    = document.getElementById("name");
+const $btnSearch = document.getElementById("btnSearch");
+const $btnClear  = document.getElementById("btnClear");
+const $results = document.getElementById("results");
+const $count = document.getElementById("count");
+
+function setLoading(is=true){
+  $count.innerHTML = is ? `<span class="loader"></span> लोड हो रहा है…` : "—";
+}
+
+/* ===== Search ===== */
+async function runSearch(){
+  const a  = txt($aadhaar.value);
+  const ac = txt($account.value);
+  const nm = txt($name.value);
+
+  if(!a && !ac && !nm){
+    $results.innerHTML = `<div class="empty">कृपया खोज के लिए कोई एक फ़ील्ड भरें।</div>`;
+    $count.textContent = "—";
+    return;
+  }
+
+  setLoading(true);
+
+  const parts = [];
+  if (a)  parts.push(`Aadhar Number.eq.${a}`);
+  if (ac) parts.push(`Account Number.eq.${ac}`);
+  if (nm) parts.push(`Name.ilike.*${nm.replaceAll('.', '\\.')}*`);
+
+  let query = sb.from(TABLE_NAME)
+    .select(`Aadhar Number,Name,Father Name,BL NUMBER,Gender,Share Capital,Address,Age,Marrige Satuts,Mobile Number,Category,Account Number,Application Year,Application Expire,Nominee Name,Relation,Nominee Aadhar Number,Whatsapp Number,photo link`)
+    .or(parts.join(","))
+    .limit(300);
+
+  const { data, error } = await query;
+
+  if(error){
+    console.error(error);
+    $results.innerHTML = `<div class="empty">त्रुटि: ${error.message}</div>`;
+    $count.textContent = "त्रुटि";
+    return;
+  }
+
+  renderCards(data || []);
+}
+
+function renderCards(rows){
+  if(!rows.length){
+    $results.innerHTML = `<div class="empty">कोई रिकॉर्ड नहीं मिला।</div>`;
+    $count.textContent = "0 रिकॉर्ड";
+    return;
+  }
+  $results.innerHTML = "";
+  for(const r of rows){
+    const card = el("div","card");
+
+    // HEAD
+    const head = el("div","cardHead");
+    const img = el("img","avatar");
+    const imgUrl = driveLinkToImg(r["photo link"]);
+    if(imgUrl){ img.src = imgUrl; img.alt = txt(r["Name"]); }
+    head.appendChild(img);
+
+    const ht = el("div","headText");
+    ht.appendChild(el("div","name", txt(r["Name"]) || "—"));
+    const chips = el("div","chips");
+    chips.appendChild(el("div","chip mono","Aadhar: "+(txt(r["Aadhar Number"])||"—")));
+    chips.appendChild(el("div","chip mono","A/C: "+(txt(r["Account Number"])||"—")));
+    if (txt(r["BL NUMBER"])) chips.appendChild(el("div","chip mono","BL: "+txt(r["BL NUMBER"])));
+    head.appendChild(ht);
+    head.appendChild(chips);
+
+    const linkWrap = el("div","openLink");
+    if (txt(r["photo link"])){
+      const a = el("a","", "फोटो लिंक");
+      a.href = txt(r["photo link"]); a.target="_blank"; a.rel="noopener";
+      linkWrap.appendChild(a);
+    }
+    head.appendChild(linkWrap);
+
+    card.appendChild(head);
+
+    // BODY (Form-like fields)
+    const body = el("div","cardBody");
+    const g = el("div","formGrid");
+
+    g.appendChild(field("Father Name", r["Father Name"]));
+    g.appendChild(field("Gender", r["Gender"]));
+    g.appendChild(field("Share Capital", r["Share Capital"], true));
+    g.appendChild(field("Address", r["Address"]));
+    g.appendChild(field("Age", r["Age"], true));
+    g.appendChild(field("Marrige Status", r["Marrige Satuts"]));
+    g.appendChild(field("Mobile Number", r["Mobile Number"], true));
+    g.appendChild(field("Category", r["Category"]));
+    g.appendChild(field("Application Year", r["Application Year"]));
+    g.appendChild(field("Application Expire", r["Application Expire"]));
+    g.appendChild(field("Nominee Name", r["Nominee Name"]));
+    g.appendChild(field("Relation", r["Relation"]));
+    g.appendChild(field("Nominee Aadhar Number", r["Nominee Aadhar Number"], true));
+    g.appendChild(field("Whatsapp Number", r["Whatsapp Number"], true));
+
+    // Keep Aadhaar/Account in body too (read-only look)
+    g.appendChild(field("Aadhar Number", r["Aadhar Number"], true));
+    g.appendChild(field("Account Number", r["Account Number"], true));
+
+    body.appendChild(g);
+    card.appendChild(body);
+
+    $results.appendChild(card);
+  }
+  $count.textContent = `${rows.length} रिकॉर्ड`;
+}
+
+/* ===== Events ===== */
+$btnSearch.addEventListener("click", runSearch);
+$btnClear.addEventListener("click", ()=>{
+  $aadhaar.value=""; $account.value=""; $name.value="";
+  $count.textContent="—";
+  $results.innerHTML = `<div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>`;
+});
+[$aadhaar,$account,$name].forEach(elm=>elm.addEventListener("keydown",(e)=>{ if(e.key==="Enter") runSearch(); }));
+</script>
+</body>
+</html>
