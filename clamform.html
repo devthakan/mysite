@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>दावा फ़ॉर्म | आधार से खोज</title>
+<title>क्लेम फॉर्म | आधार से खोज</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   body{font-family:"Inter","Noto Sans Devanagari",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;margin:0;color:#111}
@@ -11,8 +11,8 @@
   .card{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:20px}
   h1{font-size:22px;margin:0 0 16px}
   label{display:block;margin:12px 0 6px;font-weight:600}
-  input,select,button{width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:15px}
-  input:focus,select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.1)}
+  input,button{width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:15px}
+  input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.1)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .muted{color:#6b7280;font-size:13px}
   .btn{background:#4f46e5;color:#fff;border:0;cursor:pointer;font-weight:600}
@@ -20,16 +20,16 @@
   .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#4f46e5;font-weight:600;font-size:12px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .divider{height:1px;background:#eee;margin:18px 0}
-  .out{background:#0ea5e9;color:#fff}
+  .right{text-align:right}
   .warn{color:#b91c1c}
   .success{color:#065f46}
-  .right{text-align:right}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
     <h1>क्लेम फॉर्म (Aadhaar से खोज)</h1>
+
     <label>आधार नंबर (12 अंकों का)</label>
     <div class="row">
       <input id="aadhar" maxlength="12" placeholder="उदा. 123412341234" />
@@ -61,7 +61,7 @@
 
       <div class="divider"></div>
       <div class="right">
-        <button class="btn out" id="btnDownload">फॉर्म डाउनलोड (PDF)</button>
+        <button class="btn" id="btnDownload">फॉर्म डाउनलोड (PDF)</button>
       </div>
       <div id="msg2" class="muted" style="margin-top:10px;"></div>
     </div>
@@ -69,7 +69,7 @@
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx4jQ2BksBPqc8ZZMGCyaPY8NnCDifmTy4uWFAuyjMHrc0eFR8XNX08FuHF6WFy5ygdaw/exec"; // <-- यहाँ अपना Apps Script Web App URL डालें
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6-C7-4s5lroKgV4-T_tcxpq0hqYksK7DaI1lq220bjPgKtBjrP-3wv460EUT4vKo8uw/exec"; // <-- अपना Apps Script Web App URL
 
 const $ = (id)=>document.getElementById(id);
 $('btnSearch').addEventListener('click', onSearch);
@@ -88,10 +88,14 @@ async function onSearch(){
   }
   setLoading(true);
   try{
+    const form = new URLSearchParams();
+    form.append('action','search');
+    form.append('aadhar', aadhar);
+
     const res = await fetch(WEB_APP_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'search', aadhar })
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: form.toString()
     });
     const json = await res.json();
     if(!json.ok){
@@ -118,8 +122,9 @@ function fillMaster(m){
   $('m_ac').value = m.account_number || '';
   $('m_bl').value = m.bl_number || '';
   $('m_loan').value = m.date_of_loan || '';
-  $('m_amount').value = m.amount!=null? m.amount : '';
+  $('m_amount').value = (m.amount!=null? m.amount : '');
   $('m_dob').value = m.date_of_birth || '';
+
   $('f_nom').value = '';
   $('f_rel').value = '';
   $('f_dod').value = '';
@@ -127,8 +132,8 @@ function fillMaster(m){
 }
 
 function updateAgePreview(){
-  const dobStr = $('m_dob').value;
-  const dodStr = $('f_dod').value;
+  const dobStr = $('m_dob').value; // expect yyyy-mm-dd from DB
+  const dodStr = $('f_dod').value; // yyyy-mm-dd from <input type="date">
   if(!dobStr || !dodStr){ $('f_age').value=''; return; }
   const dob = new Date(dobStr);
   const dod = new Date(dodStr);
@@ -147,7 +152,7 @@ async function onDownload(){
   }
   const nominee_name = $('f_nom').value.trim();
   const nominee_relation = $('f_rel').value.trim();
-  const date_of_death = $('f_dod').value;
+  const date_of_death = $('f_dod').value; // yyyy-mm-dd
 
   if(!nominee_name || !nominee_relation || !date_of_death){
     $('msg2').innerHTML = '<span class="warn">नॉमिनी नाम, रिश्ता और मृत्यु-तिथि अनिवार्य हैं।</span>';
@@ -157,14 +162,17 @@ async function onDownload(){
   $('msg2').textContent = 'PDF बन रहा है...';
   setLoading(true);
   try{
-    const payload = {
-      aadhar_number: currentMaster.aadhar_number,
-      nominee_name, nominee_relation, date_of_death
-    };
+    const form2 = new URLSearchParams();
+    form2.append('action','submit');
+    form2.append('aadhar_number', currentMaster.aadhar_number);
+    form2.append('nominee_name', nominee_name);
+    form2.append('nominee_relation', nominee_relation);
+    form2.append('date_of_death', date_of_death);
+
     const res = await fetch(WEB_APP_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'submit', payload })
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: form2.toString()
     });
     const json = await res.json();
     if(!json.ok){
