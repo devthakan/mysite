@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>दावा फ़ॉर्म | आधार से खोज</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:"Inter","Noto Sans Devanagari",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;margin:0;color:#111}
+  .wrap{max-width:860px;margin:40px auto;padding:16px}
+  .card{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:20px}
+  h1{font-size:22px;margin:0 0 16px}
+  label{display:block;margin:12px 0 6px;font-weight:600}
+  input,select,button{width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;font-size:15px}
+  input:focus,select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.1)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .muted{color:#6b7280;font-size:13px}
+  .btn{background:#4f46e5;color:#fff;border:0;cursor:pointer;font-weight:600}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#4f46e5;font-weight:600;font-size:12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .divider{height:1px;background:#eee;margin:18px 0}
+  .out{background:#0ea5e9;color:#fff}
+  .warn{color:#b91c1c}
+  .success{color:#065f46}
+  .right{text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>क्लेम फॉर्म (Aadhaar से खोज)</h1>
+    <label>आधार नंबर (12 अंकों का)</label>
+    <div class="row">
+      <input id="aadhar" maxlength="12" placeholder="उदा. 123412341234" />
+      <button class="btn" id="btnSearch">खोजें</button>
+    </div>
+    <div id="msg" class="muted" style="margin-top:8px;"></div>
+
+    <div id="memberBox" style="display:none;margin-top:14px;">
+      <div class="divider"></div>
+      <div class="pill">मास्टर डेटा</div>
+      <div class="grid" style="margin-top:10px;">
+        <div><label>नाम</label><input id="m_name" disabled></div>
+        <div><label>DMR नंबर</label><input id="m_dmr" disabled></div>
+        <div><label>खाता नंबर</label><input id="m_ac" disabled></div>
+        <div><label>BL नंबर</label><input id="m_bl" disabled></div>
+        <div><label>ऋण तिथि</label><input id="m_loan" disabled></div>
+        <div><label>राशि</label><input id="m_amount" disabled></div>
+        <div><label>जन्म तिथि (DOB)</label><input id="m_dob" disabled></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="pill">किसान द्वारा भरना अनिवार्य</div>
+      <div class="grid" style="margin-top:10px;">
+        <div><label>नॉमिनी का नाम *</label><input id="f_nom" placeholder="नॉमिनी का नाम"></div>
+        <div><label>नॉमिनी से रिश्ता *</label><input id="f_rel" placeholder="उदा. पुत्र/पत्नी"></div>
+        <div><label>मृत्यु की तिथि (DOD) *</label><input id="f_dod" type="date"></div>
+        <div><label>उम्र (वर्ष)</label><input id="f_age" disabled></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="right">
+        <button class="btn out" id="btnDownload">फॉर्म डाउनलोड (PDF)</button>
+      </div>
+      <div id="msg2" class="muted" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx4jQ2BksBPqc8ZZMGCyaPY8NnCDifmTy4uWFAuyjMHrc0eFR8XNX08FuHF6WFy5ygdaw/exec"; // <-- यहाँ अपना Apps Script Web App URL डालें
+
+const $ = (id)=>document.getElementById(id);
+$('btnSearch').addEventListener('click', onSearch);
+$('f_dod').addEventListener('change', updateAgePreview);
+$('btnDownload').addEventListener('click', onDownload);
+
+let currentMaster = null;
+
+async function onSearch(){
+  const aadhar = $('aadhar').value.trim();
+  $('msg').textContent = '';
+  if(!/^\d{12}$/.test(aadhar)){
+    $('msg').innerHTML = '<span class="warn">कृपया 12 अंकों का वैध आधार नंबर दर्ज करें।</span>';
+    $('memberBox').style.display = 'none';
+    return;
+  }
+  setLoading(true);
+  try{
+    const res = await fetch(WEB_APP_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'search', aadhar })
+    });
+    const json = await res.json();
+    if(!json.ok){
+      $('msg').innerHTML = '<span class="warn">'+(json.error||'रिकॉर्ड नहीं मिला')+'</span>';
+      $('memberBox').style.display = 'none';
+      setLoading(false);
+      return;
+    }
+    currentMaster = json.data || null;
+    fillMaster(currentMaster);
+    $('msg').innerHTML = '<span class="success">रिकॉर्ड मिला। आवश्यक फ़ील्ड भरें।</span>';
+    $('memberBox').style.display = 'block';
+  }catch(err){
+    $('msg').innerHTML = '<span class="warn">सर्वर त्रुटि: '+err+'</span>';
+    $('memberBox').style.display = 'none';
+  }finally{
+    setLoading(false);
+  }
+}
+
+function fillMaster(m){
+  $('m_name').value = m.name || '';
+  $('m_dmr').value = m.dmr_number || '';
+  $('m_ac').value = m.account_number || '';
+  $('m_bl').value = m.bl_number || '';
+  $('m_loan').value = m.date_of_loan || '';
+  $('m_amount').value = m.amount!=null? m.amount : '';
+  $('m_dob').value = m.date_of_birth || '';
+  $('f_nom').value = '';
+  $('f_rel').value = '';
+  $('f_dod').value = '';
+  $('f_age').value = '';
+}
+
+function updateAgePreview(){
+  const dobStr = $('m_dob').value;
+  const dodStr = $('f_dod').value;
+  if(!dobStr || !dodStr){ $('f_age').value=''; return; }
+  const dob = new Date(dobStr);
+  const dod = new Date(dodStr);
+  if(isNaN(dob.getTime()) || isNaN(dod.getTime())){ $('f_age').value=''; return; }
+  let age = dod.getFullYear()-dob.getFullYear();
+  const m = dod.getMonth()-dob.getMonth();
+  if(m<0 || (m===0 && dod.getDate()<dob.getDate())) age--;
+  if(age<0) age = 0;
+  $('f_age').value = age;
+}
+
+async function onDownload(){
+  if(!currentMaster){
+    $('msg2').innerHTML = '<span class="warn">पहले आधार से खोज करें।</span>';
+    return;
+  }
+  const nominee_name = $('f_nom').value.trim();
+  const nominee_relation = $('f_rel').value.trim();
+  const date_of_death = $('f_dod').value;
+
+  if(!nominee_name || !nominee_relation || !date_of_death){
+    $('msg2').innerHTML = '<span class="warn">नॉमिनी नाम, रिश्ता और मृत्यु-तिथि अनिवार्य हैं।</span>';
+    return;
+  }
+
+  $('msg2').textContent = 'PDF बन रहा है...';
+  setLoading(true);
+  try{
+    const payload = {
+      aadhar_number: currentMaster.aadhar_number,
+      nominee_name, nominee_relation, date_of_death
+    };
+    const res = await fetch(WEB_APP_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'submit', payload })
+    });
+    const json = await res.json();
+    if(!json.ok){
+      $('msg2').innerHTML = '<span class="warn">'+(json.error||'त्रुटि')+'</span>';
+      setLoading(false);
+      return;
+    }
+    const filename = json.filename || ('claim.pdf');
+    const base64 = json.pdfBase64;
+    downloadBase64(base64, filename, 'application/pdf');
+    $('msg2').innerHTML = '<span class="success">PDF डाउनलोड हो गया और डेटा सेव हो गया।</span>';
+  }catch(err){
+    $('msg2').innerHTML = '<span class="warn">सर्वर त्रुटि: '+err+'</span>';
+  }finally{
+    setLoading(false);
+  }
+}
+
+function downloadBase64(base64, filename, mime){
+  const link = document.createElement('a');
+  link.href = 'data:'+mime+';base64,'+base64;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function setLoading(b){
+  $('btnSearch').disabled = b;
+  $('btnDownload').disabled = b;
+}
+</script>
+</body>
+</html>
