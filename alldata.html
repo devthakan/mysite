@@ -9,12 +9,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root{ --bg:#0b1223; --panel:#0f172a; --panel2:#111827; --muted:#9aa9c2; --text:#e6eaf1; --accent:#22d3ee; --accent2:#60a5fa; --border:#1f2937; --chip:#2a3753; }
+  :root{ --bg:#0b1223; --panel:#0f172a; --panel2:#111827; --muted:#9aa9c2; --text:#e6eaf1; --border:#1f2937; --chip:#2a3753; }
   *{box-sizing:border-box} html,body{margin:0;background:radial-gradient(1200px 400px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 300px at 90% -20%,rgba(96,165,250,.07),transparent),var(--bg);font-family:"Inter","Noto Sans Devanagari",system-ui;color:var(--text)}
   a{color:inherit;text-decoration:none}
   .container{max-width:1100px;margin:28px auto;padding:0 16px}
   .hero{display:flex;gap:16px;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.0));border:1px solid var(--border);border-radius:20px;padding:18px 16px}
-  .title{font-size:clamp(20px,2.6vw,28px);font-weight:800;letter-spacing:.2px}
+  .title{font-size:clamp(20px,2.6vw,28px);font-weight:800}
   .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
   .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(34,211,238,.12);color:#a5f3fc;border:1px solid rgba(34,211,238,.25);border-radius:999px;font-size:12px;font-weight:700;padding:6px 10px}
   .searchCard{margin-top:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:14px}
@@ -83,7 +83,7 @@
       <button id="btnClear" class="btn btnGhost">रीसेट</button>
       <div class="count" id="count">—</div>
     </div>
-    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च लागू होगा (क्लाइंट-साइड मर्ज).</div>
+    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च (server-side) लागू होगा।</div>
   </div>
 
   <div id="results" class="results">
@@ -91,15 +91,15 @@
   </div>
 
   <div class="footer">
-    Supabase में <span class="pill">Aadhar Number</span> व <span class="pill">Account Number</span> का टाइप <b>TEXT</b> रखें।
+    VIEW: <span class="pill">farmer_all</span> (snake_case कॉलम). Base टेबल पर RLS + पॉलिसी सक्षम होनी चाहिए।
   </div>
 </div>
 
 <script>
-/* ===== CONFIG: अपनी वैल्यू डालें ===== */
+/* ===== CONFIG ===== */
 const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // ← अपना Supabase URL
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                 // ← अपना ANON KEY
-const TABLE_NAME = 'All Farmer data';                      // ← बिना quotes
+const TABLE_NAME = 'All Farmer data';                           // ← VIEW
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -122,6 +122,8 @@ function field(label, value, mono=false){
   w.appendChild(v);
   return w;
 }
+
+/* ===== Rendering ===== */
 function renderCards(rows){
   const $results = document.getElementById("results");
   const $count = document.getElementById("count");
@@ -134,62 +136,60 @@ function renderCards(rows){
   for(const r of rows){
     const card = el("div","card");
 
-    // HEAD
     const head = el("div","cardHead");
     const img = el("img","avatar");
-    const imgUrl = driveLinkToImg(r["photo link"]);
-    if(imgUrl){ img.src = imgUrl; img.alt = txt(r["Name"]); }
+    const imgUrl = driveLinkToImg(r.photo_link);
+    if(imgUrl){ img.src = imgUrl; img.alt = r.name || ""; }
     head.appendChild(img);
 
     const ht = el("div","headText");
-    ht.appendChild(el("div","name", txt(r["Name"]) || "—"));
+    ht.appendChild(el("div","name", r.name || "—"));
     const chips = el("div","chips");
-    chips.appendChild(el("div","chip mono","Aadhar: "+(txt(r["Aadhar Number"])||"—")));
-    chips.appendChild(el("div","chip mono","A/C: "+(txt(r["Account Number"])||"—")));
-    if (txt(r["BL NUMBER"])) chips.appendChild(el("div","chip mono","BL: "+txt(r["BL NUMBER"])));
+    chips.appendChild(el("div","chip mono","Aadhar: "+(r.aadhaar_number||"—")));
+    chips.appendChild(el("div","chip mono","A/C: "+(r.account_number||"—")));
+    if (r.bl_number) chips.appendChild(el("div","chip mono","BL: "+r.bl_number));
     head.appendChild(ht);
     head.appendChild(chips);
 
     const linkWrap = el("div","openLink");
-    if (txt(r["photo link"])){
+    if (r.photo_link){
       const a = el("a","", "फोटो लिंक");
-      a.href = txt(r["photo link"]); a.target="_blank"; a.rel="noopener";
+      a.href = r.photo_link; a.target="_blank"; a.rel="noopener";
       linkWrap.appendChild(a);
     }
     head.appendChild(linkWrap);
-
     card.appendChild(head);
 
-    // BODY (Form-like fields)
     const body = el("div","cardBody");
     const g = el("div","formGrid");
 
-    g.appendChild(field("Father Name", r["Father Name"]));
-    g.appendChild(field("Gender", r["Gender"]));
-    g.appendChild(field("Share Capital", r["Share Capital"], true));
-    g.appendChild(field("Address", r["Address"]));
-    g.appendChild(field("Age", r["Age"], true));
-    g.appendChild(field("Marrige Status", r["Marrige Satuts"]));
-    g.appendChild(field("Mobile Number", r["Mobile Number"], true));
-    g.appendChild(field("Category", r["Category"]));
-    g.appendChild(field("Application Year", r["Application Year"]));
-    g.appendChild(field("Application Expire", r["Application Expire"]));
-    g.appendChild(field("Nominee Name", r["Nominee Name"]));
-    g.appendChild(field("Relation", r["Relation"]));
-    g.appendChild(field("Nominee Aadhar Number", r["Nominee Aadhar Number"], true));
-    g.appendChild(field("Whatsapp Number", r["Whatsapp Number"], true));
-    g.appendChild(field("Aadhar Number", r["Aadhar Number"], true));
-    g.appendChild(field("Account Number", r["Account Number"], true));
+    const F = (label, key, mono=false)=> g.appendChild(field(label, r[key], mono));
+
+    F("Father Name","father_name");
+    F("Gender","gender");
+    F("Share Capital","share_capital",true);
+    F("Address","address");
+    F("Age","age",true);
+    F("Marrige Status","marriage_status");
+    F("Mobile Number","mobile_number",true);
+    F("Category","category");
+    F("Application Year","application_year");
+    F("Application Expire","application_expire");
+    F("Nominee Name","nominee_name");
+    F("Relation","relation");
+    F("Nominee Aadhar Number","nominee_aadhaar_number",true);
+    F("Whatsapp Number","whatsapp_number",true);
+    F("Aadhar Number","aadhaar_number",true);
+    F("Account Number","account_number",true);
 
     body.appendChild(g);
     card.appendChild(body);
-
-    document.getElementById("results").appendChild(card);
+    $results.appendChild(card);
   }
-  document.getElementById("count").textContent = `${rows.length} रिकॉर्ड`;
+  $count.textContent = `${rows.length} रिकॉर्ड`;
 }
 
-/* ===== Search (client-side OR) ===== */
+/* ===== Search (server-side OR; clean names) ===== */
 async function runSearch(){
   const a  = txt(document.getElementById("aadhaar").value);
   const ac = txt(document.getElementById("account").value);
@@ -206,51 +206,26 @@ async function runSearch(){
 
   $count.innerHTML = `<span class="loader"></span> लोड हो रहा है…`;
 
-  const COLS = `
-    Aadhar Number,Name,Father Name,BL NUMBER,Gender,Share Capital,Address,Age,
-    Marrige Satuts,Mobile Number,Category,Account Number,Application Year,
-    Application Expire,Nominee Name,Relation,Nominee Aadhar Number,
-    Whatsapp Number,photo link
-  `;
+  // OR logic tree (अब snake_case keys — कोई encode/quotes नहीं)
+  const parts = [];
+  if (a)  parts.push(`aadhaar_number.eq.${a}`);
+  if (ac) parts.push(`account_number.eq.${ac}`);
+  if (nm) parts.push(`name.ilike.*${nm.replaceAll('.', '\\.')}*`);
 
-  const tasks = [];
-  if (a)  tasks.push(sb.from(TABLE_NAME).select(COLS).eq('Aadhar Number', a).limit(300));
-  if (ac) tasks.push(sb.from(TABLE_NAME).select(COLS).eq('Account Number', ac).limit(300));
-  if (nm) tasks.push(sb.from(TABLE_NAME).select(COLS).ilike('Name', `%${nm.replaceAll('.', '\\.')}%`).limit(300));
+  const { data, error } = await sb
+    .from(TABLE_NAME)
+    .select(`aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number,photo_link`)
+    .or(parts.join(','))
+    .limit(300);
 
-  // अगर सिर्फ एक ही फ़ील्ड भरी है तो एक ही क्वेरी चलेगी
-  try{
-    const results = await Promise.all(tasks.length ? tasks : [Promise.resolve({ data: [], error: null })]);
-
-    for (const r of results){
-      if (r.error){
-        console.error(r.error);
-        $results.innerHTML = `<div class="empty">त्रुटि: ${r.error.message}</div>`;
-        $count.textContent = "त्रुटि";
-        return;
-      }
-    }
-
-    // merge + dedupe
-    const rows = [];
-    const seen = new Set();
-    for (const r of results){
-      for (const x of (r.data || [])){
-        const key = [
-          (x["Aadhar Number"] ?? ""), 
-          (x["Account Number"] ?? ""), 
-          (x["Name"] ?? "")
-        ].join("||");
-        if (!seen.has(key)){ seen.add(key); rows.push(x); }
-      }
-    }
-
-    renderCards(rows);
-  }catch(err){
-    console.error(err);
-    $results.innerHTML = `<div class="empty">त्रुटि: ${err.message || err}</div>`;
+  if (error){
+    console.error(error);
+    $results.innerHTML = `<div class="empty">त्रुटि: ${error.message}</div>`;
     $count.textContent = "त्रुटि";
+    return;
   }
+
+  renderCards(data || []);
 }
 
 /* ===== Events ===== */
