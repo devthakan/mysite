@@ -83,7 +83,7 @@
       <button id="btnClear" class="btn btnGhost">रीसेट</button>
       <div class="count" id="count">—</div>
     </div>
-    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च लागू होगा।</div>
+    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च लागू होगा (क्लाइंट-साइड मर्ज).</div>
   </div>
 
   <div id="results" class="results">
@@ -99,7 +99,7 @@
 /* ===== CONFIG: अपनी वैल्यू डालें ===== */
 const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // ← अपना Supabase URL
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                 // ← अपना ANON KEY
-const TABLE_NAME = 'All Farmer data';                    // ← टेबल नाम (डबल-क्वोट सहित)
+const TABLE_NAME = 'All Farmer data';                      // ← बिना quotes
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -118,82 +118,13 @@ function field(label, value, mono=false){
   const w = el("div","f");
   w.appendChild(el("label","",label));
   const v = el("div","ro"+(mono?" mono":""));
-  v.textContent = value ?? "—";
+  v.textContent = (value ?? "—").toString();
   w.appendChild(v);
   return w;
 }
-
-/* ===== UI refs ===== */
-const $aadhaar = document.getElementById("aadhaar");
-const $account = document.getElementById("account");
-const $name    = document.getElementById("name");
-const $btnSearch = document.getElementById("btnSearch");
-const $btnClear  = document.getElementById("btnClear");
-const $results = document.getElementById("results");
-const $count = document.getElementById("count");
-
-function setLoading(is=true){ $count.innerHTML = is ? `<span class="loader"></span> लोड हो रहा है…` : "—"; }
-
-/* ===== Search ===== */
-async function runSearch(){
-  const a  = txt($aadhaar.value);
-  const ac = txt($account.value);
-  const nm = txt($name.value);
-
-  if(!a && !ac && !nm){
-    $results.innerHTML = `<div class="empty">कृपया खोज के लिए कोई एक फ़ील्ड भरें।</div>`;
-    $count.textContent = "—";
-    return;
-  }
-
-  setLoading(true);
-
-  // ⚠️ स्पेस वाले कॉलम नामों को URL-encode करके .or() में पास करें
-  const enc = (s) => encodeURIComponent(s); // "Aadhar Number" -> "Aadhar%20Number"
-
-  const parts = [];
-  if (a)  parts.push(`${enc("Aadhar Number")}.eq.${a}`);
-  if (ac) parts.push(`${enc("Account Number")}.eq.${ac}`);
-  if (nm) parts.push(`${enc("Name")}.ilike.*${nm.replaceAll('.', '\\.')}*`);
-
-  let query = sb.from(TABLE_NAME)
-    .select(`
-      Aadhar Number,
-      Name,
-      Father Name,
-      BL NUMBER,
-      Gender,
-      Share Capital,
-      Address,
-      Age,
-      Marrige Satuts,
-      Mobile Number,
-      Category,
-      Account Number,
-      Application Year,
-      Application Expire,
-      Nominee Name,
-      Relation,
-      Nominee Aadhar Number,
-      Whatsapp Number,
-      photo link
-    `)
-    .or(parts.join(','))    // ← अब keys encoded हैं
-    .limit(300);
-
-  const { data, error } = await query;
-
-  if(error){
-    console.error(error);
-    $results.innerHTML = `<div class="empty">त्रुटि: ${error.message}</div>`;
-    $count.textContent = "त्रुटि";
-    return;
-  }
-
-  renderCards(data || []);
-}
-
 function renderCards(rows){
+  const $results = document.getElementById("results");
+  const $count = document.getElementById("count");
   if(!rows.length){
     $results.innerHTML = `<div class="empty">कोई रिकॉर्ड नहीं मिला।</div>`;
     $count.textContent = "0 रिकॉर्ड";
@@ -253,19 +184,87 @@ function renderCards(rows){
     body.appendChild(g);
     card.appendChild(body);
 
-    $results.appendChild(card);
+    document.getElementById("results").appendChild(card);
   }
-  $count.textContent = `${rows.length} रिकॉर्ड`;
+  document.getElementById("count").textContent = `${rows.length} रिकॉर्ड`;
+}
+
+/* ===== Search (client-side OR) ===== */
+async function runSearch(){
+  const a  = txt(document.getElementById("aadhaar").value);
+  const ac = txt(document.getElementById("account").value);
+  const nm = txt(document.getElementById("name").value);
+
+  const $results = document.getElementById("results");
+  const $count = document.getElementById("count");
+
+  if(!a && !ac && !nm){
+    $results.innerHTML = `<div class="empty">कृपया खोज के लिए कोई एक फ़ील्ड भरें।</div>`;
+    $count.textContent = "—";
+    return;
+  }
+
+  $count.innerHTML = `<span class="loader"></span> लोड हो रहा है…`;
+
+  const COLS = `
+    Aadhar Number,Name,Father Name,BL NUMBER,Gender,Share Capital,Address,Age,
+    Marrige Satuts,Mobile Number,Category,Account Number,Application Year,
+    Application Expire,Nominee Name,Relation,Nominee Aadhar Number,
+    Whatsapp Number,photo link
+  `;
+
+  const tasks = [];
+  if (a)  tasks.push(sb.from(TABLE_NAME).select(COLS).eq('Aadhar Number', a).limit(300));
+  if (ac) tasks.push(sb.from(TABLE_NAME).select(COLS).eq('Account Number', ac).limit(300));
+  if (nm) tasks.push(sb.from(TABLE_NAME).select(COLS).ilike('Name', `%${nm.replaceAll('.', '\\.')}%`).limit(300));
+
+  // अगर सिर्फ एक ही फ़ील्ड भरी है तो एक ही क्वेरी चलेगी
+  try{
+    const results = await Promise.all(tasks.length ? tasks : [Promise.resolve({ data: [], error: null })]);
+
+    for (const r of results){
+      if (r.error){
+        console.error(r.error);
+        $results.innerHTML = `<div class="empty">त्रुटि: ${r.error.message}</div>`;
+        $count.textContent = "त्रुटि";
+        return;
+      }
+    }
+
+    // merge + dedupe
+    const rows = [];
+    const seen = new Set();
+    for (const r of results){
+      for (const x of (r.data || [])){
+        const key = [
+          (x["Aadhar Number"] ?? ""), 
+          (x["Account Number"] ?? ""), 
+          (x["Name"] ?? "")
+        ].join("||");
+        if (!seen.has(key)){ seen.add(key); rows.push(x); }
+      }
+    }
+
+    renderCards(rows);
+  }catch(err){
+    console.error(err);
+    $results.innerHTML = `<div class="empty">त्रुटि: ${err.message || err}</div>`;
+    $count.textContent = "त्रुटि";
+  }
 }
 
 /* ===== Events ===== */
 document.getElementById("btnSearch").addEventListener("click", runSearch);
 document.getElementById("btnClear").addEventListener("click", ()=>{
-  $aadhaar.value=""; $account.value=""; $name.value="";
-  $count.textContent="—";
-  $results.innerHTML = `<div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>`;
+  document.getElementById("aadhaar").value="";
+  document.getElementById("account").value="";
+  document.getElementById("name").value="";
+  document.getElementById("count").textContent="—";
+  document.getElementById("results").innerHTML = `<div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>`;
 });
-[$aadhaar,$account,$name].forEach(elm=>elm.addEventListener("keydown",(e)=>{ if(e.key==="Enter") runSearch(); }));
+['aadhaar','account','name'].forEach(id=>{
+  document.getElementById(id).addEventListener("keydown",(e)=>{ if(e.key==="Enter") runSearch(); });
+});
 </script>
 </body>
 </html>
