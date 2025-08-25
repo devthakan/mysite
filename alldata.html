@@ -2,175 +2,213 @@
 <html lang="hi">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>कानोड़ GSSS — सदस्य खोज (Form UI)</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>सदस्य खोज</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#0b1223; --panel:#0f172a; --muted:#9aa9c2; --text:#e6eaf1; --border:#1f2937; --chip:#2a3753; }
-  *{box-sizing:border-box} html,body{margin:0;background:radial-gradient(1200px 400px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 300px at 90% -20%,rgba(96,165,250,.07),transparent),var(--bg);font-family:"Inter","Noto Sans Devanagari",system-ui;color:var(--text)}
+  :root{
+    --bg: #0b1020;
+    --card: #0f172a;
+    --muted:#9aa9c2;
+    --text:#e8ecf3;
+    --accent:#7dd3fc;
+    --border:#1f2a44;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(1200px 480px at 0% -10%,rgba(125,211,252,.10),transparent),radial-gradient(900px 300px at 100% -20%,rgba(99,102,241,.10),transparent),var(--bg);color:var(--text);font-family:"Inter","Noto Sans Devanagari",system-ui}
   a{color:inherit;text-decoration:none}
-  .container{max-width:1100px;margin:28px auto;padding:0 16px}
-  .hero{display:flex;gap:16px;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.0));border:1px solid var(--border);border-radius:20px;padding:18px 16px}
-  .title{font-size:clamp(20px,2.6vw,28px);font-weight:800}
-  .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
-  .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(34,211,238,.12);color:#a5f3fc;border:1px solid rgba(34,211,238,.25);border-radius:999px;font-size:12px;font-weight:700;padding:6px 10px}
-  .searchCard{margin-top:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:14px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  @media (max-width:860px){.grid3{grid-template-columns:1fr}}
-  .label{font-size:12px;color:var(--muted);margin:2px 2px 6px}
-  .input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0a1120;color:var(--text);outline:none}
-  .input:focus{border-color:#334155;box-shadow:0 0 0 4px rgba(96,165,250,.12)}
+
+  /* Shell */
+  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));
+    border:1px solid var(--border); border-radius:16px; padding:14px 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.25);
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#22d3ee)}
+  .title{font-weight:800;font-size:clamp(18px,2.5vw,24px);letter-spacing:.2px}
+
+  /* Search */
+  .search{
+    margin-top:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);
+    border-radius:16px;padding:14px;backdrop-filter: blur(4px);
+  }
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:860px){.grid{grid-template-columns:1fr}}
+  .label{font-size:12px;color:var(--muted);margin:0 0 6px 4px}
+  .input{
+    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+    background:#0a1225;color:var(--text);outline:none
+  }
+  .input:focus{border-color:#334155;box-shadow:0 0 0 4px rgba(125,211,252,.12)}
   .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(180deg,#111827,#0b1223);font-weight:800;cursor:pointer}
-  .btnPrimary{background:linear-gradient(135deg,rgba(34,211,238,.25),rgba(96,165,250,.2));border-color:rgba(34,211,238,.35)}
+  .btn{
+    padding:10px 14px;border-radius:12px;border:1px solid var(--border);
+    background:linear-gradient(180deg,#121a33,#0b1225);font-weight:800;cursor:pointer
+  }
+  .btnPrimary{background:linear-gradient(135deg,rgba(34,211,238,.25),rgba(96,165,250,.25));border-color:rgba(125,211,252,.45)}
   .btnGhost{background:transparent}
   .count{margin-left:auto;color:var(--muted);font-size:13px;align-self:center}
-  .note{font-size:12px;color:var(--muted);margin-top:6px}
-  .results{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0}
-  .card{background:linear-gradient(180deg,#0c1426,#0a1120);border:1px solid var(--border);border-radius:18px;overflow:hidden}
-  .cardHead{display:flex;gap:14px;align-items:center;padding:12px 12px;border-bottom:1px solid #0f2136}
-  .avatar{width:64px;height:64px;border-radius:14px;object-fit:cover;background:#0a1120;border:1px solid var(--border)}
-  .headText{display:flex;flex-direction:column;gap:4px}
-  .name{font-weight:800;font-size:16px}
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{background:#2a3753;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:12px}
+
+  /* Results */
+  .list{display:grid;grid-template-columns:1fr;gap:12px;margin:18px 0}
+  .card{
+    border:1px solid var(--border);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#0c142b,#0a1225)
+  }
+  .head{
+    display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #13203b
+  }
+  .avatarWrap{
+    position:relative;width:64px;height:64px;border-radius:14px;border:1px solid var(--border);
+    overflow:hidden;flex:0 0 64px;background:#0a1225;display:flex;align-items:center;justify-content:center
+  }
+  .avatar{width:100%;height:100%;object-fit:cover;display:block}
+  .initials{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:800; font-size:18px; color:#cfe8ff; background:linear-gradient(135deg,#1e293b,#0b1225);
+  }
+  .name{font-weight:800;font-size:16px;line-height:1.1}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;color:#bcd0ff}
+  .chip{background:#162447;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:12px}
   .openLink{margin-left:auto}
   .openLink a{display:inline-block;border:1px solid var(--border);padding:8px 12px;border-radius:10px;font-weight:700}
-  .cardBody{padding:12px}
-  .formGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  @media (max-width:760px){.formGrid{grid-template-columns:1fr}}
+
+  .body{padding:12px}
+  .form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (max-width:760px){.form{grid-template-columns:1fr}}
   .f{display:flex;flex-direction:column}
-  .f label{font-size:12px;color:var(--muted);margin:0 2px 6px}
-  .ro{padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:#071024;font-size:14px;min-height:42px;display:flex;align-items:center}
+  .f label{font-size:12px;color:var(--muted);margin:0 0 6px 4px}
+  .ro{padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:#0a152e;font-size:14px;min-height:42px;display:flex;align-items:center}
   .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-  .empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed #334155;border-radius:14px}
-  .loader{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#a5f3fc;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
+  .empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed #334155;border-radius:16px}
+  .loader{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#86e1ff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .footer{margin:10px 0 24px;color:var(--muted);font-size:12px;text-align:center}
-  .pill{display:inline-block;padding:4px 8px;border:1px dashed #334155;border-radius:999px;margin-left:6px}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="hero">
-    <div>
-      <div class="badge">किसान डेटा सर्च • Form-UI</div>
-      <div class="title">कानोड़ ग्राम सेवा सहकारी समिति — सदस्य खोज</div>
-      <div class="subtitle">आधार नंबर, 17 अंकों का अकाउंट (TEXT), या नाम से खोजें। फोटो Google Drive लिंक से ऑटो दिखेगी।</div>
-    </div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span><div class="title">सदस्य खोज</div></div>
   </div>
 
-  <div class="searchCard">
-    <div class="grid3">
-      <div>
-        <div class="label">आधार नंबर</div>
-        <input id="aadhaar" class="input mono" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="उदा: 542783962691"/>
+  <div class="search">
+    <div class="grid">
+      <div><div class="label">आधार नंबर</div>
+        <input id="aadhaar" class="input mono" inputmode="numeric" maxlength="12" placeholder="उदा: 542783962691"/>
       </div>
-      <div>
-        <div class="label">अकाउंट नंबर (17 अंक)</div>
+      <div><div class="label">अकाउंट नंबर</div>
         <input id="account" class="input mono" inputmode="numeric" maxlength="20" placeholder="उदा: 14004116920004840"/>
       </div>
-      <div>
-        <div class="label">नाम (आंशिक/पूरा)</div>
-        <input id="name" class="input" placeholder="उदा: Bannu Devi / राम"/>
+      <div><div class="label">नाम</div>
+        <input id="name" class="input" placeholder="उदा: Luni Devi"/>
       </div>
     </div>
     <div class="actions">
       <button id="btnSearch" class="btn btnPrimary">खोजें</button>
       <button id="btnClear" class="btn btnGhost">रीसेट</button>
-      <div class="count" id="count">—</div>
+      <div id="count" class="count">—</div>
     </div>
-    <div class="note">टिप: एक से अधिक फ़ील्ड भरने पर OR सर्च (server-side) लागू होगा।</div>
   </div>
 
-  <div id="results" class="results">
-    <div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>
-  </div>
-
-  <div class="footer">
-    टेबल: <span class="pill">public.farmers</span> (snake_case कॉलम). <span class="pill">aadhaar_number</span> और <span class="pill">account_number</span> TEXT रखें।
+  <div id="results" class="list">
+    <div class="empty">परिणाम यहाँ दिखेंगे…</div>
   </div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // ← अपना Supabase URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                 // ← अपना ANON KEY
-const TABLE_NAME = 'farmers';                               // ← नई टेबल (snake_case)
+/* ==== CONFIG (अपना प्रोजेक्ट भरें) ==== */
+const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+const TABLE = "farmers"; // snake_case schema per our SQL
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ===== Helpers ===== */
-function txt(v){ return (v ?? "").toString().trim(); }
+/* ==== Utils ==== */
+const txt = v => (v ?? "").toString().trim();
+const initialsOf = (name="")=>{
+  const parts = name.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] || "";
+  const last  = parts[parts.length-1]?.[0] || "";
+  return (first+last).toUpperCase();
+};
 function driveLinkToImg(url){
   if(!url) return "";
   try{
+    // supports: https://drive.google.com/file/d/FILE_ID/view?...
     const m = url.match(/\/d\/([a-zA-Z0-9_-]{10,})\//);
     const id = m ? m[1] : (new URL(url).searchParams.get("id") || "");
     return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
-  }catch(e){ return url; }
+  }catch{ return url; }
 }
 function el(tag, cls, html){ const e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
 function field(label, value, mono=false){
   const w = el("div","f");
   w.appendChild(el("label","",label));
   const v = el("div","ro"+(mono?" mono":""));
-  v.textContent = (value ?? "—").toString();
+  v.textContent = value ?? "—";
   w.appendChild(v);
   return w;
 }
 
-/* ===== Rendering ===== */
-function renderCards(rows){
-  const $results = document.getElementById("results");
-  const $count = document.getElementById("count");
+/* ==== Render ==== */
+function render(rows){
+  const wrap = document.getElementById("results");
+  const count = document.getElementById("count");
   if(!rows.length){
-    $results.innerHTML = `<div class="empty">कोई रिकॉर्ड नहीं मिला।</div>`;
-    $count.textContent = "0 रिकॉर्ड";
+    wrap.innerHTML = `<div class="empty">कोई रिकॉर्ड नहीं मिला।</div>`;
+    count.textContent = "0 रिकॉर्ड";
     return;
   }
-  $results.innerHTML = "";
+  wrap.innerHTML = "";
   for(const r of rows){
     const card = el("div","card");
 
-    const head = el("div","cardHead");
-    const img = el("img","avatar");
+    // Head (avatar + name + chips + link)
+    const head = el("div","head");
+    const avatarWrap = el("div","avatarWrap");
+    const img = document.createElement("img");
+    img.className = "avatar";
     const imgUrl = driveLinkToImg(r.photo_link);
-    if(imgUrl){ img.src = imgUrl; img.alt = r.name || ""; }
-    head.appendChild(img);
+    if (imgUrl) img.src = imgUrl;
+    const init = el("div","initials", initialsOf(r.name));
+    init.style.display = "none";
+    img.onerror = ()=>{ img.style.display="none"; init.style.display="flex"; };
+    img.onload  = ()=>{ init.style.display = "none"; };
+    avatarWrap.appendChild(img);
+    avatarWrap.appendChild(init);
+    head.appendChild(avatarWrap);
 
-    const ht = el("div","headText");
-    ht.appendChild(el("div","name", r.name || "—"));
+    const text = el("div");
+    text.appendChild(el("div","name", r.name || "—"));
     const chips = el("div","chips");
-    chips.appendChild(el("div","chip mono","Aadhar: "+(r.aadhaar_number||"—")));
-    chips.appendChild(el("div","chip mono","A/C: "+(r.account_number||"—")));
+    chips.appendChild(el("div","chip mono","Aadhar: "+(r.aadhaar_number || "—")));
+    chips.appendChild(el("div","chip mono","A/C: "+(r.account_number || "—")));
     if (r.bl_number) chips.appendChild(el("div","chip mono","BL: "+r.bl_number));
-    head.appendChild(ht);
-    head.appendChild(chips);
+    text.appendChild(chips);
+    head.appendChild(text);
 
     const linkWrap = el("div","openLink");
     if (r.photo_link){
-      const a = el("a","", "फोटो लिंक");
+      const a = el("a","", "फोटो");
       a.href = r.photo_link; a.target="_blank"; a.rel="noopener";
       linkWrap.appendChild(a);
     }
     head.appendChild(linkWrap);
     card.appendChild(head);
 
-    const body = el("div","cardBody");
-    const g = el("div","formGrid");
-
-    const F = (label, key, mono=false)=> g.appendChild(field(label, r[key], mono));
-
+    // Body (form-like)
+    const body = el("div","body");
+    const g = el("div","form");
+    const F = (label,key,mono=false)=>g.appendChild(field(label,r[key],mono));
     F("Father Name","father_name");
     F("Gender","gender");
     F("Share Capital","share_capital",true);
     F("Address","address");
     F("Age","age",true);
-    F("Marrige Status","marriage_status");
+    F("Marriage Status","marriage_status");
     F("Mobile Number","mobile_number",true);
     F("Category","category");
     F("Application Year","application_year");
@@ -181,63 +219,60 @@ function renderCards(rows){
     F("Whatsapp Number","whatsapp_number",true);
     F("Aadhar Number","aadhaar_number",true);
     F("Account Number","account_number",true);
-
     body.appendChild(g);
     card.appendChild(body);
-    $results.appendChild(card);
+
+    wrap.appendChild(card);
   }
-  $count.textContent = `${rows.length} रिकॉर्ड`;
+  count.textContent = `${rows.length} रिकॉर्ड`;
 }
 
-/* ===== Search (server-side OR; snake_case keys) ===== */
-async function runSearch(){
+/* ==== Search (server-side OR with snake_case keys) ==== */
+async function search(){
   const a  = txt(document.getElementById("aadhaar").value);
   const ac = txt(document.getElementById("account").value);
   const nm = txt(document.getElementById("name").value);
-
-  const $results = document.getElementById("results");
-  const $count = document.getElementById("count");
+  const count = document.getElementById("count");
+  const results = document.getElementById("results");
 
   if(!a && !ac && !nm){
-    $results.innerHTML = `<div class="empty">कृपया खोज के लिए कोई एक फ़ील्ड भरें।</div>`;
-    $count.textContent = "—";
+    results.innerHTML = `<div class="empty">कृपया खोज के लिए कोई एक फ़ील्ड भरें।</div>`;
+    count.textContent = "—";
     return;
   }
+  count.innerHTML = `<span class="loader"></span> लोड हो रहा है…`;
 
-  $count.innerHTML = `<span class="loader"></span> लोड हो रहा है…`;
-
-  const parts = [];
-  if (a)  parts.push(`aadhaar_number.eq.${a}`);
-  if (ac) parts.push(`account_number.eq.${ac}`);
-  if (nm) parts.push(`name.ilike.*${nm.replaceAll('.', '\\.')}*`);
+  const clauses = [];
+  if (a)  clauses.push(`aadhaar_number.eq.${a}`);
+  if (ac) clauses.push(`account_number.eq.${ac}`);
+  if (nm) clauses.push(`name.ilike.*${nm.replaceAll('.', '\\.')}*`);
 
   const { data, error } = await sb
-    .from(TABLE_NAME)
+    .from(TABLE)
     .select(`aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number,photo_link`)
-    .or(parts.join(','))
+    .or(clauses.join(','))
     .limit(300);
 
   if (error){
     console.error(error);
-    $results.innerHTML = `<div class="empty">त्रुटि: ${error.message}</div>`;
-    $count.textContent = "त्रुटि";
+    results.innerHTML = `<div class="empty">त्रुटि: ${error.message}</div>`;
+    count.textContent = "त्रुटि";
     return;
   }
-
-  renderCards(data || []);
+  render(data || []);
 }
 
-/* ===== Events ===== */
-document.getElementById("btnSearch").addEventListener("click", runSearch);
+/* ==== Events ==== */
+document.getElementById("btnSearch").addEventListener("click", search);
 document.getElementById("btnClear").addEventListener("click", ()=>{
   document.getElementById("aadhaar").value="";
   document.getElementById("account").value="";
   document.getElementById("name").value="";
-  document.getElementById("count").textContent="—";
-  document.getElementById("results").innerHTML = `<div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>`;
+  document.getElementById("results").innerHTML = `<div class="empty">परिणाम यहाँ दिखेंगे…</div>`;
+  document.getElementById("count").textContent = "—";
 });
 ['aadhaar','account','name'].forEach(id=>{
-  document.getElementById(id).addEventListener("keydown",(e)=>{ if(e.key==="Enter") runSearch(); });
+  document.getElementById(id).addEventListener("keydown", e=>{ if(e.key==="Enter") search(); });
 });
 </script>
 </body>
