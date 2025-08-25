@@ -35,7 +35,6 @@
   .count{margin-left:auto;color:var(--muted);font-size:13px;align-self:center}
   .note{font-size:12px;color:var(--muted);margin-top:6px}
 
-  /* Cards (Form-like) */
   .results{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0}
   .card{background:linear-gradient(180deg,#0c1426,#0a1120);border:1px solid var(--border);border-radius:18px;overflow:hidden}
   .cardHead{display:flex;gap:14px;align-items:center;padding:12px 12px;border-bottom:1px solid #0f2136}
@@ -109,7 +108,7 @@
 /* ===== CONFIG: अपनी वैल्यू डालें ===== */
 const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // ← अपना Supabase URL
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                 // ← अपना ANON KEY
-const TABLE_NAME = "All Farmer data";                    // ← टेबल नाम
+const TABLE_NAME = `"All Farmer data"`;                    // ← टेबल नाम (डबल-क्वोट सहित)
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -142,9 +141,7 @@ const $btnClear  = document.getElementById("btnClear");
 const $results = document.getElementById("results");
 const $count = document.getElementById("count");
 
-function setLoading(is=true){
-  $count.innerHTML = is ? `<span class="loader"></span> लोड हो रहा है…` : "—";
-}
+function setLoading(is=true){ $count.innerHTML = is ? `<span class="loader"></span> लोड हो रहा है…` : "—"; }
 
 /* ===== Search ===== */
 async function runSearch(){
@@ -160,14 +157,35 @@ async function runSearch(){
 
   setLoading(true);
 
+  // OR फ़िल्टर बिल्डर (स्पेस-वाले कॉलम नाम ज्यों-का-त्यों)
   const parts = [];
   if (a)  parts.push(`Aadhar Number.eq.${a}`);
   if (ac) parts.push(`Account Number.eq.${ac}`);
   if (nm) parts.push(`Name.ilike.*${nm.replaceAll('.', '\\.')}*`);
 
   let query = sb.from(TABLE_NAME)
-    .select(`Aadhar Number,Name,Father Name,BL NUMBER,Gender,Share Capital,Address,Age,Marrige Satuts,Mobile Number,Category,Account Number,Application Year,Application Expire,Nominee Name,Relation,Nominee Aadhar Number,Whatsapp Number,photo link`)
-    .or(parts.join(","))
+    .select(`
+      Aadhar Number,
+      Name,
+      Father Name,
+      BL NUMBER,
+      Gender,
+      Share Capital,
+      Address,
+      Age,
+      Marrige Satuts,
+      Mobile Number,
+      Category,
+      Account Number,
+      Application Year,
+      Application Expire,
+      Nominee Name,
+      Relation,
+      Nominee Aadhar Number,
+      Whatsapp Number,
+      photo link
+    `)
+    .or(parts.join(','))
     .limit(300);
 
   const { data, error } = await query;
@@ -250,8 +268,8 @@ function renderCards(rows){
 }
 
 /* ===== Events ===== */
-$btnSearch.addEventListener("click", runSearch);
-$btnClear.addEventListener("click", ()=>{
+document.getElementById("btnSearch").addEventListener("click", runSearch);
+document.getElementById("btnClear").addEventListener("click", ()=>{
   $aadhaar.value=""; $account.value=""; $name.value="";
   $count.textContent="—";
   $results.innerHTML = `<div class="empty">परिणाम यहाँ फॉर्म-जैसे कार्ड में दिखेंगे…</div>`;
