@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root{ --bg:#0b1223; --panel:#0f172a; --panel2:#111827; --muted:#9aa9c2; --text:#e6eaf1; --border:#1f2937; --chip:#2a3753; }
+  :root{ --bg:#0b1223; --panel:#0f172a; --muted:#9aa9c2; --text:#e6eaf1; --border:#1f2937; --chip:#2a3753; }
   *{box-sizing:border-box} html,body{margin:0;background:radial-gradient(1200px 400px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 300px at 90% -20%,rgba(96,165,250,.07),transparent),var(--bg);font-family:"Inter","Noto Sans Devanagari",system-ui;color:var(--text)}
   a{color:inherit;text-decoration:none}
   .container{max-width:1100px;margin:28px auto;padding:0 16px}
@@ -91,7 +91,7 @@
   </div>
 
   <div class="footer">
-    VIEW: <span class="pill">farmer_all</span> (snake_case कॉलम). Base टेबल पर RLS + पॉलिसी सक्षम होनी चाहिए।
+    टेबल: <span class="pill">public.farmers</span> (snake_case कॉलम). <span class="pill">aadhaar_number</span> और <span class="pill">account_number</span> TEXT रखें।
   </div>
 </div>
 
@@ -99,7 +99,7 @@
 /* ===== CONFIG ===== */
 const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";   // ← अपना Supabase URL
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";                 // ← अपना ANON KEY
-const TABLE_NAME = 'All Farmer data';                           // ← VIEW
+const TABLE_NAME = 'farmers';                               // ← नई टेबल (snake_case)
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -189,7 +189,7 @@ function renderCards(rows){
   $count.textContent = `${rows.length} रिकॉर्ड`;
 }
 
-/* ===== Search (server-side OR; clean names) ===== */
+/* ===== Search (server-side OR; snake_case keys) ===== */
 async function runSearch(){
   const a  = txt(document.getElementById("aadhaar").value);
   const ac = txt(document.getElementById("account").value);
@@ -206,7 +206,6 @@ async function runSearch(){
 
   $count.innerHTML = `<span class="loader"></span> लोड हो रहा है…`;
 
-  // OR logic tree (अब snake_case keys — कोई encode/quotes नहीं)
   const parts = [];
   if (a)  parts.push(`aadhaar_number.eq.${a}`);
   if (ac) parts.push(`account_number.eq.${ac}`);
