@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <title>रिकवरी बकाया सूची</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Fonts (optional) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Supabase JS v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box }
@@ -59,7 +57,14 @@
     .locked{color:#9ca3af}
 
     /* Modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:1100}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);
+      display:none;align-items:center;justify-content:center;z-index:1100;
+      pointer-events:none; /* hidden state में क्लिक ब्लॉक न करे */
+    }
+    .modal-backdrop.active{
+      display:flex; pointer-events:auto; /* खुले तब ही क्लिक ले */
+    }
     .modal{width:92%;max-width:560px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);overflow:hidden}
     .modal header{background:#f1f5f9;color:#0f172a;padding:12px 16px}
     .modal .content{padding:14px 16px}
@@ -87,7 +92,7 @@
     <form id="loginForm">
       <input type="email" id="email" placeholder="ईमेल" required />
       <input type="password" id="password" placeholder="पासवर्ड" required />
-      <button type="submit">लॉग-इन</button>
+      <button id="loginBtn" type="submit">लॉग-इन</button>
     </form>
     <small>नया अकाउंट नहीं बनाया जा सकता — केवल अधिकृत यूज़र्स लॉग-इन करें।</small>
     <div style="margin-top:8px;text-align:center">
@@ -97,9 +102,9 @@
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <button class="btn btn-refresh" onclick="loadData()">Refresh</button>
-    <button id="addBtn" class="btn btn-add" style="display:none" onclick="openEditModal('create')">+ नया रिकॉर्ड</button>
-    <button id="logoutBtn" class="btn btn-logout" style="display:none" onclick="authLogout()">Logout</button>
+    <button class="btn btn-refresh" type="button" onclick="loadData()">Refresh</button>
+    <button id="addBtn" class="btn btn-add" type="button" style="display:none" onclick="openEditModal('create')">+ नया रिकॉर्ड</button>
+    <button id="logoutBtn" class="btn btn-logout" type="button" style="display:none" onclick="authLogout()">Logout</button>
   </div>
 
   <!-- Data Table -->
@@ -122,7 +127,7 @@
   </table>
 
   <!-- Edit/Create Modal -->
-  <div id="backdrop" class="modal-backdrop">
+  <div id="backdrop" class="modal-backdrop" aria-hidden="true">
     <div class="modal">
       <header><strong id="modalTitle">रिकॉर्ड अपडेट</strong></header>
       <div class="content">
@@ -173,44 +178,35 @@
       </div>
       <div class="actions">
         <button class="btn btn-secondary" type="button" onclick="closeEditModal()">रद्द</button>
-        <button class="btn btn-add" type="button" onclick="saveRecord()">सेव</button>
+        <button id="saveBtn" class="btn btn-add" type="button" onclick="saveRecord()">सेव</button>
       </div>
     </div>
   </div>
 
 <script>
-  // ⛳ अपनी keys डालें
+  // ----- CONFIG -----
   const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
-
-  // Client with stable auth options
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: "recovrybakimember-auth-v1"
-    }
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "recovrybakimember-auth-v1" }
   });
 
-  let user = null;
-  let mode = 'edit'; // 'create' | 'edit'
+  let currentUser = null;
+  let editMode = 'edit'; // 'create' | 'edit'
 
-  // ---------- Small helpers ----------
-  function showError(prefix, error){
-    console.error(prefix, error);
-    const msg = (error && (error.message || error.error_description || error.hint)) ? `\n${error.message || error.error_description || error.hint}` : '';
-    alert(prefix + msg);
-  }
+  // ----- GLOBAL ERROR GUARDS -----
+  window.addEventListener('error', (e)=>{ console.error('Window error:', e.error || e.message); alert('Error: ' + (e.message || 'unknown')); });
+  window.addEventListener('unhandledrejection', (e)=>{ console.error('Unhandled promise:', e.reason); alert('Async error: ' + (e.reason?.message || 'unknown')); });
 
+  // ----- UI helpers -----
   function setAuthUI(){
-    const isLogged = !!user;
+    const isLogged = !!currentUser;
     document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
     document.getElementById('addBtn').style.display = isLogged ? 'inline-block' : 'none';
     document.getElementById('logoutBtn').style.display = isLogged ? 'inline-block' : 'none';
 
     const badge = document.getElementById('emailBadge');
-    if(isLogged && user.email){ badge.textContent = user.email; badge.style.display = 'inline-block'; }
+    if(isLogged && currentUser.email){ badge.textContent = currentUser.email; badge.style.display = 'inline-block'; }
     else { badge.style.display = 'none'; }
   }
 
@@ -221,107 +217,126 @@
     box.setAttribute('aria-hidden', visible ? 'true' : 'false');
   }
 
-  // Bind click via JS to avoid inline issues
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtn = document.getElementById('loginToggleBtn');
-    toggleBtn.addEventListener('click', toggleLogin);
+  // Backdrop helpers (no stuck overlay)
+  function openBackdrop(){
+    const b = document.getElementById('backdrop');
+    b.classList.add('active');
+    b.style.display = 'flex';
+    b.setAttribute('aria-hidden', 'false');
+  }
+  function closeBackdrop(){
+    const b = document.getElementById('backdrop');
+    b.classList.remove('active');
+    b.style.display = 'none';
+    b.setAttribute('aria-hidden', 'true');
+  }
 
-    const form = document.getElementById('loginForm');
-    form.addEventListener('submit', async (e) => {
+  // Bind UI events
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('loginToggleBtn').addEventListener('click', toggleLogin);
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       await authLogin();
     });
   });
 
-  // ---------- Auth ----------
+  // ----- AUTH -----
   sb.auth.onAuthStateChange(async (_event, session) => {
-    user = session?.user ?? null;
+    currentUser = session?.user ?? null;
     setAuthUI();
     await loadData();
   });
 
   async function authLogin(){
+    const btn = document.getElementById('loginBtn');
     try {
+      btn.disabled = true; btn.textContent = 'लॉग-इन...';
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) return showError('Login failed:', error);
-      user = data.user;
+      if (error) throw error;
+      currentUser = data.user;
       document.getElementById('loginBox').style.display = 'none';
       setAuthUI();
       await loadData();
     } catch (e) {
-      showError('Login exception:', e);
+      alert('Login failed: ' + (e.message || 'unknown'));
+    } finally {
+      btn.disabled = false; btn.textContent = 'लॉग-इन';
     }
   }
 
   async function authLogout(){
     try {
-      const { error } = await sb.auth.signOut();
-      if (error) return showError('Logout failed:', error);
-      user = null;
+      // Supabase logout
+      let { error } = await sb.auth.signOut({ scope: 'global' });
+      if (error) { await sb.auth.signOut({ scope: 'local' }); }
+
+      // Local storage cleanup
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('sb-') || k.includes('recovrybakimember-auth-v1'))) keysToRemove.push(k);
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      } catch (_) {}
+
+      currentUser = null;
       setAuthUI();
       document.getElementById('loginBox').style.display = 'none';
       await loadData();
       alert('Logged out');
     } catch (e) {
-      showError('Logout exception:', e);
+      alert('Logout error: ' + (e.message || 'unknown'));
     }
   }
 
-  // ---------- Data ----------
+  // ----- DATA -----
   async function loadData(){
-    try {
-      const { data, error } = await sb
-        .from('recovrybakimember')
-        .select('*')
-        .order('id', { ascending: true });
+    const { data, error } = await sb.from('recovrybakimember').select('*').order('id', { ascending: true });
+    if (error) { console.error(error); alert('Data load error: ' + error.message); return; }
 
-      if (error) return showError('Data load error:', error);
-
-      const tbody = document.querySelector('#dataTable tbody');
-      tbody.innerHTML = '';
-      (data || []).forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r.sn ?? ''}</td>
-          <td>${r.adhar_number ?? ''}</td>
-          <td>${r.name ?? ''}</td>
-          <td>${r.father_name ?? ''}</td>
-          <td>${r.account_number ?? ''}</td>
-          <td>${r.amount ?? ''}</td>
-          <td>${r.intrestdmr_number ?? ''}</td>
-          <td>${r.year ?? ''}</td>
-          <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
-          <td>
-            ${
-              user
-              ? `
-                <button class="action edit-btn" onclick="openEditModal('edit', ${r.id})">Edit</button>
-                <button class="action delete-btn" onclick="deleteRow(${r.id})">Delete</button>
-                <button class="action done-btn" onclick="markDone(${r.id})">Done</button>
-              `
-              : '<span class="locked" title="Login आवश्यक">🔒</span>'
-            }
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } catch (e) {
-      showError('Load exception:', e);
-    }
+    const tbody = document.querySelector('#dataTable tbody');
+    tbody.innerHTML = '';
+    (data || []).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.sn ?? ''}</td>
+        <td>${r.adhar_number ?? ''}</td>
+        <td>${r.name ?? ''}</td>
+        <td>${r.father_name ?? ''}</td>
+        <td>${r.account_number ?? ''}</td>
+        <td>${r.amount ?? ''}</td>
+        <td>${r.intrestdmr_number ?? ''}</td>
+        <td>${r.year ?? ''}</td>
+        <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
+        <td>
+          ${
+            currentUser
+            ? `
+              <button class="action edit-btn" type="button" onclick="openEditModal('edit', ${r.id})">Edit</button>
+              <button class="action delete-btn" type="button" onclick="deleteRow(${r.id})">Delete</button>
+              <button class="action done-btn" type="button" onclick="markDone(${r.id})">Done</button>
+            `
+            : '<span class="locked" title="Login आवश्यक">🔒</span>'
+          }
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
-  // ---------- Modal Create/Edit ----------
-  async function openEditModal(m, id=null){
-    if(!user) return alert('Login आवश्यक');
-    mode = m;
-    document.getElementById('modalTitle').textContent = (mode==='create') ? 'नया रिकॉर्ड जोड़ें' : 'रिकॉर्ड अपडेट';
+  // ----- MODAL (Create/Edit) -----
+  async function openEditModal(mode, id=null){
+    if(!currentUser) return alert('Login आवश्यक');
+    editMode = mode;
+    document.getElementById('modalTitle').textContent = (editMode==='create') ? 'नया रिकॉर्ड जोड़ें' : 'रिकॉर्ड अपडेट';
     clearForm();
 
-    if(mode==='edit' && id){
+    if(editMode==='edit' && id){
       const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
-      if(error) return showError('Fetch row failed:', error);
+      if(error){ alert('Row fetch error: ' + error.message); return; }
       document.getElementById('rowId').value = data.id;
       document.getElementById('f_adhar').value = data.adhar_number ?? '';
       document.getElementById('f_name').value = data.name ?? '';
@@ -333,10 +348,10 @@
       document.getElementById('f_done').value = data.recovery_done ? 'true' : 'false';
     }
 
-    document.getElementById('backdrop').style.display = 'flex';
+    openBackdrop();
   }
 
-  function closeEditModal(){ document.getElementById('backdrop').style.display = 'none'; }
+  function closeEditModal(){ closeBackdrop(); }
 
   function clearForm(){
     document.getElementById('rowId').value = '';
@@ -364,8 +379,11 @@
   }
 
   async function saveRecord(){
-    if(!user) return alert('Login आवश्यक');
+    if(!currentUser) return alert('Login आवश्यक');
     if(!validateForm()) return;
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true; const oldText = saveBtn.textContent; saveBtn.textContent = 'सेव हो रहा है...';
 
     const payload = {
       adhar_number: document.getElementById('f_adhar').value.trim(),
@@ -379,40 +397,44 @@
     };
 
     try {
-      if(mode === 'create'){
+      if(editMode === 'create'){
         const { error } = await sb.from('recovrybakimember').insert(payload);
-        if(error) return showError('Insert failed:', error);
+        if(error) throw error;
         alert('रिकॉर्ड जोड़ा गया');
       } else {
         const id = document.getElementById('rowId').value;
         const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
-        if(error) return showError('Update failed:', error);
+        if(error) throw error;
         alert('रिकॉर्ड अपडेट हुआ');
       }
-      closeEditModal();
-      loadData();
-    } catch (e) { showError('Save exception:', e); }
+      closeEditModal();     // 👉 overlay पूरी तरह हट रहा है
+      await loadData();
+    } catch (e) {
+      alert('Save error: ' + (e.message || 'unknown'));
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = oldText;
+    }
   }
 
   async function deleteRow(id){
-    if(!user) return alert('Login आवश्यक');
+    if(!currentUser) return alert('Login आवश्यक');
     if(!confirm('क्या आप इस रिकॉर्ड को हटाना चाहते हैं?')) return;
     const { error } = await sb.from('recovrybakimember').delete().eq('id', id);
-    if(error) return showError('Delete failed:', error);
-    loadData();
+    if(error){ alert('Delete error: ' + error.message); return; }
+    await loadData();
   }
 
   async function markDone(id){
-    if(!user) return alert('Login आवश्यक');
+    if(!currentUser) return alert('Login आवश्यक');
     const { error } = await sb.from('recovrybakimember').update({ recovery_done: true }).eq('id', id);
-    if(error) return showError('Mark done failed:', error);
-    loadData();
+    if(error){ alert('Mark done error: ' + error.message); return; }
+    await loadData();
   }
 
   // First paint
   (async () => {
     const { data: { session } } = await sb.auth.getSession();
-    user = session?.user ?? null;
+    currentUser = session?.user ?? null;
     setAuthUI();
     await loadData();
   })();
