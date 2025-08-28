@@ -256,18 +256,44 @@
   }
 
   async function authLogout(){
-    try {
-      const { error } = await sb.auth.signOut();
-      if (error) return showError('Logout failed:', error);
-      user = null;
-      setAuthUI();
-      document.getElementById('loginBox').style.display = 'none';
-      await loadData();
-      alert('Logged out');
-    } catch (e) {
-      showError('Logout exception:', e);
+  try {
+    // 1) Supabase logout (global = सभी devices/tabs के refresh tokens revoke)
+    const { error } = await sb.auth.signOut({ scope: 'global' });
+    if (error) {
+      // कुछ providers पर global disallow होता है, fallback: local
+      await sb.auth.signOut({ scope: 'local' });
     }
+
+    // 2) Local storage से supabase tokens फोर्स-क्लियर
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        // supabase v2 auth key prefix आमतौर पर "sb-" से होता है
+        if (k.startsWith('sb-') || k.includes('recovrybakimember-auth-v1')) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+
+    // 3) In-memory user reset + UI अपडेट
+    user = null;
+    setAuthUI();
+    document.getElementById('loginBox').style.display = 'none';
+    await loadData();
+
+    // 4) (Optional) हार्ड रीलोड ताकि cached session भी साफ़ दिखे
+    // अगर बिना reload सब ठीक दिख रहा है, नीचे लाइन कमेंट रहने दें।
+    // location.reload();
+
+    alert('Logged out');
+  } catch (e) {
+    console.error('Logout exception:', e);
+    alert('Logout exception: ' + (e?.message || 'unknown error'));
   }
+}
 
   // ---------- Data ----------
   async function loadData(){
