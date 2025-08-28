@@ -1,463 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ST Loan Application</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>रिकवरी बकाया सूची</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
-    html, body {
-      background:
-        radial-gradient(1200px 800px at 10% 10%, #0ea5e94d, transparent),
-        radial-gradient(900px 700px at 90% 20%, #22c55e33, transparent),
-        #0b1220;
+    body { font-family: 'Inter','Noto Sans Devanagari',sans-serif; background:#f8fafc; margin:0 }
+    header{ background:#4f46e5; color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between }
+    header h2{ margin:0; font-size:22px }
+    .right{ display:flex; gap:10px; align-items:center }
+    #authStatus{ font-size:18px }
+    #loginIcon{
+      background:#fff; color:#4f46e5; width:36px; height:36px; display:grid; place-items:center;
+      border-radius:50%; cursor:pointer; font-size:18px; font-weight:700; box-shadow:0 2px 5px rgba(0,0,0,.2)
     }
-    .glass { backdrop-filter: blur(16px); background: rgba(255,255,255,0.06); }
-    .hidden { display:none; }
-    input[type='date'] { color-scheme: dark; }
-    .caps-only { text-transform: uppercase; }
-    .locked { background:rgba(2,6,23,.6); cursor:not-allowed; }
-    .focusy:focus { outline:none; box-shadow: 0 0 0 3px rgba(34,197,94,.35); border-color: rgba(255,255,255,.25); }
-    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50; }
-    .pop { animation: pop .28s ease-out both; }
-    @keyframes pop{ from{ transform:scale(.96); opacity:0 } to{ transform:scale(1); opacity:1 } }
-    .check svg circle { stroke-dasharray: 157; stroke-dashoffset: 157; animation: dash 0.6s ease-out forwards; }
-    .check svg path { stroke-dasharray: 50; stroke-dashoffset: 50; animation: dash 0.4s 0.4s ease-out forwards; }
-    @keyframes dash{ to{ stroke-dashoffset: 0; } }
-    .confetti{ position:fixed; top:-10px; width:8px; height:14px; opacity:.9; transform:rotate(15deg); animation: fall 1.8s linear forwards; z-index:60; }
-    @keyframes fall{ to{ transform: translateY(110vh) rotate(360deg); opacity:1; } }
-    .btn { transition: filter .15s ease; }
-    .btn:disabled{ opacity:.7; cursor:not-allowed; filter: saturate(.6); }
+    #loginBox{
+      display:none; width:300px; margin:16px auto; background:#fff; border-radius:10px; padding:14px;
+      box-shadow:0 6px 20px rgba(0,0,0,.08); animation:slide .25s ease
+    }
+    #loginBox input{ width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; margin:6px 0 }
+    #loginBox button{ width:100%; padding:10px; border:none; border-radius:8px; background:#4f46e5; color:#fff; cursor:pointer }
+    #loginBox small{ color:#6b7280 }
+    @keyframes slide{ from{ transform:translateY(-8px); opacity:.0 } to{ transform:translateY(0); opacity:1 } }
+
+    table{ width:95%; margin:18px auto; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden;
+           box-shadow:0 2px 10px rgba(0,0,0,.05) }
+    th,td{ padding:10px 8px; border-bottom:1px solid #eef2ff; text-align:center }
+    th{ background:#eef2ff }
+    .badge{ padding:4px 8px; border-radius:999px; font-size:12px; display:inline-block }
+    .pending{ background:#fff7ed; color:#9a3412 }
+    .done{ background:#ecfdf5; color:#065f46 }
+
+    button.action{ padding:6px 10px; border:none; border-radius:8px; margin:2px; cursor:pointer; color:#fff }
+    .edit-btn{ background:#3b82f6 } .delete-btn{ background:#ef4444 } .done-btn{ background:#f59e0b }
+    .locked{ color:#9ca3af }
   </style>
 </head>
-<body class="min-h-screen text-slate-100">
-  <div class="max-w-6xl mx-auto p-4 md:p-8">
-    <header class="mb-6 md:mb-8">
-      <h1 class="text-2xl md:text-3xl font-extrabold">ST Loan Application</h1>
-    </header>
+<body>
+  <header>
+    <h2>रिकवरी बकाया सूची</h2>
+    <div class="right">
+      <span id="authStatus" title="Auth Status">🔒</span>
+      <span id="loginIcon" title="Login" onclick="toggleLogin()">🔑</span>
+    </div>
+  </header>
 
-    <form id="appForm" class="glass rounded-2xl p-5 md:p-7 border border-white/10 shadow-2xl" novalidate>
-      <!-- सदस्यता संख्या Lookup -->
-      <div class="mb-6">
-        <label class="block text-sm mb-1">सदस्यता संख्या</label>
-        <div class="flex gap-2 items-center">
-          <input id="member_no" inputmode="numeric" pattern="\d{1,12}" maxlength="12"
-                 class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy"
-                 placeholder="उदा. 123456" required />
-          <button type="button" id="member_fetch"
-                  class="btn px-4 py-2 rounded-xl bg-indigo-500 text-slate-900 font-semibold hover:brightness-110">Find</button>
-          <span id="member_status" class="text-sm ml-2 text-slate-300"></span>
-        </div>
-      </div>
-
-      <!-- Applicant details -->
-      <div class="grid md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label class="block text-sm mb-1">कृषक का प्रकार</label>
-          <select id="kisan_type" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
-            <option value="">— चुनें —</option>
-            <option>LAGHU</option>
-            <option>SIMANT</option>
-            <option>ANY</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">वर्ग</label>
-          <select id="caste_cat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
-            <option value="">— चुनें —</option>
-            <option>SC</option>
-            <option>ST</option>
-            <option>OBC</option>
-            <option>GEN</option>
-            <option>OTHER</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">कृषक का नाम</label>
-          <input id="farmer_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only locked focusy" pattern="^[A-Z ]+$" readonly />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">पिता / पति का नाम</label>
-          <input id="guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only locked focusy" pattern="^[A-Z ]+$" readonly />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">जाति</label>
-          <input id="jaati" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy"
-                 pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">लिंग</label>
-          <select id="gender" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
-            <option value="">— चुनें —</option>
-            <option>MALE</option>
-            <option>FEMALE</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">जन्म तिथि</label>
-          <input id="dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">रेवेन्यु विलेज</label>
-          <input id="rev_village" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy"
-                 pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">ग्राम पंचायत</label>
-          <input id="gram_panchayat" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy"
-                 pattern="^[A-Z ]+$" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">बैंक खाता संख्या</label>
-          <input id="bank_ac" inputmode="numeric" pattern="\d{17}" maxlength="17"
-                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">आधार संख्या</label>
-          <input id="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12"
-                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">मोबाइल नम्बर</label>
-          <input id="mobile" inputmode="numeric" pattern="\d{10}" maxlength="10"
-                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">व्हाट्सएप नंबर</label>
-          <input id="whatsapp" inputmode="numeric" pattern="\d{10}" maxlength="10"
-                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">जन आधार (वैकल्पिक)</label>
-          <input id="jan_aadhaar" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">वोटर आईडी (वैकल्पिक)</label>
-          <input id="voter_id" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">पेन कार्ड (वैकल्पिक)</label>
-          <input id="pan" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxlength="10"
-                 class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" />
-        </div>
-      </div>
-
-      <!-- Nominee details -->
-      <div class="grid md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label class="block text-sm mb-1">नॉमिनी का नाम</label>
-          <input id="nominee_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 caps-only focusy"
-                 pattern="^[A-Z ]+$" required oninput="this.value=this.value.toUpperCase().replace(/[^A-Z ]/g,'')" />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">नॉमिनी जन्म तिथि</label>
-          <input id="nominee_dob" type="date" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" required />
-        </div>
-        <div>
-          <label class="block text-sm mb-1">कृषक से संबंध</label>
-          <select id="nominee_relation" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 uppercase focusy" required>
-            <option value="">— चुनें —</option>
-            <option>WIFE</option>
-            <option>HUS</option>
-            <option>SON</option>
-            <option>DOU</option>
-            <option>BRO</option>
-            <option>SIS</option>
-            <option>OTHER</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Witnesses -->
-      <div class="grid md:grid-cols-2 gap-6 mb-6">
-        <div class="border border-white/10 rounded-2xl p-4 bg-slate-900/40">
-          <h3 class="font-semibold mb-3">गवाह 1</h3>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-sm mb-1">आधार</label>
-              <div class="flex gap-2">
-                <input id="w1_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}"
-                       class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" placeholder="12 digits" />
-                <button type="button" id="w1_fetch" class="btn px-3 rounded-lg bg-slate-700 hover:brightness-110">Find</button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm mb-1">नाम</label>
-              <input id="w1_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div>
-              <label class="block text-sm mb-1">पिता/पति का नाम</label>
-              <input id="w1_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div>
-              <label class="block text-sm mb-1">मोबाइल</label>
-              <input id="w1_mobile" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div class="flex gap-2 items-end">
-              <div class="flex-1">
-                <label class="block text-sm mb-1">OTP</label>
-                <input id="w1_otp" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-              </div>
-              <button type="button" id="w1_send_otp" class="btn px-3 rounded-lg bg-emerald-600 hover:brightness-110">Send</button>
-              <button type="button" id="w1_verify" class="btn px-3 rounded-lg bg-indigo-600 hover:brightness-110">Verify</button>
-            </div>
-            <p id="w1_status" class="text-sm text-slate-300" data-ok="0"></p>
-          </div>
-        </div>
-
-        <div class="border border-white/10 rounded-2xl p-4 bg-slate-900/40">
-          <h3 class="font-semibold mb-3">गवाह 2</h3>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-sm mb-1">आधार</label>
-              <div class="flex gap-2">
-                <input id="w2_aadhaar" inputmode="numeric" maxlength="12" pattern="\d{12}"
-                       class="flex-1 bg-slate-900/60 border border-white/10 rounded-xl p-3 focusy" placeholder="12 digits" />
-                <button type="button" id="w2_fetch" class="btn px-3 rounded-lg bg-slate-700 hover:brightness-110">Find</button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm mb-1">नाम</label>
-              <input id="w2_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div>
-              <label class="block text-sm mb-1">पिता/पति का नाम</label>
-              <input id="w2_guardian_name" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div>
-              <label class="block text-sm mb-1">मोबाइल</label>
-              <input id="w2_mobile" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" readonly />
-            </div>
-            <div class="flex gap-2 items-end">
-              <div class="flex-1">
-                <label class="block text-sm mb-1">OTP</label>
-                <input id="w2_otp" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3" placeholder="6-digit" maxlength="6" />
-              </div>
-              <button type="button" id="w2_send_otp" class="btn px-3 rounded-lg bg-emerald-600 hover:brightness-110">Send</button>
-              <button type="button" id="w2_verify" class="btn px-3 rounded-lg bg-indigo-600 hover:brightness-110">Verify</button>
-            </div>
-            <p id="w2_status" class="text-sm text-slate-300" data-ok="0"></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-4 flex justify-end">
-        <button type="submit" id="submitBtn"
-                class="btn px-5 py-3 rounded-xl bg-emerald-500 text-slate-900 font-semibold hover:brightness-110"
-                disabled>सबमिट</button>
-      </div>
-    </form>
-
-    <div id="toast" class="hidden fixed bottom-5 right-5 bg-black/80 text-white px-4 py-2 rounded-lg"></div>
-
-    <!-- Success Modal -->
-    <div id="success_modal" class="hidden modal-backdrop">
-      <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-6 md:p-8 w-full max-w-md pop text-center">
-        <div class="check mx-auto mb-4">
-          <svg width="84" height="84" viewBox="0 0 84 84" fill="none">
-            <circle cx="42" cy="42" r="25" stroke="#22c55e" stroke-width="4" fill="none" />
-            <path d="M32 43.5 L40 51 L54 35" stroke="#22c55e" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-        <h3 class="text-xl font-bold">आपका फॉर्म सेव हो गया</h3>
-        <p class="text-slate-300 mt-2">Application Number: <span id="success_app_no" class="font-semibold text-emerald-400"></span></p>
-        <div class="mt-5 flex justify-center gap-3">
-          <a id="go_download" href="download.html" class="px-4 py-2 rounded-lg bg-indigo-500 text-slate-900 font-semibold">Download पेज</a>
-          <button id="success_close" class="px-4 py-2 rounded-lg bg-slate-700">ठीक है</button>
-        </div>
-      </div>
+  <!-- Login (signup removed) -->
+  <div id="loginBox">
+    <h3 style="margin:6px 0 8px">लॉग-इन</h3>
+    <input type="email" id="email" placeholder="ईमेल">
+    <input type="password" id="password" placeholder="पासवर्ड">
+    <button onclick="login()">लॉग-इन</button>
+    <small>नया अकाउंट बनाने की अनुमति नहीं है — केवल अधिकृत यूज़र्स लॉग-इन कर सकते हैं।</small>
+    <div style="margin-top:8px; text-align:center">
+      <a href="javascript:void(0)" onclick="logout()" style="color:#4f46e5; text-decoration:none">लॉग-आउट</a>
     </div>
   </div>
 
-  <script>
-    /* ===== CONFIG ===== */
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+  <!-- Data Table -->
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>S.N.</th>
+        <th>आधार नंबर</th>
+        <th>नाम</th>
+        <th>पिता का नाम</th>
+        <th>खाता नंबर</th>
+        <th>राशि</th>
+        <th>DMR नंबर</th>
+        <th>वर्ष</th>
+        <th>स्थिति</th>
+        <th>कार्यवाही</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    const DOWNLOAD_URL = localStorage.getItem('loan.download_url') || 'download.html';
-    const MEMBERS_TABLE = 'members';
-    const WITNESS_TABLE = 'witness_master';
-    const APPLICATIONS  = 'applications';
-    const FN_SEND_OTP   = 'send-otp';
-    const FN_VERIFY_OTP = 'verify-otp';
+<script>
+  // ⛳ यहां अपनी keys डालें
+  const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    /* ===== Helpers ===== */
-    const $ = (id) => document.getElementById(id);
-    const show = (el) => el.classList.remove('hidden');
-    const hide = (el) => el.classList.add('hidden');
-    const toast = (msg) => { const t=$('toast'); t.textContent=msg; show(t); setTimeout(()=>hide(t), 2200); };
-    const onlyDigits = (s) => (s||'').replace(/\D+/g,'');
-    const upperAZ = (s) => (s||'').toUpperCase().replace(/[^A-Z ]+/g,'').trim();
-    const validAadhaar = s => /^\d{12}$/.test(s||"");
-    const validMobile10 = s => /^[6-9]\d{9}$/.test(s||"");
+  let user = null;
 
-    let sb = null;
-    function fromTbl(n){ return sb.from(n); }
+  // Toggle login box
+  function toggleLogin(){
+    const el = document.getElementById('loginBox');
+    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+  }
 
-    /* ===== Member Lookup ===== */
-    let membershipOk = false;
-    function lockNames(){ $('farmer_name').readOnly = true; $('guardian_name').readOnly = true; $('farmer_name').classList.add('locked'); $('guardian_name').classList.add('locked'); }
-    function unlockNames(){ $('farmer_name').readOnly = false; $('guardian_name').readOnly = false; $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked'); $('farmer_name').value=''; $('guardian_name').value=''; }
-    function setSubmitEnabled(){ const ok1=$('w1_status').dataset.ok==='1'; const ok2=$('w2_status').dataset.ok==='1'; $('submitBtn').disabled = !(ok1 && ok2 && membershipOk); }
+  // Auth state listener (refresh UI on login/logout)
+  sb.auth.onAuthStateChange(async (event, session) => {
+    user = session?.user ?? null;
+    document.getElementById('authStatus').textContent = user ? '✅' : '🔒';
+    await loadData();
+  });
 
-    async function fetchMember(){
-      const raw = $('member_no').value.trim();
-      if(!raw){ $('member_status').textContent=''; membershipOk=false; return; }
+  async function login(){
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ alert(error.message); return; }
+    document.getElementById('loginBox').style.display = 'none';
+  }
 
-      let res = await fromTbl(MEMBERS_TABLE).select('farmer_name, guardian_name').eq('membership_no', raw).limit(1).maybeSingle();
-      if((!res.data && !res.error) && /^\d+$/.test(raw)){
-        res = await fromTbl(MEMBERS_TABLE).select('farmer_name, guardian_name').eq('membership_no', Number(raw)).limit(1).maybeSingle();
-      }
+  async function logout(){
+    await sb.auth.signOut();
+    document.getElementById('loginBox').style.display = 'none';
+  }
 
-      if(res.error){ console.error(res.error); $('member_status').textContent=''; membershipOk=false; unlockNames(); return; }
-      if(!res.data){ $('member_status').textContent=''; membershipOk=false; unlockNames(); return; }
+  async function loadData(){
+    const { data, error } = await sb.from('recovrybakimember')
+      .select('*')
+      .order('id', { ascending: true });
 
-      $('farmer_name').value   = upperAZ(res.data.farmer_name||'');
-      $('guardian_name').value = upperAZ(res.data.guardian_name||'');
-      lockNames(); $('member_status').textContent=''; membershipOk=true; setSubmitEnabled();
-    }
+    if(error){ console.error(error); alert('Data load error'); return; }
 
-    /* ===== Witness Lookup ===== */
-    async function fetchWitness(slot){
-      const aadhaar = onlyDigits($(slot+'_aadhaar').value);
-      $(slot+'_aadhaar').value = aadhaar;
-      if(!validAadhaar(aadhaar)){ toast('आधार 12 अंक'); return; }
+    const tbody = document.querySelector('#dataTable tbody');
+    tbody.innerHTML = '';
+    data.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.sn ?? ''}</td>
+        <td>${r.adhar_number ?? ''}</td>
+        <td>${r.name ?? ''}</td>
+        <td>${r.father_name ?? ''}</td>
+        <td>${r.account_number ?? ''}</td>
+        <td>${r.amount ?? ''}</td>
+        <td>${r.intrestdmr_number ?? ''}</td>
+        <td>${r.year ?? ''}</td>
+        <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
+        <td>
+          ${
+            user
+            ? `
+              <button class="action edit-btn" onclick="editRow(${r.id})">Edit</button>
+              <button class="action delete-btn" onclick="deleteRow(${r.id})">Delete</button>
+              <button class="action done-btn" onclick="markDone(${r.id})">Done</button>
+            `
+            : '<span class="locked" title="Login आवश्यक">🔒</span>'
+          }
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-      const appA  = onlyDigits($('aadhaar').value);
-      const other = slot==='w1' ? onlyDigits($('w2_aadhaar').value) : onlyDigits($('w1_aadhaar').value);
-      if(aadhaar===appA){ toast('गवाह = आवेदक नहीं हो सकता'); return; }
-      if(other && aadhaar===other){ toast('दोनों गवाह अलग होने चाहिए'); return; }
+  async function deleteRow(id){
+    if(!user) return alert('Login आवश्यक');
+    if(!confirm('क्या आप इस रिकॉर्ड को हटाना चाहते हैं?')) return;
+    const { error } = await sb.from('recovrybakimember').delete().eq('id', id);
+    if(error){ alert(error.message); return; }
+    loadData();
+  }
 
-      const q = await fromTbl(WITNESS_TABLE).select('name, guardian_name, mobile').eq('aadhaar', aadhaar).limit(1).maybeSingle();
-      if(q.error || !q.data){ toast('गवाह नहीं मिला'); return; }
+  async function markDone(id){
+    if(!user) return alert('Login आवश्यक');
+    const { error } = await sb.from('recovrybakimember').update({ recovery_done: true }).eq('id', id);
+    if(error){ alert(error.message); return; }
+    loadData();
+  }
 
-      $(slot+'_name').value          = upperAZ(q.data.name||'');
-      $(slot+'_guardian_name').value = upperAZ(q.data.guardian_name||'');
-      $(slot+'_mobile').value        = onlyDigits(q.data.mobile||'');
-      toast('मिला');
-    }
+  function editRow(id){
+    if(!user) return alert('Login आवश्यक');
+    alert('Edit form अगली स्टेप में add करेंगे।');
+  }
 
-    /* ===== OTP via Edge Functions ===== */
-    function toE164(m){ const d=onlyDigits(m||''); if(d.length===10) return '+91'+d; if(d.length===12 && d.startsWith('91')) return '+'+d; if((m||'').startsWith('+')) return m; return '+91'+d; }
-
-    async function sendOtpEdge(mobile, context){
-      const to = toE164(mobile);
-      if(!/^\+?\d{11,15}$/.test(to)){ toast('मोबाइल सही करें'); return false; }
-      const { data, error } = await sb.functions.invoke(FN_SEND_OTP, { body: { mobile: to, context }});
-      if(error || !data?.ok){ console.error('send-otp', error||data); toast('OTP भेजने में समस्या'); return false; }
-      toast('OTP भेजी गई'); return true;
-    }
-    async function verifyOtpEdge(mobile, otp, context){
-      const to = toE164(mobile), code = onlyDigits(otp);
-      if(!/^\+?\d{11,15}$/.test(to) || !/^\d{6}$/.test(code)){ toast('OTP सही करें'); return false; }
-      const { data, error } = await sb.functions.invoke(FN_VERIFY_OTP, { body: { mobile: to, otp: code, context }});
-      if(error || !data?.ok){ console.error('verify-otp', error||data); toast('OTP गलत/समाप्त'); return false; }
-      toast('Verified'); return true;
-    }
-
-    /* ===== Success UI ===== */
-    function confettiBurst(){
-      const colors = ['#22c55e','#a3e635','#34d399','#60a5fa','#f472b6','#f59e0b'];
-      for(let i=0;i<60;i++){
-        const s = document.createElement('div'); s.className='confetti';
-        s.style.left = Math.random()*100+'vw'; s.style.background = colors[Math.floor(Math.random()*colors.length)];
-        s.style.transform = `rotate(${Math.random()*360}deg)`; s.style.animationDuration = (1.4 + Math.random()*0.8)+'s';
-        document.body.appendChild(s); setTimeout(()=>s.remove(), 2200);
-      }
-    }
-    function openSuccess(appNo){ $('success_app_no').textContent = appNo || ''; $('go_download').href = DOWNLOAD_URL; show($('success_modal')); confettiBurst(); }
-    function closeSuccess(){ hide($('success_modal')); }
-
-    /* ===== Submit ===== */
-    async function submitApp(e){
-      e.preventDefault();
-      if(!membershipOk){ toast('सदस्यता जाँचें'); return; }
-
-      const ac=onlyDigits($('bank_ac').value), ad=onlyDigits($('aadhaar').value), mob=onlyDigits($('mobile').value);
-      if(!/^\d{17}$/.test(ac)){ toast('खाता 17 अंक'); return; }
-      if(!validAadhaar(ad)){ toast('आधार 12 अंक'); return; }
-      if(!/^\d{10}$/.test(mob)){ toast('मोबाइल 10 अंक'); return; }
-
-      const w1a=onlyDigits($('w1_aadhaar').value), w2a=onlyDigits($('w2_aadhaar').value);
-      if(w1a && ad && w1a===ad){ toast('आवेदक गवाह 1 नहीं हो सकता'); return; }
-      if(w2a && ad && w2a===ad){ toast('आवेदक गवाह 2 नहीं हो सकता'); return; }
-      if(w1a && w2a && w1a===w2a){ toast('दोनों गवाह अलग होने चाहिए'); return; }
-      if($('w1_status').dataset.ok!=='1' || $('w2_status').dataset.ok!=='1'){ toast('दोनों गवाह Verify करें'); return; }
-
-      const payload = {
-        membership_no: $('member_no').value.trim(),
-        kisan_type: $('kisan_type').value, caste_cat: $('caste_cat').value,
-        farmer_name: $('farmer_name').value, guardian_name: $('guardian_name').value, jaati: $('jaati').value,
-        gender: $('gender').value, dob: $('dob').value, rev_village: $('rev_village').value, gram_panchayat: $('gram_panchayat').value,
-        bank_ac: ac, aadhaar: ad, mobile: mob, whatsapp: onlyDigits($('whatsapp').value),
-        jan_aadhaar: $('jan_aadhaar').value, voter_id: $('voter_id').value, pan: ($('pan').value||'').toUpperCase(),
-        nominee_name: $('nominee_name').value, nominee_dob: $('nominee_dob').value, nominee_relation: $('nominee_relation').value,
-        w1_aadhaar: w1a, w1_name: $('w1_name').value, w1_guardian_name: $('w1_guardian_name').value, w1_mobile: onlyDigits($('w1_mobile').value),
-        w2_aadhaar: w2a, w2_name: $('w2_name').value, w2_guardian_name: $('w2_guardian_name').value, w2_mobile: onlyDigits($('w2_mobile').value),
-        w1_verified: $('w1_status').dataset.ok==='1',
-        w2_verified: $('w2_status').dataset.ok==='1',
-        status: 'submitted'
-      };
-
-      const ins = await fromTbl(APPLICATIONS).insert(payload);
-      if(ins.error){ console.error(ins.error); toast('सेव समस्या'); return; }
-
-      openSuccess(ad);
-
-      // reset
-      e.target.reset();
-      $('w1_status').textContent=''; $('w2_status').textContent='';
-      $('w1_status').dataset.ok='0'; $('w2_status').dataset.ok='0';
-      membershipOk=false; $('member_status').textContent='';
-      $('farmer_name').readOnly=false; $('guardian_name').readOnly=false;
-      $('farmer_name').classList.remove('locked'); $('guardian_name').classList.remove('locked');
-      $('submitBtn').disabled = true;
-    }
-
-    /* ===== Bootstrap ===== */
-    (function start(){
-      const init = async () => {
-        if(!window.supabase || !window.supabase.createClient){ toast('लोड त्रुटि'); return; }
-        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Edge Functions के लिए JWT (recommended)
-        try{ await sb.auth.signInAnonymously(); }catch(e){ console.error(e); }
-
-        $('member_fetch').addEventListener('click', fetchMember);
-        $('member_no').addEventListener('input', ()=>{ $('member_status').textContent=''; membershipOk=false; $('submitBtn').disabled=true; });
-
-        $('w1_fetch').onclick = () => fetchWitness('w1');
-        $('w2_fetch').onclick = () => fetchWitness('w2');
-
-        $('w1_send_otp').onclick = async () => {
-          const m = onlyDigits($('w1_mobile').value);
-          if(!validMobile10(m)){ toast('मोबाइल सही करें'); return; }
-          await sendOtpEdge(m, 'w1');
-        };
-        $('w2_send_otp').onclick = async () => {
-          const m = onlyDigits($('w2_mobile').value);
-          if(!validMobile10(m)){ toast('मोबाइल सही करें'); return; }
-          await sendOtpEdge(m, 'w2');
-        };
-        $('w1_verify').onclick = async () => {
-          const ok = await verifyOtpEdge($('w1_mobile').value, $('w1_otp').value, 'w1');
-          $('w1_status').textContent = ok ? 'Verified' : 'Invalid';
-          $('w1_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled();
-        };
-        $('w2_verify').onclick = async () => {
-          const ok = await verifyOtpEdge($('w2_mobile').value, $('w2_otp').value, 'w2');
-          $('w2_status').textContent = ok ? 'Verified' : 'Invalid';
-          $('w2_status').dataset.ok = ok ? '1' : '0'; setSubmitEnabled();
-        };
-
-        $('appForm').addEventListener('submit', submitApp);
-        $('success_close').addEventListener('click', closeSuccess);
-        $('go_download').href = DOWNLOAD_URL;
-      };
-      if(document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(init,0);
-      else window.addEventListener('DOMContentLoaded', init);
-    })();
-  </script>
+  // Load on first paint + restore session
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    user = session?.user ?? null;
+    document.getElementById('authStatus').textContent = user ? '✅' : '🔒';
+    await loadData();
+  })();
+</script>
 </body>
 </html>
