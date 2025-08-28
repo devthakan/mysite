@@ -1,39 +1,51 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>रिकवरी बकाया सूची</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: 'Inter','Noto Sans Devanagari',sans-serif; background:#f8fafc; margin:0 }
-    header{ background:#4f46e5; color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between }
-    header h2{ margin:0; font-size:22px }
-    .right{ display:flex; gap:10px; align-items:center }
-    #authStatus{ font-size:18px }
-    #loginIcon{
-      background:#fff; color:#4f46e5; width:36px; height:36px; display:grid; place-items:center;
-      border-radius:50%; cursor:pointer; font-size:18px; font-weight:700; box-shadow:0 2px 5px rgba(0,0,0,.2)
-    }
-    #loginBox{
-      display:none; width:300px; margin:16px auto; background:#fff; border-radius:10px; padding:14px;
-      box-shadow:0 6px 20px rgba(0,0,0,.08); animation:slide .25s ease
-    }
-    #loginBox input{ width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:8px; margin:6px 0 }
-    #loginBox button{ width:100%; padding:10px; border:none; border-radius:8px; background:#4f46e5; color:#fff; cursor:pointer }
-    #loginBox small{ color:#6b7280 }
-    @keyframes slide{ from{ transform:translateY(-8px); opacity:.0 } to{ transform:translateY(0); opacity:1 } }
+    body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#f8fafc;margin:0}
+    header{background:#4f46e5;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    header h2{margin:0;font-size:22px}
+    .right{display:flex;gap:10px;align-items:center}
+    #authStatus{font-size:18px}
+    #loginIcon{background:#fff;color:#4f46e5;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;cursor:pointer;font-size:18px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+    #loginBox{display:none;width:300px;margin:16px auto;background:#fff;border-radius:10px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.08);animation:slide .25s ease}
+    #loginBox input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin:6px 0}
+    #loginBox button{width:100%;padding:10px;border:none;border-radius:8px;background:#4f46e5;color:#fff;cursor:pointer}
+    #loginBox small{color:#6b7280}
+    @keyframes slide{from{transform:translateY(-8px);opacity:.0}to{transform:translateY(0);opacity:1}}
 
-    table{ width:95%; margin:18px auto; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden;
-           box-shadow:0 2px 10px rgba(0,0,0,.05) }
-    th,td{ padding:10px 8px; border-bottom:1px solid #eef2ff; text-align:center }
-    th{ background:#eef2ff }
-    .badge{ padding:4px 8px; border-radius:999px; font-size:12px; display:inline-block }
-    .pending{ background:#fff7ed; color:#9a3412 }
-    .done{ background:#ecfdf5; color:#065f46 }
+    .toolbar{width:95%;margin:12px auto 0;display:flex;gap:8px;justify-content:flex-end;align-items:center}
+    .btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;color:#fff}
+    .btn-add{background:#22c55e}
+    .btn-refresh{background:#0ea5e9}
+    .btn-logout{background:#ef4444}
 
-    button.action{ padding:6px 10px; border:none; border-radius:8px; margin:2px; cursor:pointer; color:#fff }
-    .edit-btn{ background:#3b82f6 } .delete-btn{ background:#ef4444 } .done-btn{ background:#f59e0b }
-    .locked{ color:#9ca3af }
+    table{width:95%;margin:12px auto 18px;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+    th,td{padding:10px 8px;border-bottom:1px solid #eef2ff;text-align:center}
+    th{background:#eef2ff}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;display:inline-block}
+    .pending{background:#fff7ed;color:#9a3412}
+    .done{background:#ecfdf5;color:#065f46}
+    button.action{padding:6px 10px;border:none;border-radius:8px;margin:2px;cursor:pointer;color:#fff}
+    .edit-btn{background:#3b82f6}
+    .delete-btn{background:#ef4444}
+    .done-btn{background:#f59e0b}
+    .locked{color:#9ca3af}
+
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50}
+    .modal{width:92%;max-width:560px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);overflow:hidden}
+    .modal header{background:#f1f5f9;color:#0f172a;padding:12px 16px}
+    .modal .content{padding:14px 16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row .col{display:flex;flex-direction:column}
+    .row input,.row select{padding:10px;border:1px solid #e5e7eb;border-radius:8px}
+    .modal .actions{display:flex;gap:10px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #e5e7eb}
+    .btn-secondary{background:#6b7280}
   </style>
 </head>
 <body>
@@ -45,16 +57,23 @@
     </div>
   </header>
 
-  <!-- Login (signup removed) -->
+  <!-- Login -->
   <div id="loginBox">
     <h3 style="margin:6px 0 8px">लॉग-इन</h3>
-    <input type="email" id="email" placeholder="ईमेल">
-    <input type="password" id="password" placeholder="पासवर्ड">
+    <input type="email" id="email" placeholder="ईमेल" />
+    <input type="password" id="password" placeholder="पासवर्ड" />
     <button onclick="login()">लॉग-इन</button>
-    <small>नया अकाउंट बनाने की अनुमति नहीं है — केवल अधिकृत यूज़र्स लॉग-इन कर सकते हैं।</small>
-    <div style="margin-top:8px; text-align:center">
-      <a href="javascript:void(0)" onclick="logout()" style="color:#4f46e5; text-decoration:none">लॉग-आउट</a>
+    <small>नया अकाउंट नहीं बनाया जा सकता — केवल अधिकृत यूज़र्स लॉग-इन करें।</small>
+    <div style="margin-top:8px;text-align:center">
+      <a href="javascript:void(0)" onclick="logout()" style="color:#4f46e5;text-decoration:none">लॉग-आउट</a>
     </div>
+  </div>
+
+  <!-- Toolbar (login पर ही Add दिखे) -->
+  <div class="toolbar">
+    <button class="btn btn-refresh" onclick="loadData()">Refresh</button>
+    <button id="addBtn" class="btn btn-add" style="display:none" onclick="openEditModal('create')">+ नया रिकॉर्ड</button>
+    <button id="logoutBtn" class="btn btn-logout" style="display:none" onclick="logout()">Logout</button>
   </div>
 
   <!-- Data Table -->
@@ -76,31 +95,94 @@
     <tbody></tbody>
   </table>
 
+  <!-- Edit/Create Modal -->
+  <div id="backdrop" class="modal-backdrop">
+    <div class="modal">
+      <header><strong id="modalTitle">रिकॉर्ड अपडेट</strong></header>
+      <div class="content">
+        <input type="hidden" id="rowId" />
+        <div class="row">
+          <div class="col">
+            <label>आधार नंबर (12 अंक)</label>
+            <input id="f_adhar" maxlength="12" placeholder="123456789012" />
+          </div>
+          <div class="col">
+            <label>नाम</label>
+            <input id="f_name" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="col">
+            <label>पिता का नाम</label>
+            <input id="f_father" />
+          </div>
+          <div class="col">
+            <label>खाता नंबर</label>
+            <input id="f_account" maxlength="20" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="col">
+            <label>राशि</label>
+            <input id="f_amount" type="number" step="0.01" />
+          </div>
+          <div class="col">
+            <label>DMR नंबर</label>
+            <input id="f_dmr" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="col">
+            <label>वर्ष</label>
+            <input id="f_year" type="number" placeholder="2025" />
+          </div>
+          <div class="col">
+            <label>रिकवरी स्थिति</label>
+            <select id="f_done">
+              <option value="false">Pending</option>
+              <option value="true">Done</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="closeEditModal()">रद्द</button>
+        <button class="btn btn-add" onclick="saveRecord()">सेव</button>
+      </div>
+    </div>
+  </div>
+
 <script>
-  // ⛳ यहां अपनी keys डालें
+  // ⛳ अपनी keys भरें
   const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let user = null;
+  let mode = 'edit'; // 'create' | 'edit'
 
-  // Toggle login box
   function toggleLogin(){
     const el = document.getElementById('loginBox');
     el.style.display = (el.style.display === 'block') ? 'none' : 'block';
   }
 
-  // Auth state listener (refresh UI on login/logout)
+  function setAuthUI(){
+    const isLogged = !!user;
+    document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
+    document.getElementById('addBtn').style.display = isLogged ? 'inline-block' : 'none';
+    document.getElementById('logoutBtn').style.display = isLogged ? 'inline-block' : 'none';
+  }
+
   sb.auth.onAuthStateChange(async (event, session) => {
     user = session?.user ?? null;
-    document.getElementById('authStatus').textContent = user ? '✅' : '🔒';
+    setAuthUI();
     await loadData();
   });
 
   async function login(){
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if(error){ alert(error.message); return; }
     document.getElementById('loginBox').style.display = 'none';
   }
@@ -110,8 +192,10 @@
     document.getElementById('loginBox').style.display = 'none';
   }
 
+  // Load data
   async function loadData(){
-    const { data, error } = await sb.from('recovrybakimember')
+    const { data, error } = await sb
+      .from('recovrybakimember')
       .select('*')
       .order('id', { ascending: true });
 
@@ -135,7 +219,7 @@
           ${
             user
             ? `
-              <button class="action edit-btn" onclick="editRow(${r.id})">Edit</button>
+              <button class="action edit-btn" onclick="openEditModal('edit', ${r.id})">Edit</button>
               <button class="action delete-btn" onclick="deleteRow(${r.id})">Delete</button>
               <button class="action done-btn" onclick="markDone(${r.id})">Done</button>
             `
@@ -145,6 +229,91 @@
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  // Open Modal (create/edit)
+  async function openEditModal(m, id=null){
+    if(!user) return alert('Login आवश्यक');
+    mode = m;
+    document.getElementById('modalTitle').textContent = (mode==='create') ? 'नया रिकॉर्ड जोड़ें' : 'रिकॉर्ड अपडेट';
+    clearForm();
+
+    if(mode==='edit' && id){
+      const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
+      if(error){ alert(error.message); return; }
+      document.getElementById('rowId').value = data.id;
+      document.getElementById('f_adhar').value = data.adhar_number ?? '';
+      document.getElementById('f_name').value = data.name ?? '';
+      document.getElementById('f_father').value = data.father_name ?? '';
+      document.getElementById('f_account').value = data.account_number ?? '';
+      document.getElementById('f_amount').value = data.amount ?? '';
+      document.getElementById('f_dmr').value = data.intrestdmr_number ?? '';
+      document.getElementById('f_year').value = data.year ?? '';
+      document.getElementById('f_done').value = data.recovery_done ? 'true' : 'false';
+    }
+
+    document.getElementById('backdrop').style.display = 'flex';
+  }
+
+  function closeEditModal(){
+    document.getElementById('backdrop').style.display = 'none';
+  }
+
+  function clearForm(){
+    document.getElementById('rowId').value = '';
+    document.getElementById('f_adhar').value = '';
+    document.getElementById('f_name').value = '';
+    document.getElementById('f_father').value = '';
+    document.getElementById('f_account').value = '';
+    document.getElementById('f_amount').value = '';
+    document.getElementById('f_dmr').value = '';
+    document.getElementById('f_year').value = '';
+    document.getElementById('f_done').value = 'false';
+  }
+
+  // Validation (basic)
+  function validateForm(){
+    const adhar = document.getElementById('f_adhar').value.trim();
+    const name = document.getElementById('f_name').value.trim();
+    const amount = document.getElementById('f_amount').value.trim();
+    const year = document.getElementById('f_year').value.trim();
+
+    if(adhar.length !== 12 || !/^\d{12}$/.test(adhar)) {
+      alert('आधार नंबर 12 अंकों का होना चाहिए'); return false;
+    }
+    if(!name){ alert('नाम आवश्यक है'); return false; }
+    if(amount && isNaN(Number(amount))){ alert('राशि संख्या में होनी चाहिए'); return false; }
+    if(year && (Number(year) < 1900 || Number(year) > 2100)){ alert('वर्ष मान्य नहीं'); return false; }
+    return true;
+  }
+
+  // Save (create or update)
+  async function saveRecord(){
+    if(!validateForm()) return;
+
+    const payload = {
+      adhar_number: document.getElementById('f_adhar').value.trim(),
+      name: document.getElementById('f_name').value.trim(),
+      father_name: document.getElementById('f_father').value.trim() || null,
+      account_number: document.getElementById('f_account').value.trim() || null,
+      amount: document.getElementById('f_amount').value ? Number(document.getElementById('f_amount').value) : null,
+      intrestdmr_number: document.getElementById('f_dmr').value.trim() || null,
+      year: document.getElementById('f_year').value ? Number(document.getElementById('f_year').value) : null,
+      recovery_done: document.getElementById('f_done').value === 'true'
+    };
+
+    if(mode === 'create'){
+      const { error } = await sb.from('recovrybakimember').insert(payload);
+      if(error){ alert(error.message); return; }
+      alert('रिकॉर्ड जोड़ा गया');
+    } else {
+      const id = document.getElementById('rowId').value;
+      const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
+      if(error){ alert(error.message); return; }
+      alert('रिकॉर्ड अपडेट हुआ');
+    }
+    closeEditModal();
+    loadData();
   }
 
   async function deleteRow(id){
@@ -162,16 +331,11 @@
     loadData();
   }
 
-  function editRow(id){
-    if(!user) return alert('Login आवश्यक');
-    alert('Edit form अगली स्टेप में add करेंगे।');
-  }
-
-  // Load on first paint + restore session
+  // First paint
   (async () => {
     const { data: { session } } = await sb.auth.getSession();
     user = session?.user ?? null;
-    document.getElementById('authStatus').textContent = user ? '✅' : '🔒';
+    setAuthUI();
     await loadData();
   })();
 </script>
