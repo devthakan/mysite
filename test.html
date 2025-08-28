@@ -156,82 +156,138 @@
   // ⛳ अपनी keys भरें
   const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ज्यादा stable auth options
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true, // सावधानी: OAuth नहीं है, फिर भी safe
+      storageKey: "recovrybakimember-auth-v1"
+    }
+  });
 
   let user = null;
   let mode = 'edit'; // 'create' | 'edit'
+
+  // ---------- UI helpers ----------
+  function setAuthUI(){
+    const isLogged = !!user;
+    document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
+    const addBtn = document.getElementById('addBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (addBtn) addBtn.style.display = isLogged ? 'inline-block' : 'none';
+    if (logoutBtn) logoutBtn.style.display = isLogged ? 'inline-block' : 'none';
+
+    // header में email दिखाएँ
+    const emailBadgeId = 'emailBadge';
+    let badge = document.getElementById(emailBadgeId);
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = emailBadgeId;
+      badge.style.cssText = 'color:#fff;background:#16a34a;padding:4px 8px;border-radius:999px;margin-left:8px;font-size:12px;display:none';
+      document.querySelector('.right').prepend(badge);
+    }
+    if (isLogged) {
+      badge.textContent = user.email || 'logged-in';
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 
   function toggleLogin(){
     const el = document.getElementById('loginBox');
     el.style.display = (el.style.display === 'block') ? 'none' : 'block';
   }
 
-  function setAuthUI(){
-    const isLogged = !!user;
-    document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
-    document.getElementById('addBtn').style.display = isLogged ? 'inline-block' : 'none';
-    document.getElementById('logoutBtn').style.display = isLogged ? 'inline-block' : 'none';
+  function showError(prefix, error){
+    console.error(prefix, error);
+    const msg = (error && (error.message || error.error_description || error.hint)) ? `\n${error.message || error.error_description || error.hint}` : '';
+    alert(prefix + msg);
   }
 
-  sb.auth.onAuthStateChange(async (event, session) => {
+  // ---------- Auth ----------
+  sb.auth.onAuthStateChange(async (_event, session) => {
     user = session?.user ?? null;
     setAuthUI();
-    await loadData();
+    await loadData();  // login/logout पर table refresh
   });
 
   async function login(){
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if(error){ alert(error.message); return; }
-    document.getElementById('loginBox').style.display = 'none';
+    try {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) return showError('Login failed:', error);
+      user = data.user;
+      document.getElementById('loginBox').style.display = 'none';
+      setAuthUI();
+      await loadData();
+    } catch (e) {
+      showError('Login exception:', e);
+    }
   }
 
   async function logout(){
-    await sb.auth.signOut();
-    document.getElementById('loginBox').style.display = 'none';
+    try {
+      const { error } = await sb.auth.signOut();
+      if (error) return showError('Logout failed:', error);
+      user = null;
+      setAuthUI();
+      document.getElementById('loginBox').style.display = 'none';
+      await loadData();
+      alert('Logged out');
+    } catch (e) {
+      showError('Logout exception:', e);
+    }
   }
 
-  // Load data
+  // ---------- Data ----------
   async function loadData(){
-    const { data, error } = await sb
-      .from('recovrybakimember')
-      .select('*')
-      .order('id', { ascending: true });
+    try {
+      const { data, error } = await sb
+        .from('recovrybakimember')
+        .select('*')
+        .order('id', { ascending: true });
 
-    if(error){ console.error(error); alert('Data load error'); return; }
+      if (error) return showError('Data load error:', error);
 
-    const tbody = document.querySelector('#dataTable tbody');
-    tbody.innerHTML = '';
-    data.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${r.sn ?? ''}</td>
-        <td>${r.adhar_number ?? ''}</td>
-        <td>${r.name ?? ''}</td>
-        <td>${r.father_name ?? ''}</td>
-        <td>${r.account_number ?? ''}</td>
-        <td>${r.amount ?? ''}</td>
-        <td>${r.intrestdmr_number ?? ''}</td>
-        <td>${r.year ?? ''}</td>
-        <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
-        <td>
-          ${
-            user
-            ? `
-              <button class="action edit-btn" onclick="openEditModal('edit', ${r.id})">Edit</button>
-              <button class="action delete-btn" onclick="deleteRow(${r.id})">Delete</button>
-              <button class="action done-btn" onclick="markDone(${r.id})">Done</button>
-            `
-            : '<span class="locked" title="Login आवश्यक">🔒</span>'
-          }
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+      const tbody = document.querySelector('#dataTable tbody');
+      tbody.innerHTML = '';
+      (data || []).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.sn ?? ''}</td>
+          <td>${r.adhar_number ?? ''}</td>
+          <td>${r.name ?? ''}</td>
+          <td>${r.father_name ?? ''}</td>
+          <td>${r.account_number ?? ''}</td>
+          <td>${r.amount ?? ''}</td>
+          <td>${r.intrestdmr_number ?? ''}</td>
+          <td>${r.year ?? ''}</td>
+          <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
+          <td>
+            ${
+              user
+              ? `
+                <button class="action edit-btn" onclick="openEditModal('edit', ${r.id})">Edit</button>
+                <button class="action delete-btn" onclick="deleteRow(${r.id})">Delete</button>
+                <button class="action done-btn" onclick="markDone(${r.id})">Done</button>
+              `
+              : '<span class="locked" title="Login आवश्यक">🔒</span>'
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (e) {
+      showError('Load exception:', e);
+    }
   }
 
-  // Open Modal (create/edit)
+  // ---------- Modal Create/Edit ----------
+  let mode = 'edit';
   async function openEditModal(m, id=null){
     if(!user) return alert('Login आवश्यक');
     mode = m;
@@ -240,7 +296,7 @@
 
     if(mode==='edit' && id){
       const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
-      if(error){ alert(error.message); return; }
+      if(error) return showError('Fetch row failed:', error);
       document.getElementById('rowId').value = data.id;
       document.getElementById('f_adhar').value = data.adhar_number ?? '';
       document.getElementById('f_name').value = data.name ?? '';
@@ -255,9 +311,7 @@
     document.getElementById('backdrop').style.display = 'flex';
   }
 
-  function closeEditModal(){
-    document.getElementById('backdrop').style.display = 'none';
-  }
+  function closeEditModal(){ document.getElementById('backdrop').style.display = 'none'; }
 
   function clearForm(){
     document.getElementById('rowId').value = '';
@@ -271,24 +325,21 @@
     document.getElementById('f_done').value = 'false';
   }
 
-  // Validation (basic)
   function validateForm(){
     const adhar = document.getElementById('f_adhar').value.trim();
     const name = document.getElementById('f_name').value.trim();
     const amount = document.getElementById('f_amount').value.trim();
     const year = document.getElementById('f_year').value.trim();
 
-    if(adhar.length !== 12 || !/^\d{12}$/.test(adhar)) {
-      alert('आधार नंबर 12 अंकों का होना चाहिए'); return false;
-    }
+    if(adhar.length !== 12 || !/^\d{12}$/.test(adhar)) { alert('आधार नंबर 12 अंकों का चाहिए'); return false; }
     if(!name){ alert('नाम आवश्यक है'); return false; }
-    if(amount && isNaN(Number(amount))){ alert('राशि संख्या में होनी चाहिए'); return false; }
+    if(amount && isNaN(Number(amount))){ alert('राशि संख्या में हो'); return false; }
     if(year && (Number(year) < 1900 || Number(year) > 2100)){ alert('वर्ष मान्य नहीं'); return false; }
     return true;
   }
 
-  // Save (create or update)
   async function saveRecord(){
+    if(!user) return alert('Login आवश्यक');
     if(!validateForm()) return;
 
     const payload = {
@@ -302,32 +353,36 @@
       recovery_done: document.getElementById('f_done').value === 'true'
     };
 
-    if(mode === 'create'){
-      const { error } = await sb.from('recovrybakimember').insert(payload);
-      if(error){ alert(error.message); return; }
-      alert('रिकॉर्ड जोड़ा गया');
-    } else {
-      const id = document.getElementById('rowId').value;
-      const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
-      if(error){ alert(error.message); return; }
-      alert('रिकॉर्ड अपडेट हुआ');
+    try {
+      if(mode === 'create'){
+        const { error } = await sb.from('recovrybakimember').insert(payload);
+        if(error) return showError('Insert failed:', error);
+        alert('रिकॉर्ड जोड़ा गया');
+      } else {
+        const id = document.getElementById('rowId').value;
+        const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
+        if(error) return showError('Update failed:', error);
+        alert('रिकॉर्ड अपडेट हुआ');
+      }
+      closeEditModal();
+      loadData();
+    } catch (e) {
+      showError('Save exception:', e);
     }
-    closeEditModal();
-    loadData();
   }
 
   async function deleteRow(id){
     if(!user) return alert('Login आवश्यक');
     if(!confirm('क्या आप इस रिकॉर्ड को हटाना चाहते हैं?')) return;
     const { error } = await sb.from('recovrybakimember').delete().eq('id', id);
-    if(error){ alert(error.message); return; }
+    if(error) return showError('Delete failed:', error);
     loadData();
   }
 
   async function markDone(id){
     if(!user) return alert('Login आवश्यक');
     const { error } = await sb.from('recovrybakimember').update({ recovery_done: true }).eq('id', id);
-    if(error){ alert(error.message); return; }
+    if(error) return showError('Mark done failed:', error);
     loadData();
   }
 
@@ -339,5 +394,6 @@
     await loadData();
   })();
 </script>
+
 </body>
 </html>
