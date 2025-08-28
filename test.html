@@ -4,144 +4,485 @@
   <meta charset="UTF-8" />
   <title>रिकवरी बकाया सूची</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Supabase JS v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
   <style>
-    body{font-family:sans-serif;margin:0;background:#f9fafb}
-    header{background:#4f46e5;color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:center}
-    #loginBox{display:none;background:#fff;padding:12px;border:1px solid #ddd;margin:10px auto;width:280px}
-    table{width:95%;margin:15px auto;border-collapse:collapse;background:#fff}
-    th,td{border:1px solid #eee;padding:8px;text-align:center}
-    .btn{padding:6px 10px;border:none;border-radius:5px;cursor:pointer;color:#fff}
-    .btn-add{background:#22c55e} .btn-edit{background:#3b82f6} .btn-del{background:#ef4444} .btn-done{background:#f59e0b}
-    #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);justify-content:center;align-items:center}
-    #modalContent{background:#fff;padding:15px;border-radius:8px;width:300px}
-    input,select{width:100%;margin:5px 0;padding:6px}
+    :root{
+      --bg:#0b1020;         /* deep navy */
+      --card:#11172b;       /* card bg */
+      --muted:#8fa0c6;      /* secondary text */
+      --pri:#6c8cff;        /* primary accent */
+      --pri-2:#94a9ff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --border:#1f2a44;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:linear-gradient(180deg,#0b1020,#0e1430 60%, #0b1020);
+      font-family:'Inter','Noto Sans Devanagari',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+      color:#eaf0ff;
+    }
+    /* Header */
+    header{
+      position:sticky; top:0; z-index:1000;
+      background:rgba(11,16,32,.75); backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px;
+    }
+    .title{
+      display:flex; gap:10px; align-items:center;
+    }
+    .logoDot{ width:10px; height:10px; border-radius:50%; background:var(--pri); box-shadow:0 0 16px var(--pri-2) }
+    .title h2{ margin:0; font-size:20px; letter-spacing:.2px }
+    .right{ display:flex; gap:10px; align-items:center }
+    #authStatus{ font-size:18px }
+    #emailBadge{
+      display:none; font-size:12px; padding:4px 10px; border-radius:999px;
+      background:rgba(148,169,255,.15); color:var(--pri-2); border:1px solid rgba(148,169,255,.35)
+    }
+    #loginToggleBtn{
+      border:1px solid rgba(148,169,255,.35);
+      background:linear-gradient(180deg, rgba(148,169,255,.25), rgba(148,169,255,.1));
+      color:var(--pri-2); width:40px; height:40px; border-radius:12px;
+      display:grid; place-items:center; cursor:pointer; font-size:18px; font-weight:700;
+      transition:.2s transform ease, .2s box-shadow ease;
+      box-shadow:0 10px 25px rgba(108,140,255,.15), inset 0 0 0 1px rgba(108,140,255,.1);
+    }
+    #loginToggleBtn:hover{ transform:translateY(-1px) }
+
+    /* Container */
+    .container{ max-width:1200px; margin:18px auto; padding:0 12px }
+
+    /* Login Panel */
+    #loginBox{
+      display:none; width:min(380px,92%); margin:16px 0 0 auto;
+      background:linear-gradient(180deg,#0f1833,#0d152e); border:1px solid var(--border);
+      border-radius:14px; padding:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(108,140,255,.06);
+    }
+    #loginBox h3{ margin:6px 0 10px; font-size:16px; color:#eaf0ff }
+    #loginBox input{
+      width:100%; padding:12px 12px; margin:6px 0 10px;
+      border-radius:10px; border:1px solid var(--border); background:#0b1328; color:#eaf0ff;
+      outline:none;
+    }
+    #loginBox button{
+      width:100%; padding:12px; border:none; border-radius:10px; cursor:pointer;
+      background:linear-gradient(180deg, var(--pri), #5576ff); color:#fff; font-weight:600;
+      box-shadow:0 10px 25px rgba(108,140,255,.25);
+    }
+    #loginBox small{ color:var(--muted) }
+    #logoutBtn{ margin-top:8px; display:none; background:linear-gradient(180deg,#d34,#b22) }
+
+    /* Toolbar */
+    .toolbar{
+      display:flex; gap:10px; justify-content:flex-end; align-items:center; margin:14px 0;
+    }
+    .btn{
+      padding:10px 12px; border:none; border-radius:10px; cursor:pointer; color:#fff; font-weight:600;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .btn-refresh{ background:linear-gradient(180deg,#3db2ff,#2b93e6) }
+    .btn-add{ background:linear-gradient(180deg,#22c55e,#16a34a); display:none }
+    .btn-logout{ background:linear-gradient(180deg,#ef4444,#dc2626); display:none }
+
+    /* Card Table */
+    .card{
+      background:linear-gradient(180deg,#0f1833,#0d152e);
+      border:1px solid var(--border); border-radius:16px; overflow:hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(108,140,255,.06);
+    }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ padding:12px 10px; border-bottom:1px solid var(--border); text-align:center }
+    th{ background:linear-gradient(180deg, rgba(148,169,255,.12), rgba(148,169,255,.06)); color:#dbe4ff; font-weight:700 }
+    td{ color:#eaf0ff }
+    .badge{ padding:4px 10px; border-radius:999px; font-size:12px; display:inline-block }
+    .pending{ background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.35) }
+    .done{ background:rgba(34,197,94,.12); color:#34d399; border:1px solid rgba(34,197,94,.35) }
+
+    .action{
+      padding:7px 10px; border:none; border-radius:10px; margin:2px; cursor:pointer; color:#fff; font-weight:600;
+      border:1px solid rgba(255,255,255,.08)
+    }
+    .edit-btn{ background:linear-gradient(180deg,#3b82f6,#2563eb) }
+    .delete-btn{ background:linear-gradient(180deg,#ef4444,#dc2626) }
+    .done-btn{ background:linear-gradient(180deg,#f59e0b,#d97706) }
+    .locked{ color:var(--muted) }
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed; inset:0; background:rgba(5,9,20,.6);
+      display:none; align-items:center; justify-content:center; z-index:1100; pointer-events:none;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.active{ display:flex; pointer-events:auto }
+    .modal{
+      width:min(720px,94%); background:linear-gradient(180deg,#101a37,#0f1833);
+      border:1px solid var(--border); border-radius:16px; overflow:hidden;
+      box-shadow:0 25px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(108,140,255,.06);
+    }
+    .modal header{ background:linear-gradient(180deg, rgba(148,169,255,.14), rgba(148,169,255,.08)); color:#eaf0ff; padding:12px 16px; border-bottom:1px solid var(--border) }
+    .modal .content{ padding:16px }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+    .col{ display:flex; flex-direction:column }
+    .col label{ color:#cbd5ff; margin-bottom:6px; font-size:13px }
+    .col input,.col select{
+      padding:11px; border-radius:10px; border:1px solid var(--border);
+      background:#0b1328; color:#eaf0ff; outline:none;
+    }
+    .modal .actions{ display:flex; gap:10px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border) }
+    .btn-secondary{ background:linear-gradient(180deg,#6b7280,#4b5563) }
+    @media (max-width:720px){ .grid{ grid-template-columns:1fr } }
   </style>
 </head>
 <body>
-<header>
-  <h2>रिकवरी बकाया सूची</h2>
-  <div>
-    <span id="authStatus">🔒</span>
-    <button id="loginToggle">🔑</button>
+  <header>
+    <div class="title">
+      <div class="logoDot"></div>
+      <h2>रिकवरी बकाया सूची</h2>
+    </div>
+    <div class="right">
+      <span id="authStatus" title="Auth Status">🔒</span>
+      <span id="emailBadge"></span>
+      <button id="loginToggleBtn" type="button" title="Login">🔑</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Login box -->
+    <div id="loginBox" aria-hidden="true">
+      <h3>लॉग-इन</h3>
+      <form id="loginForm">
+        <input type="email" id="email" placeholder="ईमेल" required />
+        <input type="password" id="password" placeholder="पासवर्ड" required />
+        <button id="loginBtn" type="submit">लॉग-इन</button>
+      </form>
+      <small>नया अकाउंट नहीं बनाया जा सकता — केवल अधिकृत यूज़र्स लॉग-इन करें।</small>
+      <button id="logoutBtn">लॉग-आउट</button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn btn-refresh" type="button" id="refreshBtn">Refresh</button>
+      <button id="addBtn" class="btn btn-add" type="button">+ नया रिकॉर्ड</button>
+      <button id="topLogoutBtn" class="btn btn-logout" type="button">Logout</button>
+    </div>
+
+    <!-- Data card + table -->
+    <div class="card">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>S.N.</th>
+            <th>आधार नंबर</th>
+            <th>नाम</th>
+            <th>पिता का नाम</th>
+            <th>खाता नंबर</th>
+            <th>राशि</th>
+            <th>DMR नंबर</th>
+            <th>वर्ष</th>
+            <th>स्थिति</th>
+            <th>कार्यवाही</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
-</header>
 
-<div id="loginBox">
-  <input id="email" placeholder="Email"><br>
-  <input id="password" type="password" placeholder="Password"><br>
-  <button id="loginBtn">Login</button>
-  <button id="logoutBtn" style="display:none">Logout</button>
-</div>
+  <!-- Edit/Create Modal -->
+  <div id="backdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <header><strong id="modalTitle">रिकॉर्ड</strong></header>
+      <div class="content">
+        <input type="hidden" id="rowId" />
+        <div class="grid">
+          <div class="col">
+            <label>आधार नंबर (12 अंक)</label>
+            <input id="f_adhar" maxlength="12" placeholder="123456789012" />
+          </div>
+          <div class="col">
+            <label>नाम</label>
+            <input id="f_name" />
+          </div>
 
-<div style="text-align:right;width:95%;margin:auto">
-  <button id="addBtn" class="btn btn-add" style="display:none">+ नया</button>
-</div>
+          <div class="col">
+            <label>पिता का नाम</label>
+            <input id="f_father" />
+          </div>
+          <div class="col">
+            <label>खाता नंबर</label>
+            <input id="f_account" maxlength="20" />
+          </div>
 
-<table>
-  <thead><tr>
-    <th>ID</th><th>आधार</th><th>नाम</th><th>राशि</th><th>वर्ष</th><th>स्थिति</th><th>कार्यवाही</th>
-  </tr></thead>
-  <tbody id="tbody"></tbody>
-</table>
+          <div class="col">
+            <label>राशि</label>
+            <input id="f_amount" type="number" step="0.01" />
+          </div>
+          <div class="col">
+            <label>DMR नंबर</label>
+            <input id="f_dmr" />
+          </div>
 
-<div id="modal">
-  <div id="modalContent">
-    <input id="m_id" type="hidden">
-    <input id="m_adhar" placeholder="आधार नंबर">
-    <input id="m_name" placeholder="नाम">
-    <input id="m_amt" type="number" placeholder="राशि">
-    <input id="m_year" type="number" placeholder="वर्ष">
-    <select id="m_done"><option value="false">Pending</option><option value="true">Done</option></select>
-    <button id="saveBtn" class="btn btn-add">सेव</button>
-    <button id="cancelBtn">रद्द</button>
+          <div class="col">
+            <label>वर्ष</label>
+            <input id="f_year" type="number" placeholder="2025" />
+          </div>
+          <div class="col">
+            <label>रिकवरी स्थिति</label>
+            <select id="f_done">
+              <option value="false">Pending</option>
+              <option value="true">Done</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary" type="button" id="cancelBtn">रद्द</button>
+        <button id="saveBtn" class="btn btn-add" type="button">सेव</button>
+      </div>
+    </div>
   </div>
-</div>
 
 <script>
-const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let user=null, mode="create";
-
-function showModal(row={}){
-  mode = row.id ? "edit" : "create";
-  document.getElementById("m_id").value = row.id||"";
-  document.getElementById("m_adhar").value = row.adhar_number||"";
-  document.getElementById("m_name").value = row.name||"";
-  document.getElementById("m_amt").value = row.amount||"";
-  document.getElementById("m_year").value = row.year||"";
-  document.getElementById("m_done").value = row.recovery_done?"true":"false";
-  document.getElementById("modal").style.display="flex";
-}
-function closeModal(){ document.getElementById("modal").style.display="none"; }
-
-async function loadData(){
-  const { data,error } = await sb.from("recovrybakimember").select("*").order("id");
-  if(error) return alert(error.message);
-  const tb = document.getElementById("tbody"); tb.innerHTML="";
-  (data||[]).forEach(r=>{
-    tb.innerHTML += `<tr>
-      <td>${r.id}</td><td>${r.adhar_number||""}</td><td>${r.name||""}</td>
-      <td>${r.amount||""}</td><td>${r.year||""}</td>
-      <td>${r.recovery_done?"✔️":"⏳"}</td>
-      <td>${user?`
-        <button class="btn btn-edit" onclick='editRow(${r.id})'>Edit</button>
-        <button class="btn btn-del" onclick='delRow(${r.id})'>Del</button>
-        <button class="btn btn-done" onclick='doneRow(${r.id})'>Done</button>`:"🔒"}</td></tr>`;
+  // ===== CONFIG =====
+  const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"recovrybakimember-auth-v1" }
   });
-}
 
-async function saveRow(){
-  const row={
-    adhar_number: m_adhar.value.trim(),
-    name: m_name.value.trim(),
-    amount: Number(m_amt.value)||0,
-    year: Number(m_year.value)||null,
-    recovery_done: m_done.value==="true"
-  };
-  try{
-    if(mode==="create") await sb.from("recovrybakimember").insert(row);
-    else await sb.from("recovrybakimember").update(row).eq("id", m_id.value);
-    closeModal(); loadData();
-  }catch(e){ alert(e.message); }
-}
+  // ===== STATE =====
+  let currentUser = null;
+  let editMode = 'create';   // 'create' | 'edit'
+  let busy = false;
 
-async function editRow(id){
-  const { data } = await sb.from("recovrybakimember").select("*").eq("id",id).single();
-  showModal(data);
-}
-async function delRow(id){
-  if(confirm("हटाएँ?")){ await sb.from("recovrybakimember").delete().eq("id",id); loadData(); }
-}
-async function doneRow(id){
-  await sb.from("recovrybakimember").update({recovery_done:true}).eq("id",id); loadData();
-}
+  // ===== HELPERS =====
+  const $ = s => document.querySelector(s);
+  function setAuthUI(){
+    const isLogged = !!currentUser;
+    $('#authStatus').textContent = isLogged ? '✅' : '🔒';
+    $('#addBtn').style.display = isLogged ? 'inline-block' : 'none';
+    $('#topLogoutBtn').style.display = isLogged ? 'inline-block' : 'none';
+    $('#logoutBtn').style.display = isLogged ? 'block' : 'none';
+    const badge = $('#emailBadge');
+    if(isLogged && currentUser.email){ badge.textContent = currentUser.email; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+  function toggleLogin(){
+    const box = $('#loginBox');
+    const visible = box.style.display === 'block';
+    box.style.display = visible ? 'none' : 'block';
+    box.setAttribute('aria-hidden', visible ? 'true' : 'false');
+  }
+  function openBackdrop(){
+    const b = $('#backdrop');
+    b.classList.add('active'); b.style.display='flex'; b.setAttribute('aria-hidden','false');
+  }
+  function closeBackdrop(){
+    const b = $('#backdrop');
+    b.classList.remove('active'); b.style.display='none'; b.setAttribute('aria-hidden','true');
+  }
+  function clearForm(){
+    $('#rowId').value=''; $('#f_adhar').value=''; $('#f_name').value='';
+    $('#f_father').value=''; $('#f_account').value='';
+    $('#f_amount').value=''; $('#f_dmr').value='';
+    $('#f_year').value=''; $('#f_done').value='false';
+  }
+  function validateForm(){
+    const adhar = $('#f_adhar').value.trim();
+    const name  = $('#f_name').value.trim();
+    const amount= $('#f_amount').value.trim();
+    const year  = $('#f_year').value.trim();
+    if(adhar.length!==12 || !/^\d{12}$/.test(adhar)) { alert('आधार नंबर 12 अंकों का चाहिए'); return false; }
+    if(!name){ alert('नाम आवश्यक है'); return false; }
+    if(amount && isNaN(Number(amount))){ alert('राशि संख्या में हो'); return false; }
+    if(year && (+year<1900 || +year>2100)){ alert('वर्ष मान्य नहीं'); return false; }
+    return true;
+  }
 
-async function doLogin(){
-  const { data,error } = await sb.auth.signInWithPassword({email:email.value,password:password.value});
-  if(error) return alert(error.message);
-  user=data.user; setUI(); loadData();
-}
-async function doLogout(){
-  await sb.auth.signOut(); user=null; setUI(); loadData(); location.reload();
-}
-function setUI(){
-  authStatus.textContent = user?"✅":"🔒";
-  addBtn.style.display = user?"inline-block":"none";
-  logoutBtn.style.display = user?"inline-block":"none";
-}
+  // ===== AUTH =====
+  sb.auth.onAuthStateChange(async (_e, session) => {
+    currentUser = session?.user ?? null;
+    setAuthUI();
+    await loadData();
+  });
 
-loginToggle.onclick=()=>loginBox.style.display=loginBox.style.display==="block"?"none":"block";
-loginBtn.onclick=doLogin; logoutBtn.onclick=doLogout;
-addBtn.onclick=()=>showModal();
-saveBtn.onclick=saveRow; cancelBtn.onclick=closeModal;
+  async function authLogin(){
+    if(busy) return; busy = true;
+    const btn = $('#loginBtn'); const old = btn.textContent;
+    btn.disabled = true; btn.textContent = 'लॉग-इन...';
+    try{
+      const email = $('#email').value.trim();
+      const password = $('#password').value;
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      currentUser = data.user;
+      $('#loginBox').style.display='none';
+      setAuthUI(); await loadData();
+    }catch(e){ alert('Login failed: '+(e.message||'unknown')); }
+    finally{ btn.disabled=false; btn.textContent=old; busy=false; }
+  }
 
-(async()=>{
-  const { data:{session} }=await sb.auth.getSession();
-  user=session?.user||null; setUI(); loadData();
-})();
+  async function authLogout(){
+    if(busy) return; busy = true;
+    try{
+      let { error } = await sb.auth.signOut({ scope:'global' });
+      if(error) await sb.auth.signOut({ scope:'local' });
+
+      // localStorage cleanup
+      try{
+        const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||''; if(k.startsWith('sb-')||k.includes('recovrybakimember-auth-v1')) keys.push(k); }
+        keys.forEach(k=>localStorage.removeItem(k));
+      }catch(_){}
+
+      currentUser = null; setAuthUI(); $('#loginBox').style.display='none';
+      await loadData();
+      // hard refresh => किसी भी stale overlay/state को साफ़ करें
+      location.reload();
+    }catch(e){ alert('Logout error: '+(e.message||'unknown')); }
+    finally{ busy = false; }
+  }
+
+  // ===== DATA =====
+  async function loadData(){
+    const { data, error } = await sb.from('recovrybakimember').select('*').order('id',{ascending:true});
+    if(error){ alert('Data load error: '+error.message); return; }
+    const tbody = $('#dataTable tbody'); tbody.innerHTML='';
+    (data||[]).forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.sn ?? ''}</td>
+        <td>${r.adhar_number ?? ''}</td>
+        <td>${r.name ?? ''}</td>
+        <td>${r.father_name ?? ''}</td>
+        <td>${r.account_number ?? ''}</td>
+        <td>${r.amount ?? ''}</td>
+        <td>${r.intrestdmr_number ?? ''}</td>
+        <td>${r.year ?? ''}</td>
+        <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
+        <td>${
+          currentUser
+           ? `<button class="action edit-btn" data-id="${r.id}">Edit</button>
+              <button class="action delete-btn" data-id="${r.id}">Delete</button>
+              <button class="action done-btn" data-id="${r.id}">Done</button>`
+           : '<span class="locked">🔒</span>'
+        }</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ===== CRUD =====
+  async function openEdit(id){
+    if(!currentUser) return alert('Login आवश्यक');
+    editMode='edit';
+    $('#modalTitle').textContent = 'रिकॉर्ड अपडेट';
+    clearForm();
+    const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
+    if(error){ alert('Row fetch error: '+error.message); return; }
+    $('#rowId').value = data.id;
+    $('#f_adhar').value = data.adhar_number ?? '';
+    $('#f_name').value = data.name ?? '';
+    $('#f_father').value = data.father_name ?? '';
+    $('#f_account').value = data.account_number ?? '';
+    $('#f_amount').value = data.amount ?? '';
+    $('#f_dmr').value = data.intrestdmr_number ?? '';
+    $('#f_year').value = data.year ?? '';
+    $('#f_done').value = data.recovery_done ? 'true' : 'false';
+    openBackdrop();
+  }
+  function openCreate(){
+    if(!currentUser) return alert('Login आवश्यक');
+    editMode='create';
+    $('#modalTitle').textContent = 'नया रिकॉर्ड जोड़ें';
+    clearForm(); openBackdrop();
+  }
+
+  async function saveRecord(){
+    if(!currentUser) return alert('Login आवश्यक');
+    if(busy) return; if(!validateForm()) return;
+    busy = true;
+    const btn = $('#saveBtn'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'सेव हो रहा है...';
+    const payload = {
+      adhar_number: $('#f_adhar').value.trim(),
+      name: $('#f_name').value.trim(),
+      father_name: $('#f_father').value.trim() || null,
+      account_number: $('#f_account').value.trim() || null,
+      amount: $('#f_amount').value ? Number($('#f_amount').value) : null,
+      intrestdmr_number: $('#f_dmr').value.trim() || null,
+      year: $('#f_year').value ? Number($('#f_year').value) : null,
+      recovery_done: $('#f_done').value === 'true'
+    };
+    try{
+      if(editMode==='create'){
+        const { error } = await sb.from('recovrybakimember').insert(payload);
+        if(error) throw error;
+      }else{
+        const id = $('#rowId').value;
+        const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
+        if(error) throw error;
+      }
+      closeBackdrop(); await loadData();
+    }catch(e){ alert('Save error: ' + (e.message||'unknown')); }
+    finally{ btn.disabled=false; btn.textContent=old; busy=false; }
+  }
+
+  async function deleteRow(id){
+    if(!currentUser) return alert('Login आवश्यक');
+    if(busy) return; if(!confirm('क्या आप इस रिकॉर्ड को हटाना चाहते हैं?')) return;
+    busy=true;
+    try{ const { error } = await sb.from('recovrybakimember').delete().eq('id', id); if(error) throw error; await loadData(); }
+    catch(e){ alert('Delete error: '+(e.message||'unknown')); }
+    finally{ busy=false; }
+  }
+
+  async function markDone(id){
+    if(!currentUser) return alert('Login आवश्यक');
+    if(busy) return; busy=true;
+    try{ const { error } = await sb.from('recovrybakimember').update({ recovery_done:true }).eq('id', id); if(error) throw error; await loadData(); }
+    catch(e){ alert('Mark done error: '+(e.message||'unknown')); }
+    finally{ busy=false; }
+  }
+
+  // ===== BINDINGS =====
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // Login UI
+    $('#loginToggleBtn').addEventListener('click', toggleLogin);
+    $('#loginForm').addEventListener('submit', (e)=>{ e.preventDefault(); authLogin(); });
+    $('#logoutBtn').addEventListener('click', authLogout);
+    $('#topLogoutBtn').addEventListener('click', authLogout);
+
+    // Toolbar
+    $('#refreshBtn').addEventListener('click', loadData);
+    $('#addBtn').addEventListener('click', openCreate);
+
+    // Modal
+    $('#cancelBtn').addEventListener('click', closeBackdrop);
+    $('#saveBtn').addEventListener('click', saveRecord);
+
+    // Table actions — delegation
+    $('#dataTable').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      if(btn.classList.contains('edit-btn')) return openEdit(id);
+      if(btn.classList.contains('delete-btn')) return deleteRow(id);
+      if(btn.classList.contains('done-btn')) return markDone(id);
+    });
+  });
+
+  // Initial
+  (async()=>{
+    const { data:{ session } } = await sb.auth.getSession();
+    currentUser = session?.user ?? null;
+    setAuthUI();
+    await loadData();
+  })();
 </script>
 </body>
 </html>
