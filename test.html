@@ -3,16 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <title>रिकवरी बकाया सूची</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fonts (optional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Supabase JS v2 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
+    * { box-sizing: border-box }
     body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#f8fafc;margin:0}
-    header{background:#4f46e5;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    header{
+      position:sticky; top:0; z-index:1000;
+      background:#4f46e5;color:#fff;padding:14px 18px;
+      display:flex;align-items:center;justify-content:space-between;
+      box-shadow:0 2px 8px rgba(0,0,0,.15)
+    }
     header h2{margin:0;font-size:22px}
     .right{display:flex;gap:10px;align-items:center}
     #authStatus{font-size:18px}
-    #loginIcon{background:#fff;color:#4f46e5;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;cursor:pointer;font-size:18px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.2)}
-    #loginBox{display:none;width:300px;margin:16px auto;background:#fff;border-radius:10px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.08);animation:slide .25s ease}
+    #loginToggleBtn{
+      background:#fff;color:#4f46e5;min-width:40px;height:40px;
+      display:grid;place-items:center;border-radius:50%;cursor:pointer;
+      font-size:18px;font-weight:700;border:none;outline:none;
+      box-shadow:0 2px 6px rgba(0,0,0,.28)
+    }
+    #emailBadge{
+      color:#fff;background:#16a34a;padding:4px 8px;border-radius:999px;
+      margin-left:4px;font-size:12px;display:none
+    }
+
+    #loginBox{
+      display:none;width:320px;max-width:94%;margin:16px auto;background:#fff;border-radius:12px;padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);animation:slide .25s ease
+    }
     #loginBox input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin:6px 0}
     #loginBox button{width:100%;padding:10px;border:none;border-radius:8px;background:#4f46e5;color:#fff;cursor:pointer}
     #loginBox small{color:#6b7280}
@@ -37,7 +59,7 @@
     .locked{color:#9ca3af}
 
     /* Modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:1100}
     .modal{width:92%;max-width:560px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);overflow:hidden}
     .modal header{background:#f1f5f9;color:#0f172a;padding:12px 16px}
     .modal .content{padding:14px 16px}
@@ -46,6 +68,7 @@
     .row input,.row select{padding:10px;border:1px solid #e5e7eb;border-radius:8px}
     .modal .actions{display:flex;gap:10px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #e5e7eb}
     .btn-secondary{background:#6b7280}
+    @media (max-width:640px){ .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
@@ -53,27 +76,30 @@
     <h2>रिकवरी बकाया सूची</h2>
     <div class="right">
       <span id="authStatus" title="Auth Status">🔒</span>
-      <span id="loginIcon" title="Login" onclick="toggleLogin()">🔑</span>
+      <span id="emailBadge"></span>
+      <button id="loginToggleBtn" type="button" title="Login">🔑</button>
     </div>
   </header>
 
   <!-- Login -->
-  <div id="loginBox">
+  <div id="loginBox" aria-hidden="true">
     <h3 style="margin:6px 0 8px">लॉग-इन</h3>
-    <input type="email" id="email" placeholder="ईमेल" />
-    <input type="password" id="password" placeholder="पासवर्ड" />
-    <button onclick="login()">लॉग-इन</button>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="ईमेल" required />
+      <input type="password" id="password" placeholder="पासवर्ड" required />
+      <button type="submit">लॉग-इन</button>
+    </form>
     <small>नया अकाउंट नहीं बनाया जा सकता — केवल अधिकृत यूज़र्स लॉग-इन करें।</small>
     <div style="margin-top:8px;text-align:center">
-      <a href="javascript:void(0)" onclick="logout()" style="color:#4f46e5;text-decoration:none">लॉग-आउट</a>
+      <a href="javascript:void(0)" onclick="authLogout()" style="color:#4f46e5;text-decoration:none">लॉग-आउट</a>
     </div>
   </div>
 
-  <!-- Toolbar (login पर ही Add दिखे) -->
+  <!-- Toolbar -->
   <div class="toolbar">
     <button class="btn btn-refresh" onclick="loadData()">Refresh</button>
     <button id="addBtn" class="btn btn-add" style="display:none" onclick="openEditModal('create')">+ नया रिकॉर्ड</button>
-    <button id="logoutBtn" class="btn btn-logout" style="display:none" onclick="logout()">Logout</button>
+    <button id="logoutBtn" class="btn btn-logout" style="display:none" onclick="authLogout()">Logout</button>
   </div>
 
   <!-- Data Table -->
@@ -146,23 +172,23 @@
         </div>
       </div>
       <div class="actions">
-        <button class="btn btn-secondary" onclick="closeEditModal()">रद्द</button>
-        <button class="btn btn-add" onclick="saveRecord()">सेव</button>
+        <button class="btn btn-secondary" type="button" onclick="closeEditModal()">रद्द</button>
+        <button class="btn btn-add" type="button" onclick="saveRecord()">सेव</button>
       </div>
     </div>
   </div>
 
 <script>
-  // ⛳ अपनी keys भरें
+  // ⛳ अपनी keys डालें
   const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
 
-  // ज्यादा stable auth options
+  // Client with stable auth options
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true, // सावधानी: OAuth नहीं है, फिर भी safe
+      detectSessionInUrl: true,
       storageKey: "recovrybakimember-auth-v1"
     }
   });
@@ -170,51 +196,51 @@
   let user = null;
   let mode = 'edit'; // 'create' | 'edit'
 
-  // ---------- UI helpers ----------
-  function setAuthUI(){
-    const isLogged = !!user;
-    document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
-    const addBtn = document.getElementById('addBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (addBtn) addBtn.style.display = isLogged ? 'inline-block' : 'none';
-    if (logoutBtn) logoutBtn.style.display = isLogged ? 'inline-block' : 'none';
-
-    // header में email दिखाएँ
-    const emailBadgeId = 'emailBadge';
-    let badge = document.getElementById(emailBadgeId);
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.id = emailBadgeId;
-      badge.style.cssText = 'color:#fff;background:#16a34a;padding:4px 8px;border-radius:999px;margin-left:8px;font-size:12px;display:none';
-      document.querySelector('.right').prepend(badge);
-    }
-    if (isLogged) {
-      badge.textContent = user.email || 'logged-in';
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
-    }
-  }
-
-  function toggleLogin(){
-    const el = document.getElementById('loginBox');
-    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-  }
-
+  // ---------- Small helpers ----------
   function showError(prefix, error){
     console.error(prefix, error);
     const msg = (error && (error.message || error.error_description || error.hint)) ? `\n${error.message || error.error_description || error.hint}` : '';
     alert(prefix + msg);
   }
 
+  function setAuthUI(){
+    const isLogged = !!user;
+    document.getElementById('authStatus').textContent = isLogged ? '✅' : '🔒';
+    document.getElementById('addBtn').style.display = isLogged ? 'inline-block' : 'none';
+    document.getElementById('logoutBtn').style.display = isLogged ? 'inline-block' : 'none';
+
+    const badge = document.getElementById('emailBadge');
+    if(isLogged && user.email){ badge.textContent = user.email; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  }
+
+  function toggleLogin(){
+    const box = document.getElementById('loginBox');
+    const visible = box.style.display === 'block';
+    box.style.display = visible ? 'none' : 'block';
+    box.setAttribute('aria-hidden', visible ? 'true' : 'false');
+  }
+
+  // Bind click via JS to avoid inline issues
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('loginToggleBtn');
+    toggleBtn.addEventListener('click', toggleLogin);
+
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await authLogin();
+    });
+  });
+
   // ---------- Auth ----------
   sb.auth.onAuthStateChange(async (_event, session) => {
     user = session?.user ?? null;
     setAuthUI();
-    await loadData();  // login/logout पर table refresh
+    await loadData();
   });
 
-  async function login(){
+  async function authLogin(){
     try {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -229,7 +255,7 @@
     }
   }
 
-  async function logout(){
+  async function authLogout(){
     try {
       const { error } = await sb.auth.signOut();
       if (error) return showError('Logout failed:', error);
@@ -287,7 +313,6 @@
   }
 
   // ---------- Modal Create/Edit ----------
-  let mode = 'edit';
   async function openEditModal(m, id=null){
     if(!user) return alert('Login आवश्यक');
     mode = m;
@@ -366,9 +391,7 @@
       }
       closeEditModal();
       loadData();
-    } catch (e) {
-      showError('Save exception:', e);
-    }
+    } catch (e) { showError('Save exception:', e); }
   }
 
   async function deleteRow(id){
@@ -394,6 +417,5 @@
     await loadData();
   })();
 </script>
-
 </body>
 </html>
