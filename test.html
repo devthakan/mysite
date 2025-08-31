@@ -1,562 +1,175 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>कानोड़ GSSS — बकाया रिकवरी सूची</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root{
-      --bg:#0b1020;
-      --card:#0f162e;
-      --muted:#9aa4b2;
-      --text:#eaf0ff;
-      --accent:#4f46e5;
-      --accent-2:#22c55e;
-      --danger:#ef4444;
-      --border:#1f2742;
-      --chip:#1b2140;
-      --chip-2:#152036;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background: radial-gradient(1200px 600px at 80% -10%, #1a2245 0%, transparent 60%),
-                  radial-gradient(800px 500px at -10% 10%, #1f2a55 0%, transparent 60%),
-                  linear-gradient(180deg, #091021 0%, #0b1020 100%);
-      color:var(--text);
-      font-family:"Inter","Noto Sans Devanagari", system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      letter-spacing:0.1px;
-    }
-    a{color:inherit}
-    .container{max-width:1200px;margin:0 auto;padding:20px}
-    header{
-      display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 18px;
-    }
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#22c55e);display:grid;place-items:center; font-weight:700}
-    .logo span{background:#fff;color:#111;padding:4px 6px;border-radius:8px;font-size:12px}
-    .titles h1{margin:0;font-size:22px;font-weight:700;letter-spacing:0.2px}
-    .titles p{margin:2px 0 0;color:var(--muted);font-size:13px}
-
-    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px;border-bottom:1px solid var(--border)}
-    .toolbar .chip{background:var(--chip);border:1px solid var(--border);padding:8px 10px;border-radius:12px;font-size:13px;color:var(--muted)}
-    .toolbar input[type="text"], .toolbar select{
-      background:#0c1330;border:1px solid var(--border);color:var(--text);
-      padding:10px 12px;border-radius:12px;outline:none; font-size:14px;min-width:240px;
-    }
-    .toolbar .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:#121a37;color:var(--text);cursor:pointer;font-weight:600}
-    .toolbar .btn.primary{background:var(--accent);border-color:#3f3ab7}
-    .toolbar .btn.ghost{background:#11172f}
-    .toolbar .btn.success{background:var(--accent-2);border-color:#169c46}
-
-    table{width:100%;border-collapse:separate;border-spacing:0}
-    thead th{position:sticky;top:0;background:linear-gradient(180deg,#121a37,#0e1530);border-bottom:1px solid var(--border);
-      color:#b9c4d6;text-align:left;font-weight:600;padding:12px 10px;font-size:12px;letter-spacing:0.4px;text-transform:uppercase}
-    tbody td{border-bottom:1px solid var(--border);padding:12px 10px;font-size:14px;color:#e8eeff}
-    tbody tr:hover{background:#0f1733}
-    tbody tr.editing{background:#0b1533}
-    .td-small{font-size:12px;color:#a8b3c9}
-    .status{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--chip-2);font-size:12px}
-    .status.done{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.35)}
-    .status.baki{background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.35)}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#121a37;border:1px solid var(--border);font-size:12px;color:#9fb0cb}
-
-    .table-wrap{max-height:65vh;overflow:auto;border-radius:0 0 18px 18px}
-
-    .footbar{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-top:1px solid var(--border)}
-    .footbar .page{display:flex;gap:8px;align-items:center}
-    .footbar button{background:#11172f;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
-
-    .right-actions{display:flex;gap:8px}
-    .action{padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#0e1530;cursor:pointer;font-size:13px}
-    .action.save{background:var(--accent)}
-    .action.danger{background:var(--danger)}
-
-    /* Login Screen */
-    .auth{max-width:420px;margin:9vh auto;padding:22px}
-    .auth h2{margin:0 0 8px}
-    .auth p{margin:0 0 16px;color:var(--muted)}
-    .field{display:flex;flex-direction:column;gap:6px;margin:10px 0}
-    .field input{background:#0c1330;border:1px solid var(--border);color:var(--text);
-      padding:12px;border-radius:12px;outline:none;font-size:14px}
-
-    .hint{font-size:12px;color:var(--muted)}
-    .divider{height:1px;background:var(--border);margin:16px 0}
-
-    .hidden{display:none !important}
-
-    .toast{position:fixed;right:16px;bottom:16px;background:#101936;color:var(--text);padding:12px 16px;border:1px solid var(--border);border-radius:12px;opacity:0;transform:translateY(10px);transition:.25s}
-    .toast.show{opacity:1;transform:translateY(0)}
-
-    .tag{padding:4px 8px;border-radius:8px;background:#101838;border:1px solid var(--border);font-size:12px;color:#b8c3d8}
-
-    .loader{width:18px;height:18px;border-radius:50%;border:3px solid #2c365f;border-top-color:#fff;display:inline-block;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    .overlay{position:fixed;inset:0;background:rgba(8,12,24,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:10}
-    .overlay.show{display:flex}
-    .overlay .box{background:#0e1530;border:1px solid var(--border);padding:16px 18px;border-radius:12px;display:flex;gap:10px;align-items:center}
-
-    .muted{color:var(--muted)}
-    .kbd{background:#101838;border:1px solid var(--border);padding:2px 6px;border-radius:6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px;color:#a8b5d0}
-
-    .selectable{user-select:all}
-    .nowrap{white-space:nowrap}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>बकाया रिकवरी सूची</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #login-section, #recovery-section { max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .update-form { margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true">G</div>
-        <div class="titles">
-          <h1>कानोड़ ग्राम सेवा सहकारी समिति — बकाया रिकवरी पोर्टल</h1>
-          <p>Supabase से लाइव डेटा • तालिका: <span class="tag">recovrybakimember</span></p>
-        </div>
-      </div>
-      <div id="userBox" class="hidden">
-        <span class="muted">लॉगिन:</span> <span id="userEmail" class="selectable"></span>
-        <button id="btnLogout" class="action" title="Logout">Logout</button>
-      </div>
-    </header>
 
-    <!-- AUTH CARD -->
-    <section id="authCard" class="card auth">
-      <h2>एडमिन लॉगिन</h2>
-      <p>कृपया अपने ईमेल और पासवर्ड से लॉगिन करें (Supabase Auth).</p>
-      <div class="field">
-        <label>ईमेल</label>
-        <input id="email" type="email" placeholder="you@example.com" autocomplete="username" />
-      </div>
-      <div class="field">
-        <label>पासवर्ड</label>
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
-      </div>
-      <div class="field">
-        <button id="btnLogin" class="toolbar btn primary" style="width:100%">लॉगिन</button>
-      </div>
-      <div class="hint">नोट: यह पेज GitHub Pages पर काम करेगा। Supabase URL और ANON KEY नीचे JS में सेट करें।</div>
-      <div class="divider"></div>
-      <div class="hint">यदि आपके पास अकाउंट नहीं है, तो Supabase डैशबोर्ड से यूज़र बनाएं।</div>
-    </section>
+    <div id="login-section">
+        <h2>लॉगिन करें</h2>
+        <form id="login-form">
+            <label for="email">ईमेल:</label>
+            <input type="email" id="email" required>
+            <br><br>
+            <label for="password">पासवर्ड:</label>
+            <input type="password" id="password" required>
+            <br><br>
+            <button type="submit">लॉगिन</button>
+        </form>
+    </div>
 
-    <!-- MAIN CARD -->
-    <section id="mainCard" class="card hidden">
-      <div class="toolbar">
-        <span class="chip">🔎 खोज</span>
-        <input id="q" type="text" placeholder="A/c, आधार, नाम से खोजें (कम से कम 2 अक्षर)…" inputmode="search" />
-        <label class="chip"><input id="onlyBaki" type="checkbox" style="vertical-align:middle;transform:translateY(1px);margin-right:6px"> सिर्फ़ बकाया</label>
-        <select id="yearFilter">
-          <option value="">सभी वर्ष</option>
-          <option>2022</option>
-          <option>2023</option>
-          <option>2024</option>
-          <option>2025</option>
-        </select>
-        <button id="refreshBtn" class="btn ghost">Refresh</button>
-        <span class="chip nowrap">कुल <span id="totalCount">0</span> रिकॉर्ड</span>
-        <div style="flex:1"></div>
-        <button id="addQuickDone" class="btn success" title="चुने हुए को Done करें" disabled>Mark Done (Selected)</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:46px">#</th>
-              <th>आधार</th>
-              <th>नाम</th>
-              <th>पिता का नाम</th>
-              <th>खाता संख्या</th>
-              <th>राशि</th>
-              <th>Interest/DMR</th>
-              <th>वर्ष</th>
-              <th>स्टेटस</th>
-              <th style="width:180px">क्रिया</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
+    <div id="recovery-section" class="hidden">
+        <h2>बकाया किसानों की रिकवरी सूची</h2>
+        <button id="logout-button">लॉगआउट</button>
+        <table id="recovery-table">
+            <thead>
+                <tr>
+                    <th>क्र.सं.</th>
+                    <th>आधार नंबर</th>
+                    <th>नाम</th>
+                    <th>पिता का नाम</th>
+                    <th>खाता संख्या</th>
+                    <th>राशि</th>
+                    <th>ब्याज</th>
+                    <th>DMR नंबर</th>
+                    <th>वर्ष</th>
+                    <th>रिकवरी हुई?</th>
+                    <th>कार्यवाही</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
         </table>
-      </div>
-      <div class="footbar">
-        <div class="page">
-          <button id="prev">◀︎</button>
-          <span class="chip">Page <span id="pageNo">1</span></span>
-          <button id="next">▶︎</button>
-          <span class="chip">प्रति पेज: <span class="kbd">25</span></span>
+
+        <div class="update-form">
+            <h3>रिकवरी अपडेट करें</h3>
+            <form id="update-form">
+                <input type="hidden" id="update-sn">
+                <label for="recovery_done">रिकवरी हुई (हाँ/नहीं):</label>
+                <input type="text" id="recovery_done" required>
+                <br><br>
+                <button type="submit">अपडेट करें</button>
+            </form>
         </div>
-        <div class="right-actions">
-          <span class="hint">संपादन के लिए <span class="kbd">Edit</span> → <span class="kbd">Save</span> करें</span>
-        </div>
-      </div>
-    </section>
-  </div>
+    </div>
 
-  <div id="overlay" class="overlay"><div class="box"><span class="loader"></span> <span id="overlayText">Loading…</span></div></div>
-  <div id="toast" class="toast"></div>
+    <script>
+        const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co'; // यहाँ अपनी Supabase URL डालें
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM'; // यहाँ अपनी Supabase anon key डालें
 
-  <script>
-    // ⬇️⬇️⬇️ 1) यहाँ अपना Supabase प्रोजेक्ट जोड़ें ⬇️⬇️⬇️
-    const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co"; // TODO: बदलें
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";              // TODO: बदलें
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 🔎 Basic sanity check so you don't forget to set keys
-    if (SUPABASE_URL.includes("YOUR-PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_ANON_KEY")) {
-      alert("⚠️ Supabase URL/Anon Key सेट करें (JS के ऊपर). तब ही Login काम करेगा.");
-    }
+        const loginSection = document.getElementById('login-section');
+        const recoverySection = document.getElementById('recovery-section');
+        const loginForm = document.getElementById('login-form');
+        const logoutButton = document.getElementById('logout-button');
+        const recoveryTableBody = document.querySelector('#recovery-table tbody');
+        const updateForm = document.getElementById('update-form');
+        const updateSn = document.getElementById('update-sn');
+        const recoveryDoneInput = document.getElementById('recovery_done');
 
-    // 2) तालिका का नाम (आपने दिया है):
-    const TABLE = "recovrybakimember";
+        // लॉगिन जांचें
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                loginSection.classList.add('hidden');
+                recoverySection.classList.remove('hidden');
+                fetchRecoveryData();
+            } else {
+                loginSection.classList.remove('hidden');
+                recoverySection.classList.add('hidden');
+            }
+        };
 
-    // 3) पेज साइज
-    const PAGE_SIZE = 25;
-
-    // 4) Supabase client
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true }
-    });
-
-    // UI elements
-    const authCard = document.getElementById('authCard');
-    const mainCard = document.getElementById('mainCard');
-    const userBox = document.getElementById('userBox');
-    const userEmail = document.getElementById('userEmail');
-    const btnLogout = document.getElementById('btnLogout');
-    const btnLogin = document.getElementById('btnLogin');
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-
-    const q = document.getElementById('q');
-    const onlyBaki = document.getElementById('onlyBaki');
-    const yearFilter = document.getElementById('yearFilter');
-    const tbody = document.getElementById('tbody');
-    const totalCount = document.getElementById('totalCount');
-    const pageNo = document.getElementById('pageNo');
-    const nextBtn = document.getElementById('next');
-    const prevBtn = document.getElementById('prev');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const addQuickDone = document.getElementById('addQuickDone');
-
-    const overlay = document.getElementById('overlay');
-    const overlayText = document.getElementById('overlayText');
-    const toast = document.getElementById('toast');
-
-    let state = {
-      page: 1,
-      search: '',
-      onlyBaki: false,
-      year: '',
-      selected: new Set(),
-      total: 0
-    };
-
-    // Helpers
-    const showToast = (msg) => {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(()=> toast.classList.remove('show'), 2200);
-    }
-    const showOverlay = (msg = 'Processing…') => { overlayText.textContent = msg; overlay.classList.add('show') }
-    const hideOverlay = () => overlay.classList.remove('show');
-
-    const formatMoney = (x) => {
-      const n = Number(x);
-      if (Number.isFinite(n)) return n.toLocaleString('en-IN');
-      return x ?? '';
-    }
-
-    // Auth flow
-    async function applyAuthUI(session){
-      if(session){
-        userEmail.textContent = session.user?.email || '';
-        userBox.classList.remove('hidden');
-        authCard.classList.add('hidden');
-        mainCard.classList.remove('hidden');
-        await loadPage();
-      } else {
-        userBox.classList.add('hidden');
-        mainCard.classList.add('hidden');
-        authCard.classList.remove('hidden');
-      }
-    }
-
-    async function init(){
-      // Tiny ping to show where we are running from
-      console.log('Origin:', location.origin);
-      console.log('Supabase URL:', SUPABASE_URL);
-      const { data: { session } } = await supabase.auth.getSession();
-      await applyAuthUI(session);
-      supabase.auth.onAuthStateChange(async (_evt, sess) => {
-        await applyAuthUI(sess);
-      });
-      // Connectivity self-test (helps spot bad URL/Key)
-      try{
-        const { data, error } = await supabase.from(TABLE).select('sn').limit(1);
-        if(error){ console.warn('DB preflight (expected before login):', error.message); }
-        else { console.log('DB reachable, rows sample:', data?.length); }
-      }catch(e){ console.warn('Preflight error:', e); }
-    } } = await supabase.auth.getSession();
-      await applyAuthUI(session);
-      supabase.auth.onAuthStateChange(async (_evt, sess) => {
-        await applyAuthUI(sess);
-      });
-    }
-
-    btnLogin?.addEventListener('click', async () => {
-      const mail = email.value.trim();
-      const pass = password.value;
-      if(!mail || !pass){ showToast('ईमेल/पासवर्ड भरें'); return; }
-      try{
-        showOverlay('लॉगिन हो रहा है…');
-        const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass });
-        if(error){
-          console.error('Auth Error:', error);
-          let msg = 'लॉगिन विफल';
-          const m = (error.message||'').toLowerCase();
-          if(m.includes('invalid login credentials')) msg = 'गलत ईमेल/पासवर्ड';
-          else if(m.includes('email not confirmed') || m.includes('confirmation')) msg = 'ईमेल confirm नहीं है — Supabase → Auth → Users में इस user को Confirm कर दें या Email confirmations disable करें';
-          else if(m.includes('invalid api key') || m.includes('api key')) msg = 'API Key/URL गलत है — Project settings → API से सही URL/Anon key कॉपी करें';
-          else if(m.includes('cors')) msg = 'CORS issue — Auth → URL config में Site URL और GitHub Pages domain जोड़ें';
-          showToast(msg);
-          return;
-        }
-        // Optional: verify session/user
-        const { data: u } = await supabase.auth.getUser();
-        if(!u?.user){ showToast('सेशन नहीं बना — URL/KEY जाँचें'); return; }
-        showToast('लॉगिन सफल');
-      }catch(err){
-        console.error(err); showToast('लॉगिन त्रुटि: ' + (err.message || err));
-      }finally{ hideOverlay(); }
-    });
-        if(error) throw error;
-        showToast('लॉगिन सफल');
-      }catch(err){
-        console.error(err); showToast('लॉगिन विफल: ' + (err.message || err));
-      }finally{ hideOverlay(); }
-    });
-    btnLogout?.addEventListener('click', async ()=>{
-      showOverlay('लॉगआउट…');
-      await supabase.auth.signOut();
-      hideOverlay();
-      showToast('लॉगआउट हो गया');
-    });
-
-    // Data fetching
-    async function loadPage(){
-      try{
-        showOverlay('डेटा लोड हो रहा है…');
-        const from = (state.page-1)*PAGE_SIZE; const to = from + PAGE_SIZE - 1;
-        let query = supabase.from(TABLE)
-          .select('sn, adhar_number, name, father_name, account_number, amount, intrestdmr_number, year, recovery_done', { count: 'exact' })
-          .order('sn', { ascending: true })
-          .range(from, to);
-
-        if(state.search && state.search.length >= 2){
-          const s = state.search;
-          // account_number & adhar_number ko text मानें
-          query = query.or(
-            `account_number.ilike.%${s}%,adhar_number.ilike.%${s}%,name.ilike.%${s}%,father_name.ilike.%${s}%`
-          );
-        }
-        if(state.onlyBaki){
-          // recovery_done = false मानते हैं (BOOLEAN). यदि TEXT है तो कृपया वैल्यू TRUE/FALSE में बदलें।
-          query = query.eq('recovery_done', false);
-        }
-        if(state.year){ query = query.eq('year', state.year); }
-
-        const { data, error, count } = await query;
-        if(error) throw error;
-        state.total = count || 0;
-        totalCount.textContent = state.total;
-        pageNo.textContent = state.page;
-        renderRows(data || []);
-      }catch(err){
-        console.error(err); showToast('लोडिंग त्रुटि: ' + (err.message || err));
-      }finally{ hideOverlay(); }
-    }
-
-    function renderRows(rows){
-      tbody.innerHTML = '';
-      addQuickDone.disabled = state.selected.size === 0;
-
-      rows.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.dataset.sn = row.sn;
-        const status = (row.recovery_done === true || row.recovery_done === 'true' || row.recovery_done === 'done' || row.recovery_done === 'YES');
-        tr.innerHTML = `
-          <td><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="rowCheck"> <span class="td-small">${row.sn ?? ''}</span></label></td>
-          <td class="nowrap">${escapeHtml(row.adhar_number)}</td>
-          <td>${escapeHtml(row.name)}</td>
-          <td>${escapeHtml(row.father_name)}</td>
-          <td class="nowrap">${escapeHtml(row.account_number)}</td>
-          <td><span class="pill">₹ ${formatMoney(row.amount)}</span></td>
-          <td>${escapeHtml(row.intrestdmr_number)}</td>
-          <td class="nowrap">${escapeHtml(row.year)}</td>
-          <td>
-            <span class="status ${status? 'done':'baki'}">${status? 'Done':'Baki'}</span>
-          </td>
-          <td>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="action edit">Edit</button>
-              <button class="action save hidden">Save</button>
-              <button class="action danger cancel hidden">Cancel</button>
-            </div>
-          </td>
-        `;
-
-        // Attach events
-        tr.querySelector('.rowCheck').addEventListener('change', (e)=>{
-          const checked = e.target.checked;
-          if(checked) state.selected.add(row.sn); else state.selected.delete(row.sn);
-          addQuickDone.disabled = state.selected.size === 0;
+        // लॉगिन
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                alert('लॉगिन विफल: ' + error.message);
+            } else {
+                checkUser();
+            }
         });
 
-        const btnEdit = tr.querySelector('.edit');
-        const btnSave = tr.querySelector('.save');
-        const btnCancel = tr.querySelector('.cancel');
+        // लॉगआउट
+        logoutButton.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            checkUser();
+        });
 
-        btnEdit.addEventListener('click', ()=> startEdit(tr, row));
-        btnSave.addEventListener('click', ()=> saveEdit(tr, row.sn));
-        btnCancel.addEventListener('click', ()=> cancelEdit(tr));
+        // रिकवरी डेटा प्राप्त करें
+        const fetchRecoveryData = async () => {
+            const { data, error } = await supabase
+                .from('recovrybakimember')
+                .select('*');
 
-        tbody.appendChild(tr);
-      });
-    }
+            if (error) {
+                console.error('डेटा लाने में त्रुटि:', error);
+                return;
+            }
 
-    function startEdit(tr, row){
-      if(tr.classList.contains('editing')) return;
-      tr.classList.add('editing');
-      const tds = tr.querySelectorAll('td');
-      const [_, tdAadhar, tdName, tdFather, tdAcc, tdAmt, tdInt, tdYear, tdStatus] = tds;
+            recoveryTableBody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.sn}</td>
+                    <td>${row.adhar_number}</td>
+                    <td>${row.name}</td>
+                    <td>${row.father_name}</td>
+                    <td>${row.account_number}</td>
+                    <td>${row.amount}</td>
+                    <td>${row.intrestdmr_number}</td>
+                    <td>${row.year}</td>
+                    <td>${row.recovery_done}</td>
+                    <td><button onclick="editRecovery(${row.sn}, '${row.recovery_done}')">संपादित करें</button></td>
+                `;
+                recoveryTableBody.appendChild(tr);
+            });
+        };
 
-      // Replace with inputs (as text)
-      tdAadhar.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdAadhar.textContent)}" />`;
-      tdName.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdName.textContent)}" />`;
-      tdFather.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdFather.textContent)}" />`;
-      tdAcc.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdAcc.textContent)}" />`;
-      tdAmt.innerHTML = `<input class="inp" type="number" step="0.01" value="${String((tdAmt.textContent||'').replace(/[^0-9.]/g,''))}" />`;
-      tdInt.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdInt.textContent)}" />`;
-      tdYear.innerHTML = `<input class="inp" type="text" value="${escapeAttr(tdYear.textContent)}" />`;
-      tdStatus.innerHTML = `
-        <label class="status ${/Done/i.test(tdStatus.textContent)?'done':'baki'}">
-          <input id="chkDone" type="checkbox" ${/Done/i.test(tdStatus.textContent)?'checked':''} style="margin-right:8px"> Done
-        </label>`;
+        // संपादन के लिए फॉर्म भरें
+        window.editRecovery = (sn, recovery_done) => {
+            updateSn.value = sn;
+            recoveryDoneInput.value = recovery_done;
+        };
 
-      tr.querySelector('.edit').classList.add('hidden');
-      tr.querySelector('.save').classList.remove('hidden');
-      tr.querySelector('.cancel').classList.remove('hidden');
+        // रिकवरी अपडेट करें
+        updateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sn = updateSn.value;
+            const recovery_done = recoveryDoneInput.value;
 
-      // Style inputs
-      tr.querySelectorAll('.inp').forEach(inp=>{
-        inp.style.background = '#0c1330';
-        inp.style.border = '1px solid var(--border)';
-        inp.style.color = 'var(--text)';
-        inp.style.padding = '8px 10px';
-        inp.style.borderRadius = '10px';
-        inp.style.minWidth = '100px';
-      });
-    }
+            const { error } = await supabase
+                .from('recovrybakimember')
+                .update({ recovery_done })
+                .eq('sn', sn);
 
-    function collectRowEdits(tr){
-      const tds = tr.querySelectorAll('td');
-      const [_, tdAadhar, tdName, tdFather, tdAcc, tdAmt, tdInt, tdYear] = tds;
-      return {
-        adhar_number: tdAadhar.querySelector('input')?.value?.trim() ?? null,
-        name: tdName.querySelector('input')?.value?.trim() ?? null,
-        father_name: tdFather.querySelector('input')?.value?.trim() ?? null,
-        account_number: tdAcc.querySelector('input')?.value?.trim() ?? null,
-        amount: tdAmt.querySelector('input')?.value ?? null,
-        intrestdmr_number: tdInt.querySelector('input')?.value?.trim() ?? null,
-        year: tdYear.querySelector('input')?.value?.trim() ?? null,
-        recovery_done: tr.querySelector('#chkDone')?.checked ?? false
-      };
-    }
+            if (error) {
+                alert('अपडेट करने में त्रुटि: ' + error.message);
+            } else {
+                alert('रिकवरी सफलतापूर्वक अपडेट की गई!');
+                fetchRecoveryData();
+                updateForm.reset();
+            }
+        });
 
-    async function saveEdit(tr, sn){
-      try{
-        const updates = collectRowEdits(tr);
-        showOverlay('सेव हो रहा है…');
-        const { error } = await supabase.from(TABLE).update(updates).eq('sn', sn);
-        if(error) throw error;
-        showToast('रिकॉर्ड सेव हुआ');
-        // Reload current page
-        await loadPage();
-      }catch(err){
-        console.error(err); showToast('सेव त्रुटि: ' + (err.message || err));
-      }finally{ hideOverlay(); }
-    }
+        checkUser();
+    </script>
 
-    function cancelEdit(tr){
-      tr.classList.remove('editing');
-      // बस पेज रीलोड कर देते हैं
-      loadPage();
-    }
-
-    // Bulk quick done
-    addQuickDone.addEventListener('click', async ()=>{
-      if(state.selected.size === 0) return;
-      try{
-        showOverlay('Bulk update…');
-        const ids = Array.from(state.selected);
-        const { error } = await supabase.from(TABLE).update({ recovery_done: true }).in('sn', ids);
-        if(error) throw error;
-        showToast('चुने हुए रिकॉर्ड Done');
-        state.selected.clear();
-        await loadPage();
-      }catch(err){ console.error(err); showToast('Bulk त्रुटि: '+(err.message||err)); }
-      finally{ hideOverlay(); }
-    });
-
-    // Search & filters
-    function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
-    q.addEventListener('input', debounce(()=>{ state.search = q.value.trim(); state.page = 1; loadPage(); }, 350));
-    onlyBaki.addEventListener('change', ()=>{ state.onlyBaki = !!onlyBaki.checked; state.page = 1; loadPage(); })
-    yearFilter.addEventListener('change', ()=>{ state.year = yearFilter.value || ''; state.page = 1; loadPage(); })
-    refreshBtn.addEventListener('click', ()=> loadPage());
-
-    nextBtn.addEventListener('click', ()=>{
-      const maxPage = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
-      if(state.page < maxPage){ state.page++; loadPage(); }
-    });
-    prevBtn.addEventListener('click', ()=>{ if(state.page>1){ state.page--; loadPage(); }});
-
-    // Utils: simple HTML escaping
-    function escapeHtml(str){
-      if(str === null || str === undefined) return '';
-      return String(str)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
-    }
-    function escapeAttr(str){ return escapeHtml(str).replaceAll('"','&quot;'); }
-
-    // Kickoff
-    init();
-  </script>
-
-  <!--
-  🔧 QUICK SETUP (Supabase)
-  1) ऊपर JS में SUPABASE_URL और SUPABASE_ANON_KEY भरें।
-  2) तालिका: recovrybakimember (columns: sn [PK], adhar_number, name, father_name, account_number, amount, intrestdmr_number, year, recovery_done [BOOLEAN])
-  3) RLS (Row Level Security) ON करें और यह बेसिक पॉलिसी लगाएँ (डैशबोर्ड → SQL):
-
-     alter table recovrybakimember enable row level security;
-     create policy "read_all_auth" on recovrybakimember for select
-       to authenticated using (true);
-     create policy "update_all_auth" on recovrybakimember for update
-       to authenticated using (true) with check (true);
-
-     (Production में आप इसे और सख़्त कर सकते हैं)
-
-  4) Supabase Auth में ईमेल/पासवर्ड यूज़र बना लें।
-  5) इस एक फाइल को GitHub Pages पर होस्ट कर दीजिए — सब चल पड़ेगा ✅
-  -->
 </body>
 </html>
