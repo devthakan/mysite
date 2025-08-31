@@ -21,8 +21,6 @@
         #logout-button { background-color: #dc3545; }
         #logout-button:hover { background-color: #c82333; }
         input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 8px; margin: 5px 0 15px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        
-        /* नोटिफिकेशन स्टाइल */
         #notification { padding: 15px; margin-bottom: 20px; border-radius: 5px; color: #fff; text-align: center; }
         .notification-success { background-color: #28a745; }
         .notification-error { background-color: #dc3545; }
@@ -39,10 +37,8 @@
             <form id="login-form">
                 <label for="email">ईमेल:</label>
                 <input type="email" id="email" required placeholder="अपना ईमेल डालें">
-                
                 <label for="password">पासवर्ड:</label>
                 <input type="password" id="password" required placeholder="अपना पासवर्ड डालें">
-                
                 <button type="submit" id="login-button">लॉगिन</button>
             </form>
         </div>
@@ -52,7 +48,6 @@
                 <h2>बकाया किसानों की रिकवरी सूची</h2>
                 <button id="logout-button">लॉगआउट</button>
             </div>
-            
             <table id="recovery-table">
                 <thead>
                     <tr>
@@ -69,10 +64,8 @@
                         <th>कार्यवाही</th>
                     </tr>
                 </thead>
-                <tbody>
-                    </tbody>
+                <tbody></tbody>
             </table>
-
             <div class="update-form">
                 <h3>रिकवरी स्टेटस अपडेट करें</h3>
                 <form id="update-form">
@@ -86,13 +79,14 @@
     </div>
 
     <script>
-        // --- आपकी Supabase URL और Key यहाँ डाल दी गई है ---
         const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- यहाँ गलती को ठीक किया गया है ---
+        // 'supabase' ग्लोबल ऑब्जेक्ट का उपयोग करके एक नया क्लाइंट वेरिएबल बनाया गया है।
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // HTML एलिमेंट्स को वेरिएबल्स में स्टोर करना
+        // HTML एलिमेंट्स
         const loginSection = document.getElementById('login-section');
         const recoverySection = document.getElementById('recovery-section');
         const loginForm = document.getElementById('login-form');
@@ -105,7 +99,7 @@
         const recoveryDoneInput = document.getElementById('recovery_done');
         const notification = document.getElementById('notification');
 
-        // नोटिफिकेशन दिखाने के लिए फंक्शन
+        // नोटिफिकेशन फंक्शन
         const showNotification = (message, type = 'info', duration = 5000) => {
             notification.textContent = message;
             notification.className = `notification-${type}`;
@@ -117,9 +111,9 @@
             }
         };
         
-        // लॉगिन की स्थिति जांचने वाला फंक्शन
+        // यूजर की स्थिति जांचें
         const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 loginSection.classList.add('hidden');
                 recoverySection.classList.remove('hidden');
@@ -132,14 +126,14 @@
 
         // लॉगिन फॉर्म सबमिट होने पर
         loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // यह लाइन फॉर्म को रीलोड होने से रोकती है
+            e.preventDefault(); // फॉर्म को रीलोड होने से रोकता है
             loginButton.disabled = true;
             loginButton.textContent = 'लॉगिन हो रहा है...';
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
             
             if (error) {
                 showNotification(`लॉगिन विफल: ${error.message === 'Invalid login credentials' ? 'अमान्य ईमेल या पासवर्ड।' : error.message}`, 'error');
@@ -151,22 +145,18 @@
             loginButton.textContent = 'लॉगिन';
         });
 
-        // लॉगआउट बटन क्लिक होने पर
+        // लॉगआउट बटन
         logoutButton.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                showNotification('लॉगआउट विफल: ' + error.message, 'error');
-            } else {
-                showNotification('आप सफलतापूर्वक लॉगआउट हो गए हैं।', 'success');
-                checkUser();
-            }
+            await supabaseClient.auth.signOut();
+            showNotification('आप सफलतापूर्वक लॉगआउट हो गए हैं।', 'success');
+            checkUser();
         });
 
-        // Supabase से रिकवरी डेटा लाने वाला फंक्शन
+        // रिकवरी डेटा लाएं
         const fetchRecoveryData = async () => {
             recoveryTableBody.innerHTML = '<tr><td colspan="11" style="text-align:center;">डेटा लोड हो रहा है...</td></tr>';
             
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('recovrybakimember')
                 .select('*')
                 .order('sn', { ascending: true });
@@ -201,12 +191,12 @@
             });
         };
 
-        // "संपादित करें" बटन के लिए फंक्शन
+        // एडिट फंक्शन
         window.editRecovery = (sn, recovery_done) => {
             updateSn.value = sn;
             recoveryDoneInput.value = recovery_done;
             recoveryDoneInput.focus();
-            window.scrollTo(0, document.body.scrollHeight); // पेज को नीचे स्क्रॉल करें
+            window.scrollTo(0, document.body.scrollHeight);
             showNotification(`रिकॉर्ड नंबर ${sn} को संपादित किया जा रहा है।`, 'info');
         };
 
@@ -219,20 +209,13 @@
             const sn = updateSn.value;
             const recovery_done = recoveryDoneInput.value;
             
-            if (!sn) {
-                showNotification('कृपया पहले सूची से एक रिकॉर्ड संपादित करने के लिए चुनें।', 'error');
-                updateButton.disabled = false;
-                updateButton.textContent = 'अपडेट करें';
-                return;
-            }
-
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('recovrybakimember')
                 .update({ recovery_done: recovery_done })
                 .eq('sn', sn);
 
             if (error) {
-                showNotification('अपडेट करने में त्रुटि: ' + error.message, 'error');
+                showNotification('अपडेट करने में त्रुटि: '...` + error.message, 'error');
             } else {
                 showNotification('रिकवरी सफलतापूर्वक अपडेट की गई!', 'success');
                 fetchRecoveryData();
@@ -242,7 +225,7 @@
             updateButton.textContent = 'अपडेट करें';
         });
 
-        // पेज लोड होने पर उपयोगकर्ता की स्थिति जांचें
+        // पेज लोड होने पर यूजर जांचें
         checkUser();
     </script>
 
