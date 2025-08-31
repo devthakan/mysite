@@ -205,6 +205,11 @@
     const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co"; // TODO: बदलें
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";              // TODO: बदलें
 
+    // 🔎 Basic sanity check so you don't forget to set keys
+    if (SUPABASE_URL.includes("YOUR-PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_ANON_KEY")) {
+      alert("⚠️ Supabase URL/Anon Key सेट करें (JS के ऊपर). तब ही Login काम करेगा.");
+    }
+
     // 2) तालिका का नाम (आपने दिया है):
     const TABLE = "recovrybakimember";
 
@@ -281,7 +286,21 @@
     }
 
     async function init(){
+      // Tiny ping to show where we are running from
+      console.log('Origin:', location.origin);
+      console.log('Supabase URL:', SUPABASE_URL);
       const { data: { session } } = await supabase.auth.getSession();
+      await applyAuthUI(session);
+      supabase.auth.onAuthStateChange(async (_evt, sess) => {
+        await applyAuthUI(sess);
+      });
+      // Connectivity self-test (helps spot bad URL/Key)
+      try{
+        const { data, error } = await supabase.from(TABLE).select('sn').limit(1);
+        if(error){ console.warn('DB preflight (expected before login):', error.message); }
+        else { console.log('DB reachable, rows sample:', data?.length); }
+      }catch(e){ console.warn('Preflight error:', e); }
+    } } = await supabase.auth.getSession();
       await applyAuthUI(session);
       supabase.auth.onAuthStateChange(async (_evt, sess) => {
         await applyAuthUI(sess);
@@ -289,9 +308,31 @@
     }
 
     btnLogin?.addEventListener('click', async () => {
+      const mail = email.value.trim();
+      const pass = password.value;
+      if(!mail || !pass){ showToast('ईमेल/पासवर्ड भरें'); return; }
       try{
         showOverlay('लॉगिन हो रहा है…');
-        const { error } = await supabase.auth.signInWithPassword({ email: email.value.trim(), password: password.value });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass });
+        if(error){
+          console.error('Auth Error:', error);
+          let msg = 'लॉगिन विफल';
+          const m = (error.message||'').toLowerCase();
+          if(m.includes('invalid login credentials')) msg = 'गलत ईमेल/पासवर्ड';
+          else if(m.includes('email not confirmed') || m.includes('confirmation')) msg = 'ईमेल confirm नहीं है — Supabase → Auth → Users में इस user को Confirm कर दें या Email confirmations disable करें';
+          else if(m.includes('invalid api key') || m.includes('api key')) msg = 'API Key/URL गलत है — Project settings → API से सही URL/Anon key कॉपी करें';
+          else if(m.includes('cors')) msg = 'CORS issue — Auth → URL config में Site URL और GitHub Pages domain जोड़ें';
+          showToast(msg);
+          return;
+        }
+        // Optional: verify session/user
+        const { data: u } = await supabase.auth.getUser();
+        if(!u?.user){ showToast('सेशन नहीं बना — URL/KEY जाँचें'); return; }
+        showToast('लॉगिन सफल');
+      }catch(err){
+        console.error(err); showToast('लॉगिन त्रुटि: ' + (err.message || err));
+      }finally{ hideOverlay(); }
+    });
         if(error) throw error;
         showToast('लॉगिन सफल');
       }catch(err){
