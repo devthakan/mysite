@@ -86,8 +86,9 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co'; // यहाँ अपनी Supabase URL डालें
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM'; // यहाँ अपनी Supabase anon key डालें
+        // --- आपकी Supabase URL और Key यहाँ डाल दी गई है ---
+        const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -105,22 +106,20 @@
         const notification = document.getElementById('notification');
 
         // नोटिफिकेशन दिखाने के लिए फंक्शन
-        const showNotification = (message, type = 'info') => {
+        const showNotification = (message, type = 'info', duration = 5000) => {
             notification.textContent = message;
-            notification.className = `notification-${type}`; // success, error, or info
+            notification.className = `notification-${type}`;
             notification.classList.remove('hidden');
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 5000); // 5 सेकंड बाद मैसेज गायब हो जाएगा
+            if (duration) {
+                setTimeout(() => {
+                    notification.classList.add('hidden');
+                }, duration);
+            }
         };
         
         // लॉगिन की स्थिति जांचने वाला फंक्शन
         const checkUser = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) {
-                showNotification('सत्र की जांच करते समय त्रुटि हुई।', 'error');
-                return;
-            }
+            const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 loginSection.classList.add('hidden');
                 recoverySection.classList.remove('hidden');
@@ -133,10 +132,9 @@
 
         // लॉगिन फॉर्म सबमिट होने पर
         loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            e.preventDefault(); // यह लाइन फॉर्म को रीलोड होने से रोकती है
             loginButton.disabled = true;
             loginButton.textContent = 'लॉगिन हो रहा है...';
-            showNotification('प्रमाणित किया जा रहा है...', 'info');
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -171,7 +169,7 @@
             const { data, error } = await supabase
                 .from('recovrybakimember')
                 .select('*')
-                .order('sn', { ascending: true }); // क्र.सं. से क्रमबद्ध करें
+                .order('sn', { ascending: true });
 
             if (error) {
                 showNotification('डेटा लाने में त्रुटि हुई: ' + error.message, 'error');
@@ -184,20 +182,20 @@
                 return;
             }
 
-            recoveryTableBody.innerHTML = ''; // टेबल को खाली करें
+            recoveryTableBody.innerHTML = '';
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${row.sn}</td>
-                    <td>${row.adhar_number}</td>
-                    <td>${row.name}</td>
-                    <td>${row.father_name}</td>
-                    <td>${row.account_number}</td>
-                    <td>${row.amount}</td>
-                    <td>${row.intrestdmr_number}</td>
-                    <td>${row.year}</td>
-                    <td>${row.recovery_done}</td>
-                    <td><button onclick="editRecovery(${row.sn}, '${row.recovery_done}')">संपादित करें</button></td>
+                    <td>${row.adhar_number || ''}</td>
+                    <td>${row.name || ''}</td>
+                    <td>${row.father_name || ''}</td>
+                    <td>${row.account_number || ''}</td>
+                    <td>${row.amount || ''}</td>
+                    <td>${row.intrestdmr_number || ''}</td>
+                    <td>${row.year || ''}</td>
+                    <td>${row.recovery_done || ''}</td>
+                    <td><button onclick="editRecovery(${row.sn}, '${row.recovery_done || ''}')">संपादित करें</button></td>
                 `;
                 recoveryTableBody.appendChild(tr);
             });
@@ -207,7 +205,8 @@
         window.editRecovery = (sn, recovery_done) => {
             updateSn.value = sn;
             recoveryDoneInput.value = recovery_done;
-            recoveryDoneInput.focus(); // इनपुट फील्ड पर फोकस करें
+            recoveryDoneInput.focus();
+            window.scrollTo(0, document.body.scrollHeight); // पेज को नीचे स्क्रॉल करें
             showNotification(`रिकॉर्ड नंबर ${sn} को संपादित किया जा रहा है।`, 'info');
         };
 
@@ -236,8 +235,8 @@
                 showNotification('अपडेट करने में त्रुटि: ' + error.message, 'error');
             } else {
                 showNotification('रिकवरी सफलतापूर्वक अपडेट की गई!', 'success');
-                fetchRecoveryData(); // सूची को ताज़ा करें
-                updateForm.reset(); // फॉर्म को खाली करें
+                fetchRecoveryData();
+                updateForm.reset();
             }
             updateButton.disabled = false;
             updateButton.textContent = 'अपडेट करें';
