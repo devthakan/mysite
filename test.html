@@ -90,7 +90,6 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- DOM Elements ---
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const addEntryBtn = document.getElementById('add-entry-btn');
@@ -103,7 +102,6 @@
         const entryForm = document.getElementById('entry-form');
         const modalTitle = document.getElementById('modal-title');
         
-        // --- Functions ---
         const showNotification = (message, type = 'success') => {
             notification.textContent = message;
             notification.className = `notification-${type}`;
@@ -170,7 +168,6 @@
             }
         };
 
-        // --- Event Listeners ---
         loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
         logoutBtn.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
@@ -226,7 +223,6 @@
             }
         });
 
-        // --- Initial Load ---
         fetchAndDisplayData();
     </script>
 </body>
