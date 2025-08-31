@@ -17,7 +17,6 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #007bff; color: white; }
         .hidden { display: none; }
-        /* Modal Styles */
         .modal { position: fixed; z-index: 100; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; }
         .modal-content { background-color: white; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 500px; }
         .modal-content h3 { margin-top: 0; }
@@ -28,7 +27,6 @@
         .modal-buttons button { padding: 10px 15px; border-radius: 5px; border: none; cursor: pointer; }
         .modal-buttons .submit-btn { background-color: #007bff; color: white; }
         .modal-buttons .cancel-btn { background-color: #6c757d; color: white; margin-left: 10px; }
-        /* Notification Styles */
         #notification { padding: 15px; margin-bottom: 20px; border-radius: 5px; color: #fff; text-align: center; }
         .notification-success { background-color: #28a745; }
         .notification-error { background-color: #dc3545; }
@@ -114,7 +112,9 @@
 
     <script>
         const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIJWTJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+        // --- यहाँ गलत KEY को ठीक कर दिया गया है ---
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- DOM Elements ---
@@ -144,29 +144,33 @@
             const { data, error } = await supabaseClient.from('recovrybakimember').select('*').order('sn', { ascending: false });
             
             if (error) {
-                recoveryTableBody.innerHTML = `<tr_><td colspan="9" style="color:red;">डेटा लोड नहीं हो सका।</td></tr>`;
+                showNotification(`त्रुटि: ${error.message}`, 'error'); // Display error in notification
+                recoveryTableBody.innerHTML = `<tr><td colspan="9" style="color:red;">डेटा लोड नहीं हो सका।</td></tr>`;
                 return;
             }
 
             recoveryTableBody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                // JSON.stringify में स्ट्रिंग कोट्स की समस्या से बचने के लिए backticks का उपयोग
-                tr.innerHTML = `
-                    <td>${row.sn}</td>
-                    <td>${row.name || ''}</td>
-                    <td>${row.father_name || ''}</td>
-                    <td>${row.adhar_number || ''}</td>
-                    <td>${row.account_number || ''}</td>
-                    <td>${row.amount || ''}</td>
-                    <td>${row.year || ''}</td>
-                    <td>${row.recovery_done || ''}</td>
-                    <td class="admin-only hidden">
-                        <button onclick='editEntry(${JSON.stringify(row)})'>संपादित करें</button>
-                    </td>
-                `;
-                recoveryTableBody.appendChild(tr);
-            });
+            if (data.length === 0) {
+                 recoveryTableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;">अभी कोई रिकॉर्ड नहीं है।</td></tr>`;
+            } else {
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.sn}</td>
+                        <td>${row.name || ''}</td>
+                        <td>${row.father_name || ''}</td>
+                        <td>${row.adhar_number || ''}</td>
+                        <td>${row.account_number || ''}</td>
+                        <td>${row.amount || ''}</td>
+                        <td>${row.year || ''}</td>
+                        <td>${row.recovery_done || ''}</td>
+                        <td class="admin-only hidden">
+                            <button onclick='editEntry(${JSON.stringify(row)})'>संपादित करें</button>
+                        </td>
+                    `;
+                    recoveryTableBody.appendChild(tr);
+                });
+            }
             updateAdminUI();
         };
 
@@ -225,7 +229,6 @@
         window.editEntry = (rowData) => {
             modalTitle.textContent = `रिकॉर्ड #${rowData.sn} संपादित करें`;
             entryForm.reset();
-            // फॉर्म में डेटा भरना
             document.getElementById('entry-sn').value = rowData.sn;
             document.getElementById('name').value = rowData.name || '';
             document.getElementById('father_name').value = rowData.father_name || '';
@@ -253,16 +256,11 @@
             };
 
             let error;
-            if (sn) { // अगर sn है, तो अपडेट करें
-                const { error: updateError } = await supabaseClient
-                    .from('recovrybakimember')
-                    .update(formData)
-                    .eq('sn', sn);
+            if (sn) {
+                const { error: updateError } = await supabaseClient.from('recovrybakimember').update(formData).eq('sn', sn);
                 error = updateError;
-            } else { // अगर sn नहीं है, तो नई एंट्री डालें
-                const { error: insertError } = await supabaseClient
-                    .from('recovrybakimember')
-                    .insert([formData]);
+            } else {
+                const { error: insertError } = await supabaseClient.from('recovrybakimember').insert([formData]);
                 error = insertError;
             }
 
