@@ -133,10 +133,10 @@
 
 <script>
 /** ====== CONFIG: अपनी keys भरो ====== */
-const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"recovrybakimember-auth-v1" }
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"recovrybakimember-auth-v1" }
 });
 
 /** ====== STATE ====== */
@@ -147,211 +147,204 @@ let editMode = 'create'; // 'create' | 'edit'
 /** ====== HELPERS ====== */
 const $ = s => document.querySelector(s);
 function setAuthUI(){
-  const logged = !!user;
-  $('#authIcon').textContent = logged ? '✅' : '🔒';
-  $('#authBadge').style.display = logged && user.email ? 'inline-block' : 'none';
-  if(logged && user.email) $('#authBadge').textContent = user.email;
-  $('#addBtn').style.display = logged ? 'inline-block' : 'none';
-  $('#topLogoutBtn').style.display = logged ? 'inline-block' : 'none';
-  $('#logoutBtn').style.display = logged ? 'block' : 'none';
-  // जब यूजर लॉग इन हो तो 'Login' बटन को 'Close' में बदलें
-  $('#loginToggle').textContent = logged ? 'Close' : 'Login';
+  const logged = !!user;
+  $('#authIcon').textContent = logged ? '✅' : '🔒';
+  $('#authBadge').style.display = logged && user.email ? 'inline-block' : 'none';
+  if(logged && user.email) $('#authBadge').textContent = user.email;
+  $('#addBtn').style.display = logged ? 'inline-block' : 'none';
+  $('#topLogoutBtn').style.display = logged ? 'inline-block' : 'none';
+  $('#logoutBtn').style.display = logged ? 'block' : 'none';
 }
 function toggleLogin(){
-  const box = $('#loginBox');
-  // अगर यूजर पहले से लॉग इन है, तो loginToggle बटन सिर्फ पैनल को बंद करेगा
-  if(user) {
-    box.style.display = 'none';
-    return;
-  }
-  box.style.display = (box.style.display==='block') ? 'none' : 'block';
+  const box = $('#loginBox');
+  box.style.display = (box.style.display==='block') ? 'none' : 'block';
 }
 function openModal(){ $('#modal').style.display = 'flex'; $('#modal').setAttribute('aria-hidden','false'); }
 function closeModal(){ $('#modal').style.display = 'none'; $('#modal').setAttribute('aria-hidden','true'); }
 function clearForm(){
-  $('#rowId').value=''; $('#f_adhar').value=''; $('#f_name').value='';
-  $('#f_father').value=''; $('#f_account').value=''; $('#f_amount').value='';
-  $('#f_dmr').value=''; $('#f_year').value=''; $('#f_done').value='false';
+  $('#rowId').value=''; $('#f_adhar').value=''; $('#f_name').value='';
+  $('#f_father').value=''; $('#f_account').value=''; $('#f_amount').value='';
+  $('#f_dmr').value=''; $('#f_year').value=''; $('#f_done').value='false';
 }
 function validateForm(){
-  const adhar = $('#f_adhar').value.trim();
-  const name  = $('#f_name').value.trim();
-  const amount= $('#f_amount').value.trim();
-  const year  = $('#f_year').value.trim();
-  if(adhar.length!==12 || !/^\d{12}$/.test(adhar)){ alert('आधार 12 अंकों का चाहिए'); return false; }
-  if(!name){ alert('नाम आवश्यक है'); return false; }
-  if(amount && isNaN(Number(amount))){ alert('राशि संख्या में हो'); return false; }
-  if(year && (+year<1900 || +year>2100)){ alert('वर्ष मान्य नहीं'); return false; }
-  return true;
+  const adhar = $('#f_adhar').value.trim();
+  const name  = $('#f_name').value.trim();
+  const amount= $('#f_amount').value.trim();
+  const year  = $('#f_year').value.trim();
+  if(adhar.length!==12 || !/^\d{12}$/.test(adhar)){ alert('आधार 12 अंकों का चाहिए'); return false; }
+  if(!name){ alert('नाम आवश्यक है'); return false; }
+  if(amount && isNaN(Number(amount))){ alert('राशि संख्या में हो'); return false; }
+  if(year && (+year<1900 || +year>2100)){ alert('वर्ष मान्य नहीं'); return false; }
+  return true;
 }
 
 /** ====== AUTH ====== */
-sb.auth.onAuthStateChange(async (_event, session) => {
-  user = session?.user ?? null;
-  setAuthUI();
-  await loadData(); // Auth state बदलते ही डेटा रीलोड करें
+sb.auth.onAuthStateChange(async (_e, session)=>{
+  user = session?.user ?? null;
+  setAuthUI();
+  await loadData();
 });
 
-
 async function doLogin(){
-  if(busy) return; busy = true;
-  const btn = $('#loginBtn'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'लॉग-इन...';
-  try{
-    const email = $('#email').value.trim();
-    const password = $('#password').value;
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    // onAuthStateChange बाकी काम करेगा, लेकिन तुरंत UI अपडेट के लिए...
+  if(busy) return; busy = true;
+  const btn = $('#loginBtn'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'लॉग-इन...';
+  try{
+    const email = $('#email').value.trim();
+    const password = $('#password').value;
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    user = data.user;
     $('#loginBox').style.display='none';
-  }catch(e){ alert('Login failed: '+(e.message||'unknown error')); }
-  finally{ btn.disabled=false; btn.textContent=old; busy=false; }
+    setAuthUI(); await loadData();
+  }catch(e){ alert('Login failed: '+(e.message||'unknown')); }
+  finally{ btn.disabled=false; btn.textContent=old; busy=false; }
 }
 
 async function doLogout(){
-  if(busy) return; busy = true;
-  // दोनों लॉगआउट बटन को अस्थायी रूप से डिसेबल करें
-  $('#logoutBtn').disabled = true;
-  $('#topLogoutBtn').disabled = true;
-  try{
-    // signOut() कॉल करना ही काफी है।
-    const { error } = await sb.auth.signOut();
-    if (error) throw error;
-    // onAuthStateChange इवेंट UI को अपने आप अपडेट कर देगा।
-    $('#loginBox').style.display='none'; // लॉगआउट के बाद लॉगिन पैनल बंद कर दें
-  }catch(e){
-    alert('Logout error: ' + (e.message || 'unknown error'));
-  } finally {
-    busy = false;
-    // बटन को फिर से इनेबल करने की जरूरत नहीं है, क्योंकि UI अपडेट होकर वे गायब हो जाएंगे
-  }
+  if(busy) return; busy = true;
+  try{
+    let { error } = await sb.auth.signOut({ scope:'global' });
+    if(error) await sb.auth.signOut({ scope:'local' });
+
+    // localStorage cleanup (safety)
+    try{
+      const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||''; if(k.startsWith('sb-')||k.includes('recovrybakimember-auth-v1')) keys.push(k); }
+      keys.forEach(k=>localStorage.removeItem(k));
+    }catch(_){}
+
+    user = null; setAuthUI(); $('#loginBox').style.display='none';
+    await loadData();
+    // stale UI से बचने के लिए hard refresh:
+    location.reload();
+  }catch(e){ alert('Logout error: '+(e.message||'unknown')); }
+  finally{ busy = false; }
 }
 
 /** ====== DATA ====== */
 async function loadData(){
-  const tb = $('#tbody');
-  tb.innerHTML = '<tr><td colspan="10">लोड हो रहा है...</td></tr>';
-  const { data, error } = await sb.from('recovrybakimember').select('*').order('id',{ascending:true});
-  if(error){
-    alert('Data load error: '+error.message);
-    tb.innerHTML = '<tr><td colspan="10">डेटा लोड नहीं हो सका।</td></tr>';
-    return;
-  }
-  tb.innerHTML=''; // पुराना डेटा साफ़ करें
-  (data||[]).forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r.sn ?? ''}</td>
-      <td>${r.adhar_number ?? ''}</td>
-      <td>${r.name ?? ''}</td>
-      <td>${r.father_name ?? ''}</td>
-      <td>${r.account_number ?? ''}</td>
-      <td>${r.amount ?? ''}</td>
-      <td>${r.intrestdmr_number ?? ''}</td>
-      <td>${r.year ?? ''}</td>
-      <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
-      <td>${
-        user
-        ? `<button class="action edit" data-id="${r.id}">Edit</button>
-           <button class="action del" data-id="${r.id}">Delete</button>
-           <button class="action mark" data-id="${r.id}">Done</button>`
-        : '<span class="locked">🔒</span>'
-      }</td>`;
-    tb.appendChild(tr);
-  });
+  const { data, error } = await sb.from('recovrybakimember').select('*').order('id',{ascending:true});
+  if(error){ alert('Data load error: '+error.message); return; }
+  const tb = $('#tbody'); tb.innerHTML='';
+  (data||[]).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.sn ?? ''}</td>
+      <td>${r.adhar_number ?? ''}</td>
+      <td>${r.name ?? ''}</td>
+      <td>${r.father_name ?? ''}</td>
+      <td>${r.account_number ?? ''}</td>
+      <td>${r.amount ?? ''}</td>
+      <td>${r.intrestdmr_number ?? ''}</td>
+      <td>${r.year ?? ''}</td>
+      <td>${r.recovery_done ? '<span class="badge done">✔️ Done</span>' : '<span class="badge pending">⏳ Pending</span>'}</td>
+      <td>${
+        user
+        ? `<button class="action edit" data-id="${r.id}">Edit</button>
+           <button class="action del" data-id="${r.id}">Delete</button>
+           <button class="action mark" data-id="${r.id}">Done</button>`
+        : '<span class="locked">🔒</span>'
+      }</td>`;
+    tb.appendChild(tr);
+  });
 }
 
 /** ====== CRUD ====== */
 async function openCreate(){
-  if(!user) return alert('Login आवश्यक');
-  editMode='create'; $('#modalTitle').textContent='नया रिकॉर्ड'; clearForm(); openModal();
+  if(!user) return alert('Login आवश्यक');
+  editMode='create'; $('#modalTitle').textContent='नया रिकॉर्ड'; clearForm(); openModal();
 }
 async function openEdit(id){
-  if(!user) return alert('Login आवश्यक');
-  editMode='edit'; $('#modalTitle').textContent='रिकॉर्ड अपडेट'; clearForm();
-  const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
-  if(error){ alert('Row fetch error: '+error.message); return; }
-  $('#rowId').value = data.id;
-  $('#f_adhar').value = data.adhar_number ?? '';
-  $('#f_name').value = data.name ?? '';
-  $('#f_father').value = data.father_name ?? '';
-  $('#f_account').value = data.account_number ?? '';
-  $('#f_amount').value = data.amount ?? '';
-  $('#f_dmr').value = data.intrestdmr_number ?? '';
-  $('#f_year').value = data.year ?? '';
-  $('#f_done').value = data.recovery_done ? 'true' : 'false';
-  openModal();
+  if(!user) return alert('Login आवश्यक');
+  editMode='edit'; $('#modalTitle').textContent='रिकॉर्ड अपडेट'; clearForm();
+  const { data, error } = await sb.from('recovrybakimember').select('*').eq('id', id).single();
+  if(error){ alert('Row fetch error: '+error.message); return; }
+  $('#rowId').value = data.id;
+  $('#f_adhar').value = data.adhar_number ?? '';
+  $('#f_name').value = data.name ?? '';
+  $('#f_father').value = data.father_name ?? '';
+  $('#f_account').value = data.account_number ?? '';
+  $('#f_amount').value = data.amount ?? '';
+  $('#f_dmr').value = data.intrestdmr_number ?? '';
+  $('#f_year').value = data.year ?? '';
+  $('#f_done').value = data.recovery_done ? 'true' : 'false';
+  openModal();
 }
 
 async function saveRecord(){
-  if(!user) return alert('Login आवश्यक');
-  if(busy) return; if(!validateForm()) return; busy = true;
-  const btn = $('#saveBtn'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'सेव हो रहा है...';
-  const payload = {
-    adhar_number: $('#f_adhar').value.trim(),
-    name: $('#f_name').value.trim(),
-    father_name: $('#f_father').value.trim() || null,
-    account_number: $('#f_account').value.trim() || null,
-    amount: $('#f_amount').value ? Number($('#f_amount').value) : null,
-    intrestdmr_number: $('#f_dmr').value.trim() || null,
-    year: $('#f_year').value ? Number($('#f_year').value) : null,
-    recovery_done: $('#f_done').value === 'true'
-  };
-  try{
-    if(editMode==='create'){
-      const { error } = await sb.from('recovrybakimember').insert(payload);
-      if(error) throw error;
-    }else{
-      const id = $('#rowId').value;
-      const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
-      if(error) throw error;
-    }
-    closeModal(); await loadData();
-  }catch(e){ alert('Save error: '+(e.message||'unknown')); }
-  finally{ btn.disabled=false; btn.textContent=old; busy=false; }
+  if(!user) return alert('Login आवश्यक');
+  if(busy) return; if(!validateForm()) return; busy = true;
+  const btn = $('#saveBtn'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'सेव हो रहा है...';
+  const payload = {
+    adhar_number: $('#f_adhar').value.trim(),
+    name: $('#f_name').value.trim(),
+    father_name: $('#f_father').value.trim() || null,
+    account_number: $('#f_account').value.trim() || null,
+    amount: $('#f_amount').value ? Number($('#f_amount').value) : null,
+    intrestdmr_number: $('#f_dmr').value.trim() || null,
+    year: $('#f_year').value ? Number($('#f_year').value) : null,
+    recovery_done: $('#f_done').value === 'true'
+  };
+  try{
+    if(editMode==='create'){
+      const { error } = await sb.from('recovrybakimember').insert(payload);
+      if(error) throw error;
+    }else{
+      const id = $('#rowId').value;
+      const { error } = await sb.from('recovrybakimember').update(payload).eq('id', id);
+      if(error) throw error;
+    }
+    closeModal(); await loadData();
+  }catch(e){ alert('Save error: '+(e.message||'unknown')); }
+  finally{ btn.disabled=false; btn.textContent=old; busy=false; }
 }
 
 async function deleteRow(id){
-  if(!user) return alert('Login आवश्यक');
-  if(!confirm('रिकॉर्ड हटाएँ?')) return;
-  const { error } = await sb.from('recovrybakimember').delete().eq('id', id);
-  if(error){ alert('Delete error: '+error.message); return; }
-  await loadData();
+  if(!user) return alert('Login आवश्यक');
+  if(!confirm('रिकॉर्ड हटाएँ?')) return;
+  const { error } = await sb.from('recovrybakimember').delete().eq('id', id);
+  if(error){ alert('Delete error: '+error.message); return; }
+  await loadData();
 }
 async function markDone(id){
-  if(!user) return alert('Login आवश्यक');
-  const { error } = await sb.from('recovrybakimember').update({recovery_done:true}).eq('id', id);
-  if(error){ alert('Mark done error: '+error.message); return; }
-  await loadData();
+  if(!user) return alert('Login आवश्यक');
+  const { error } = await sb.from('recovrybakimember').update({recovery_done:true}).eq('id', id);
+  if(error){ alert('Mark done error: '+error.message); return; }
+  await loadData();
 }
 
 /** ====== EVENTS ====== */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // login ui
-  $('#loginToggle').addEventListener('click', toggleLogin);
-  $('#loginForm').addEventListener('submit', (e)=>{ e.preventDefault(); doLogin(); });
-  $('#logoutBtn').addEventListener('click', doLogout);
-  $('#topLogoutBtn').addEventListener('click', doLogout);
+  // login ui
+  $('#loginToggle').addEventListener('click', toggleLogin);
+  $('#loginForm').addEventListener('submit', (e)=>{ e.preventDefault(); doLogin(); });
+  $('#logoutBtn').addEventListener('click', doLogout);
+  $('#topLogoutBtn').addEventListener('click', doLogout);
 
-  // toolbar
-  $('#refreshBtn').addEventListener('click', loadData);
-  $('#addBtn').addEventListener('click', openCreate);
+  // toolbar
+  $('#refreshBtn').addEventListener('click', loadData);
+  $('#addBtn').addEventListener('click', openCreate);
 
-  // modal
-  $('#cancelBtn').addEventListener('click', closeModal);
-  $('#saveBtn').addEventListener('click', saveRecord);
+  // modal
+  $('#cancelBtn').addEventListener('click', closeModal);
+  $('#saveBtn').addEventListener('click', saveRecord);
 
-  // table actions (delegation)
-  $('#tbody').addEventListener('click', (e)=>{
-    const btn = e.target.closest('button'); if(!btn) return;
-    const id = btn.getAttribute('data-id');
-    if(btn.classList.contains('edit')) return openEdit(id);
-    if(btn.classList.contains('del')) return deleteRow(id);
-    if(btn.classList.contains('mark')) return markDone(id);
-  });
-
-  // पेज लोड होने पर कोई भी मौजूदा सेशन तुरंत हैंडल नहीं होता है,
-  // onAuthStateChange इसे संभाल लेगा। इसलिए initial load block की जरूरत नहीं।
+  // table actions (delegation)
+  $('#tbody').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    if(btn.classList.contains('edit')) return openEdit(id);
+    if(btn.classList.contains('del')) return deleteRow(id);
+    if(btn.classList.contains('mark')) return markDone(id);
+  });
 });
+
+// first load
+(async()=>{
+  const { data:{session} } = await sb.auth.getSession();
+  user = session?.user ?? null;
+  setAuthUI();
+  await loadData();
+})();
 </script>
 </body>
 </html>
