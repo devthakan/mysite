@@ -18,7 +18,6 @@
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
-        .hidden { display: none !important; }
         .modal { position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
         .modal-content { background-color: white; padding: 25px 35px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .modal-content h3 { margin-top: 0; }
@@ -31,6 +30,12 @@
         #notification { padding: 15px; margin-bottom: 20px; border-radius: 5px; color: #fff; text-align: center; }
         .notification-success { background-color: #28a745; }
         .notification-error { background-color: #dc3545; }
+
+        /* --- Admin UI Control --- */
+        .admin-only { display: none; }
+        body.is-admin .admin-only { display: revert; } /* 'revert' lets the element behave as it normally would (e.g., table-cell for th/td) */
+        body.is-admin #login-btn { display: none; }
+        body:not(.is-admin) #logout-btn, body:not(.is-admin) #add-entry-btn { display: none; }
     </style>
 </head>
 <body>
@@ -38,9 +43,9 @@
         <header>
             <h2>बकाया रिकवरी सूची</h2>
             <div id="auth-controls">
-                <button id="add-entry-btn" class="admin-only hidden"><i class="fas fa-plus"></i> नई एंट्री</button>
+                <button id="add-entry-btn"><i class="fas fa-plus"></i> नई एंट्री</button>
                 <button id="login-btn"><i class="fas fa-sign-in-alt"></i> लॉगिन</button>
-                <button id="logout-btn" class="admin-only hidden"><i class="fas fa-sign-out-alt"></i> लॉगआउट</button>
+                <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> लॉगआउट</button>
             </div>
         </header>
         <div id="notification" class="hidden"></div>
@@ -49,7 +54,7 @@
                 <thead>
                     <tr>
                         <th>क्र.सं.</th><th>नाम</th><th>पिता का नाम</th><th>राशि</th><th>वर्ष</th><th>रिकवरी हुई?</th>
-                        <th class="admin-only hidden" style="width: 100px;">कार्यवाही</th>
+                        <th class="admin-only" style="width: 100px;">कार्यवाही</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -57,7 +62,7 @@
         </div>
     </div>
 
-    <div id="login-modal" class="modal hidden">
+    <div id="login-modal" class="modal" style="display:none;">
         <div class="modal-content">
             <form id="login-form">
                 <h3>एडमिन लॉगिन</h3><label for="email">ईमेल:</label><input type="email" id="email" required><label for="password">पासवर्ड:</label><input type="password" id="password" required>
@@ -65,7 +70,7 @@
             </form>
         </div>
     </div>
-    <div id="entry-modal" class="modal hidden">
+    <div id="entry-modal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3 id="modal-title"></h3>
             <form id="entry-form">
@@ -90,6 +95,7 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // --- DOM Elements ---
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const addEntryBtn = document.getElementById('add-entry-btn');
@@ -97,16 +103,16 @@
         const entryModal = document.getElementById('entry-modal');
         const recoveryTableBody = document.querySelector('#recovery-table tbody');
         const notification = document.getElementById('notification');
-        const adminOnlyElements = document.querySelectorAll('.admin-only');
         const loginForm = document.getElementById('login-form');
         const entryForm = document.getElementById('entry-form');
         const modalTitle = document.getElementById('modal-title');
         
+        // --- Functions ---
         const showNotification = (message, type = 'success') => {
             notification.textContent = message;
             notification.className = `notification-${type}`;
-            notification.classList.remove('hidden');
-            setTimeout(() => notification.classList.add('hidden'), 4000);
+            notification.style.display = 'block';
+            setTimeout(() => notification.style.display = 'none', 4000);
         };
 
         const fetchAndDisplayData = async () => {
@@ -118,10 +124,11 @@
             recoveryTableBody.innerHTML = '';
             data.forEach(row => {
                 const tr = document.createElement('tr');
+                // *** FIX: Removed the 'hidden' class from the Actions <td> ***
                 tr.innerHTML = `
                     <td>${row.sn}</td> <td>${row.name || ''}</td> <td>${row.father_name || ''}</td>
                     <td>${row.amount || ''}</td> <td>${row.year || ''}</td> <td>${row.recovery_done || ''}</td>
-                    <td class="admin-only hidden">
+                    <td class="admin-only">
                         <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(row)})' title="संपादित करें"><i class="fas fa-pencil-alt"></i></button>
                         <button class="action-btn delete-btn" onclick="deleteEntry(${row.sn})" title="हटाएं"><i class="fas fa-trash-alt"></i></button>
                     </td>`;
@@ -133,11 +140,9 @@
         const updateAdminUI = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                loginBtn.classList.add('hidden');
-                adminOnlyElements.forEach(el => el.classList.remove('hidden'));
+                document.body.classList.add('is-admin');
             } else {
-                loginBtn.classList.remove('hidden');
-                adminOnlyElements.forEach(el => el.classList.add('hidden'));
+                document.body.classList.remove('is-admin');
             }
         };
 
@@ -153,7 +158,7 @@
             document.getElementById('year').value = rowData.year || '';
             document.getElementById('intrestdmr_number').value = rowData.intrestdmr_number || '';
             document.getElementById('recovery_done').value = rowData.recovery_done || 'नहीं';
-            entryModal.classList.remove('hidden');
+            entryModal.style.display = 'flex';
         };
 
         window.deleteEntry = async (id) => {
@@ -168,7 +173,8 @@
             }
         };
 
-        loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', () => { loginModal.style.display = 'flex'; });
         logoutBtn.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
             showNotification('आप सफलतापूर्वक लॉगआउट हो गए हैं।', 'success');
@@ -178,11 +184,13 @@
             modalTitle.textContent = 'नई एंट्री जोड़ें';
             entryForm.reset();
             document.getElementById('entry-sn').value = '';
-            entryModal.classList.remove('hidden');
+            entryModal.style.display = 'flex';
         });
 
         document.querySelectorAll('[data-close-modal]').forEach(button => {
-            button.addEventListener('click', () => button.closest('.modal').classList.add('hidden'));
+            button.addEventListener('click', () => {
+                button.closest('.modal').style.display = 'none';
+            });
         });
 
         loginForm.addEventListener('submit', async (e) => {
@@ -195,7 +203,7 @@
                 showNotification('लॉगिन विफल: अमान्य ईमेल या पासवर्ड।', 'error');
             } else {
                 showNotification('सफलतापूर्वक लॉगिन हो गया!', 'success');
-                loginModal.classList.add('hidden');
+                loginModal.style.display = 'none';
                 loginForm.reset();
                 updateAdminUI();
             }
@@ -204,6 +212,8 @@
         entryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const sn = document.getElementById('entry-sn').value;
+            const formData = { /* ... form data ... */ };
+            // ... (form data collection is the same)
             const formData = {
                 name: document.getElementById('name').value, father_name: document.getElementById('father_name').value,
                 adhar_number: document.getElementById('adhar_number').value, account_number: document.getElementById('account_number').value,
@@ -218,11 +228,12 @@
                 showNotification(`त्रुटि: ${error.message}`, 'error');
             } else {
                 showNotification(sn ? 'रिकॉर्ड सफलतापूर्वक अपडेट किया गया!' : 'नई एंट्री सफलतापूर्वक जोड़ी गई!', 'success');
-                entryModal.classList.add('hidden');
+                entryModal.style.display = 'none';
                 fetchAndDisplayData();
             }
         });
 
+        // --- Initial Load ---
         fetchAndDisplayData();
     </script>
 </body>
