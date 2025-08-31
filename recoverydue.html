@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>बकाया रिकवरी सूची</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --header-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+        #app-container {
+            max-width: 1400px;
+            margin: 25px auto;
+            background-color: var(--header-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        header h2 { margin: 0; font-weight: 600; }
+        #auth-controls button {
+            background: none; border: none; font-size: 1rem; cursor: pointer;
+            margin-left: 15px; padding: 8px 15px; border-radius: 8px;
+            transition: background-color 0.2s, color 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        #add-entry-btn { background-color: var(--success-color); color: white; }
+        #login-btn, #logout-btn { background-color: #6c757d; color: white; }
+        #add-entry-btn:hover { background-color: #157347; }
+        #login-btn:hover, #logout-btn:hover { background-color: #5c636a; }
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 25px;
+            font-size: 0.9rem;
+        }
+        th, td { border: 1px solid var(--border-color); padding: 14px; text-align: left; }
+        th { background-color: var(--primary-color); color: white; font-weight: 500; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:hover { background-color: #e9ecef; }
+        .hidden { display: none !important; }
+        .modal { position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: var(--shadow); }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
+        .modal-buttons { margin-top: 25px; text-align: right; }
+        .modal-buttons button { padding: 10px 20px; }
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; margin: 0 6px; }
+        .edit-btn { color: #0dcaf0; }
+        .delete-btn { color: var(--danger-color); }
+        .edit-btn:hover { color: #0aa8c2; }
+        .delete-btn:hover { color: #b02a37; }
+        #notification { padding: 15px; margin: 20px 0 0 0; border-radius: 8px; color: #fff; text-align: center; }
+        .notification-success { background-color: var(--success-color); }
+        .notification-error { background-color: var(--danger-color); }
+        body.is-admin .admin-only { display: revert; }
+        body.is-admin #login-btn { display: none; }
+        body:not(.is-admin) .admin-only { display: none; }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <h2>बकाया रिकवरी सूची</h2>
+            <div id="auth-controls">
+                <button id="add-entry-btn" class="admin-only"><i class="fas fa-plus"></i> नई एंट्री</button>
+                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> एडमिन लॉगिन</button>
+                <button id="logout-btn" class="admin-only"><i class="fas fa-sign-out-alt"></i> लॉगआउट</button>
+            </div>
+        </header>
+        <div id="notification" class="hidden"></div>
+        <div style="overflow-x:auto;">
+            <table id="recovery-table">
+                <thead>
+                    <tr>
+                        <th>क्र.सं.</th>
+                        <th>नाम</th>
+                        <th>पिता का नाम</th>
+                        <th>आधार नंबर</th>
+                        <th>खाता संख्या</th>
+                        <th>DMR नंबर</th>
+                        <th>राशि</th>
+                        <th>वर्ष</th>
+                        <th>रिकवरी हुई?</th>
+                        <th class="admin-only" style="width: 120px; text-align: center;">कार्यवाही</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content">
+            <form id="login-form">
+                <h3>एडमिन लॉगिन</h3><label for="email">ईमेल:</label><input type="email" id="email" required><label for="password">पासवर्ड:</label><input type="password" id="password" required>
+                <div class="modal-buttons"><button type="submit" class="submit-btn">लॉगिन</button><button type="button" class="cancel-btn" data-close-modal>कैंसिल</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="entry-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+            <form id="entry-form">
+                <input type="hidden" id="entry-sn">
+                <div class="form-grid">
+                    <div><label for="name">नाम:</label><input type="text" id="name" required></div>
+                    <div><label for="father_name">पिता का नाम:</label><input type="text" id="father_name"></div>
+                    <div><label for="adhar_number">आधार नंबर:</label><input type="text" id="adhar_number"></div>
+                    <div><label for="account_number">खाता संख्या:</label><input type="text" id="account_number"></div>
+                    <div><label for="intrestdmr_number">DMR नंबर:</label><input type="text" id="intrestdmr_number"></div>
+                    <div><label for="amount">राशि:</label><input type="number" id="amount"></div>
+                    <div><label for="year">वर्ष:</label><input type="number" id="year"></div>
+                    <div><label for="recovery_done">रिकवरी हुई?</label><select id="recovery_done"><option value="नहीं">नहीं</option><option value="हाँ">हाँ</option></select></div>
+                </div>
+                <div class="modal-buttons"><button type="submit" class="submit-btn">सहेजें</button><button type="button" class="cancel-btn" data-close-modal>कैंसिल</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const addEntryBtn = document.getElementById('add-entry-btn');
+        const loginModal = document.getElementById('login-modal');
+        const entryModal = document.getElementById('entry-modal');
+        const recoveryTableBody = document.querySelector('#recovery-table tbody');
+        const notification = document.getElementById('notification');
+        const loginForm = document.getElementById('login-form');
+        const entryForm = document.getElementById('entry-form');
+        const modalTitle = document.getElementById('modal-title');
+        
+        const showNotification = (message, type = 'success') => {
+            notification.textContent = message;
+            notification.className = `notification-${type}`;
+            notification.classList.remove('hidden');
+            setTimeout(() => notification.classList.add('hidden'), 4000);
+        };
+
+        const fetchAndDisplayData = async () => {
+            recoveryTableBody.innerHTML = `<tr><td colspan="10">डेटा लोड हो रहा है...</td></tr>`;
+            const { data, error } = await supabaseClient.from('recovrybakimember').select('*').order('sn', { ascending: false });
+            if (error) {
+                recoveryTableBody.innerHTML = `<tr><td colspan="10" style="color:red;">डेटा लोड नहीं हो सका।</td></tr>`; return;
+            }
+            recoveryTableBody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.sn}</td>
+                    <td>${row.name || ''}</td>
+                    <td>${row.father_name || ''}</td>
+                    <td>${row.adhar_number || ''}</td>
+                    <td>${row.account_number || ''}</td>
+                    <td>${row.intrestdmr_number || ''}</td>
+                    <td>${row.amount || ''}</td>
+                    <td>${row.year || ''}</td>
+                    <td>${row.recovery_done || ''}</td>
+                    <td class="admin-only" style="text-align: center;">
+                        <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(row)})' title="संपादित करें"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="action-btn delete-btn" onclick="deleteEntry(${row.sn})" title="हटाएं"><i class="fas fa-trash-alt"></i></button>
+                    </td>`;
+                recoveryTableBody.appendChild(tr);
+            });
+            updateAdminUI();
+        };
+
+        const updateAdminUI = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        };
+
+        window.editEntry = (rowData) => {
+            modalTitle.textContent = `रिकॉर्ड #${rowData.sn} संपादित करें`;
+            entryForm.reset();
+            document.getElementById('entry-sn').value = rowData.sn;
+            document.getElementById('name').value = rowData.name || '';
+            document.getElementById('father_name').value = rowData.father_name || '';
+            document.getElementById('adhar_number').value = rowData.adhar_number || '';
+            document.getElementById('account_number').value = rowData.account_number || '';
+            document.getElementById('amount').value = rowData.amount || '';
+            document.getElementById('year').value = rowData.year || '';
+            document.getElementById('intrestdmr_number').value = rowData.intrestdmr_number || '';
+            document.getElementById('recovery_done').value = rowData.recovery_done || 'नहीं';
+            entryModal.classList.remove('hidden');
+        };
+
+        window.deleteEntry = async (id) => {
+            if (confirm(`क्या आप वाकई रिकॉर्ड नंबर #${id} को हटाना चाहते हैं?`)) {
+                const { error } = await supabaseClient.from('recovrybakimember').delete().eq('sn', id);
+                if (error) {
+                    showNotification(`त्रुटि: ${error.message}`, 'error');
+                } else {
+                    showNotification(`रिकॉर्ड #${id} सफलतापूर्वक हटा दिया गया है।`, 'success');
+                    fetchAndDisplayData();
+                }
+            }
+        };
+
+        loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
+        logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            showNotification('आप सफलतापूर्वक लॉगआउट हो गए हैं।', 'success');
+            updateAdminUI();
+        });
+        addEntryBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'नई एंट्री जोड़ें';
+            entryForm.reset();
+            document.getElementById('entry-sn').value = '';
+            entryModal.classList.remove('hidden');
+        });
+
+        document.querySelectorAll('[data-close-modal]').forEach(button => {
+            button.addEventListener('click', () => button.closest('.modal').classList.add('hidden'));
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            });
+            if (error) {
+                showNotification('लॉगिन विफल: अमान्य ईमेल या पासवर्ड।', 'error');
+            } else {
+                showNotification('सफलतापूर्वक लॉगिन हो गया!', 'success');
+                loginModal.classList.add('hidden');
+                loginForm.reset();
+                updateAdminUI();
+            }
+        });
+
+        entryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sn = document.getElementById('entry-sn').value;
+            const formData = {
+                name: document.getElementById('name').value,
+                father_name: document.getElementById('father_name').value,
+                adhar_number: document.getElementById('adhar_number').value,
+                account_number: document.getElementById('account_number').value,
+                amount: document.getElementById('amount').value,
+                year: document.getElementById('year').value,
+                intrestdmr_number: document.getElementById('intrestdmr_number').value,
+                recovery_done: document.getElementById('recovery_done').value,
+            };
+            const { error } = sn 
+                ? await supabaseClient.from('recovrybakimember').update(formData).eq('sn', sn)
+                : await supabaseClient.from('recovrybakimember').insert([formData]);
+            
+            if (error) {
+                showNotification(`त्रुटि: ${error.message}`, 'error');
+            } else {
+                showNotification(sn ? 'रिकॉर्ड सफलतापूर्वक अपडेट किया गया!' : 'नई एंट्री सफलतापूर्वक जोड़ी गई!', 'success');
+                entryModal.classList.add('hidden');
+                fetchAndDisplayData();
+            }
+        });
+
+        fetchAndDisplayData();
+    </script>
+</body>
+</html>
