@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>रिकवरी बकाया सूची</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -10,15 +10,24 @@
   :root{--bg:#0b1020;--card:#11172b;--muted:#8fa0c6;--pri:#6c8cff;--pri2:#94a9ff;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#1f2a44}
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0b1020,#0e1430 60%,#0b1020);color:#eaf0ff;font-family:'Inter','Noto Sans Devanagari',system-ui}
-  header{position:sticky;top:0;z-index:1000;background:rgba(11,16,32,.75);backdrop-filter:blur(10px);
+
+  /* Header */
+  header{position:sticky;top:0;z-index:1000;background:rgba(11,16,32,.75);backdrop-filter:blur(8px);
          border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
   .title{display:flex;gap:10px;align-items:center}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--pri);box-shadow:0 0 12px var(--pri2)}
   .right{display:flex;gap:8px;align-items:center}
   #authIcon{font-size:18px}
   #authBadge{display:none;font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(148,169,255,.15);color:var(--pri2);border:1px solid rgba(148,169,255,.35)}
-  #loginToggle{border:1px solid rgba(148,169,255,.35);background:linear-gradient(180deg,rgba(148,169,255,.25),rgba(148,169,255,.1));
-               color:var(--pri2);padding:8px 10px;border-radius:10px;cursor:pointer}
+
+  /* 🔑 Floating login toggle to avoid any overlay issues */
+  #loginToggle{
+    position:fixed; top:12px; right:12px; z-index:9999;
+    border:1px solid rgba(148,169,255,.35);
+    background:linear-gradient(180deg,rgba(148,169,255,.25),rgba(148,169,255,.1));
+    color:var(--pri2); padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:700;
+  }
+
   .wrap{max-width:1200px;margin:16px auto;padding:0 12px}
 
   /* Login panel */
@@ -51,7 +60,7 @@
   .edit{background:linear-gradient(180deg,#3b82f6,#2563eb)} .del{background:linear-gradient(180deg,#ef4444,#dc2626)} .mark{background:linear-gradient(180deg,#f59e0b,#d97706)}
   .locked{color:var(--muted)}
 
-  /* Modal (simple + sticky footer → save हमेशा दिखे) */
+  /* Modal — simple, non-blocking, sticky footer so Save always visible */
   #modal{display:none;position:fixed;inset:0;background:rgba(5,9,20,.6);z-index:2000;align-items:center;justify-content:center}
   .dialog{width:min(780px,94%);max-height:90vh;background:linear-gradient(180deg,#101a37,#0f1833);border:1px solid var(--border);
           border-radius:16px;display:flex;flex-direction:column;box-shadow:0 25px 80px rgba(0,0,0,.55)}
@@ -68,109 +77,104 @@
 </style>
 </head>
 <body>
-<header>
-  <div class="title"><div class="dot"></div><h3 style="margin:0">रिकवरी बकाया सूची</h3></div>
-  <div class="right">
-    <span id="authIcon">🔒</span>
-    <span id="authBadge"></span>
-    <button id="loginToggle">🔑</button>
-  </div>
-</header>
+  <header>
+    <div class="title"><div class="dot"></div><h3 style="margin:0">रिकवरी बकाया सूची</h3></div>
+    <div class="right">
+      <span id="authIcon">🔒</span>
+      <span id="authBadge"></span>
+    </div>
+  </header>
+  <!-- 🔑 Floating toggle (always clickable) -->
+  <button id="loginToggle" type="button" title="Login">🔑</button>
 
-<div class="wrap">
-  <!-- Login -->
-  <div id="loginBox">
-    <h3>लॉग-इन</h3>
-    <form id="loginForm">
-      <input id="email" type="email" placeholder="Email" required>
-      <input id="password" type="password" placeholder="Password" required>
-      <button id="loginBtn" type="submit">Login</button>
-    </form>
-    <button id="logoutBtn">Logout</button>
-    <small style="color:#8fa0c6">Signup बंद है — केवल अधिकृत users login करेंगे।</small>
+  <div class="wrap">
+    <!-- Login -->
+    <div id="loginBox">
+      <h3>लॉग-इन</h3>
+      <form id="loginForm">
+        <input id="email" type="email" placeholder="Email" required>
+        <input id="password" type="password" placeholder="Password" required>
+        <button id="loginBtn" type="submit">Login</button>
+      </form>
+      <button id="logoutBtn">Logout</button>
+      <small style="color:#8fa0c6">Signup बंद है — केवल अधिकृत users login करेंगे।</small>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button id="refreshBtn" class="btn btn-refresh" type="button">Refresh</button>
+      <button id="addBtn" class="btn btn-add" type="button">+ नया रिकॉर्ड</button>
+      <button id="topLogoutBtn" class="btn btn-logout" type="button">Logout</button>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>S.N.</th><th>आधार नंबर</th><th>नाम</th><th>पिता का नाम</th>
+            <th>खाता नंबर</th><th>राशि</th><th>DMR नंबर</th><th>वर्ष</th>
+            <th>स्थिति</th><th>कार्यवाही</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <button id="refreshBtn" class="btn btn-refresh" type="button">Refresh</button>
-    <button id="addBtn" class="btn btn-add" type="button">+ नया रिकॉर्ड</button>
-    <button id="topLogoutBtn" class="btn btn-logout" type="button">Logout</button>
-  </div>
-
-  <!-- Table -->
-  <div class="card">
-    <table>
-      <thead>
-        <tr>
-          <th>S.N.</th>
-          <th>आधार नंबर</th>
-          <th>नाम</th>
-          <th>पिता का नाम</th>
-          <th>खाता नंबर</th>
-          <th>राशि</th>
-          <th>DMR नंबर</th>
-          <th>वर्ष</th>
-          <th>स्थिति</th>
-          <th>कार्यवाही</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Modal -->
-<div id="modal" aria-hidden="true">
-  <div class="dialog">
-    <header id="modalTitle">रिकॉर्ड</header>
-    <div class="content">
-      <input type="hidden" id="rowId" />
-      <div class="grid">
-        <div class="col"><label>आधार नंबर (12)</label><input id="f_adhar" maxlength="12"></div>
-        <div class="col"><label>नाम</label><input id="f_name"></div>
-        <div class="col"><label>पिता का नाम</label><input id="f_father"></div>
-        <div class="col"><label>खाता नंबर</label><input id="f_account" maxlength="20"></div>
-        <div class="col"><label>राशि</label><input id="f_amount" type="number" step="0.01"></div>
-        <div class="col"><label>DMR नंबर</label><input id="f_dmr"></div>
-        <div class="col"><label>वर्ष</label><input id="f_year" type="number" placeholder="2025"></div>
-        <div class="col"><label>रिकवरी स्थिति</label>
-          <select id="f_done"><option value="false">Pending</option><option value="true">Done</option></select>
+  <!-- Modal -->
+  <div id="modal" aria-hidden="true">
+    <div class="dialog">
+      <header id="modalTitle">रिकॉर्ड</header>
+      <div class="content">
+        <input type="hidden" id="rowId" />
+        <div class="grid">
+          <div class="col"><label>आधार नंबर (12)</label><input id="f_adhar" maxlength="12"></div>
+          <div class="col"><label>नाम</label><input id="f_name"></div>
+          <div class="col"><label>पिता का नाम</label><input id="f_father"></div>
+          <div class="col"><label>खाता नंबर</label><input id="f_account" maxlength="20"></div>
+          <div class="col"><label>राशि</label><input id="f_amount" type="number" step="0.01"></div>
+          <div class="col"><label>DMR नंबर</label><input id="f_dmr"></div>
+          <div class="col"><label>वर्ष</label><input id="f_year" type="number" placeholder="2025"></div>
+          <div class="col"><label>रिकवरी स्थिति</label>
+            <select id="f_done"><option value="false">Pending</option><option value="true">Done</option></select>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="actions">
-      <button id="cancelBtn" class="btn btn-secondary" type="button">रद्द</button>
-      <!-- ✅ Save हमेशा दिखेगा -->
-      <button id="saveBtn" class="btn btn-add" type="button" style="display:inline-block">💾 सेव</button>
+      <div class="actions">
+        <button id="cancelBtn" class="btn btn-secondary" type="button">रद्द</button>
+        <button id="saveBtn" class="btn btn-add" type="button" style="display:inline-block">💾 सेव</button>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
-/* ===== CONFIG: अपनी keys भरो ===== */
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+/* ===== CONFIG: अपनी keys भरो (https origin पर चलाएँ) ===== */
+const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
+if(!/^https?:\/\//.test(location.href)) alert("कृपया इस पेज को https origin से खोलें (file:// नहीं)");
+if(!SUPABASE_URL || !SUPABASE_ANON_KEY) alert("SUPABASE_URL/ANON KEY भरें");
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"recovrybakimember-auth-v1" }
 });
 
 /* ===== STATE ===== */
-let user = null;
-let busy = false;
-let mode = 'create'; // 'create' | 'edit'
+let user=null, busy=false, mode='create';
 
 /* ===== HELPERS ===== */
-const $ = s => document.querySelector(s);
+const $=s=>document.querySelector(s);
 function setAuthUI(){
-  const isLogged = !!user;
-  $('#authIcon').textContent = isLogged ? '✅' : '🔒';
-  $('#authBadge').style.display = (isLogged && user.email) ? 'inline-block' : 'none';
-  if(isLogged && user.email) $('#authBadge').textContent = user.email;
-  $('#addBtn').style.display = isLogged ? 'inline-block' : 'none';
-  $('#topLogoutBtn').style.display = isLogged ? 'inline-block' : 'none';
-  $('#logoutBtn').style.display = isLogged ? 'block' : 'none';
+  const logged=!!user;
+  $('#authIcon').textContent = logged ? '✅' : '🔒';
+  $('#authBadge').style.display = (logged && user.email) ? 'inline-block' : 'none';
+  if(logged && user.email) $('#authBadge').textContent = user.email;
+  $('#addBtn').style.display = logged ? 'inline-block' : 'none';
+  $('#topLogoutBtn').style.display = logged ? 'inline-block' : 'none';
+  $('#logoutBtn').style.display = logged ? 'block' : 'none';
 }
-function toggleLogin(){ const b=$('#loginBox'); b.style.display = (b.style.display==='block') ? 'none' : 'block'; }
+function toggleLogin(){
+  const b=$('#loginBox'); b.style.display = (b.style.display==='block') ? 'none' : 'block';
+}
 function openModal(){ $('#modal').style.display='flex'; $('#modal').setAttribute('aria-hidden','false'); }
 function closeModal(){ $('#modal').style.display='none'; $('#modal').setAttribute('aria-hidden','true'); }
 function clearForm(){
@@ -188,8 +192,7 @@ function validateForm(){
 }
 
 /* ===== AUTH ===== */
-sb.auth.onAuthStateChange(async (_e, session)=>{ user = session?.user ?? null; setAuthUI(); await loadData(); });
-
+sb.auth.onAuthStateChange(async (_e, session)=>{ user=session?.user??null; setAuthUI(); await loadData(); });
 async function doLogin(){
   if(busy) return; busy=true;
   const btn=$('#loginBtn'); const old=btn.textContent; btn.disabled=true; btn.textContent='लॉग-इन...';
@@ -197,7 +200,7 @@ async function doLogin(){
     const email=$('#email').value.trim(), password=$('#password').value;
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if(error) throw error;
-    user = data.user; $('#loginBox').style.display='none'; setAuthUI(); await loadData();
+    user=data.user; $('#loginBox').style.display='none'; setAuthUI(); await loadData();
   }catch(e){ alert('Login failed: '+(e.message||'unknown')); }
   finally{ btn.disabled=false; btn.textContent=old; busy=false; }
 }
@@ -211,7 +214,7 @@ async function doLogout(){
       keys.forEach(k=>localStorage.removeItem(k));
     }catch(_){}
     user=null; setAuthUI(); $('#loginBox').style.display='none'; await loadData();
-    location.reload(); // stale state कभी नहीं बचेगा
+    location.reload(); // stale UI खत्म
   }catch(e){ alert('Logout error: '+(e.message||'unknown')); }
   finally{ busy=false; }
 }
@@ -224,13 +227,9 @@ async function loadData(){
   (data||[]).forEach(r=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td>${r.sn??''}</td>
-      <td>${r.adhar_number??''}</td>
-      <td>${r.name??''}</td>
-      <td>${r.father_name??''}</td>
-      <td>${r.account_number??''}</td>
-      <td>${r.amount??''}</td>
-      <td>${r.intrestdmr_number??''}</td>
+      <td>${r.sn??''}</td><td>${r.adhar_number??''}</td><td>${r.name??''}</td>
+      <td>${r.father_name??''}</td><td>${r.account_number??''}</td>
+      <td>${r.amount??''}</td><td>${r.intrestdmr_number??''}</td>
       <td>${r.year??''}</td>
       <td>${r.recovery_done?'<span class="badge done">✔️ Done</span>':'<span class="badge pending">⏳ Pending</span>'}</td>
       <td>${
@@ -295,18 +294,23 @@ async function markDone(id){
 
 /* ===== BINDINGS ===== */
 document.addEventListener('DOMContentLoaded', ()=>{
+  // Floating toggle (always clickable)
   $('#loginToggle').addEventListener('click', toggleLogin);
+
+  // Login form
   $('#loginForm').addEventListener('submit', e=>{ e.preventDefault(); doLogin(); });
   $('#logoutBtn').addEventListener('click', doLogout);
   $('#topLogoutBtn').addEventListener('click', doLogout);
 
+  // Toolbar
   $('#refreshBtn').addEventListener('click', loadData);
   $('#addBtn').addEventListener('click', openCreate);
 
+  // Modal
   $('#cancelBtn').addEventListener('click', closeModal);
   $('#saveBtn').addEventListener('click', saveRecord);
 
-  // table actions (delegation)
+  // Table actions (delegation)
   $('#tbody').addEventListener('click', e=>{
     const b=e.target.closest('button'); if(!b) return;
     const id=b.getAttribute('data-id');
@@ -316,7 +320,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
-/* initial */
+/* Initial load */
 (async()=>{ const { data:{session} }=await sb.auth.getSession(); user=session?.user??null; setAuthUI(); await loadData(); })();
 </script>
 </body>
