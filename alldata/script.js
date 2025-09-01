@@ -18,9 +18,7 @@ function showToast(message, type = 'success') {
     const iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
     toast.innerHTML = `<i class="${iconClass}"></i> ${message}`;
     container.appendChild(toast);
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
+    setTimeout(() => { toast.remove(); }, 5000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,16 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadCsvBtn = document.getElementById('upload-csv-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cameraSelect = document.getElementById('camera-select');
-    const captureBtn = document.getElementById('capture-btn');
-    const cropCancelBtn = document.getElementById('crop-cancel-btn');
-    const cropAndUploadBtn = document.getElementById('crop-upload-btn');
-
+    const captureUploadBtn = document.getElementById('capture-upload-btn');
+    
     // सभी इवेंट लिस्नर
-    closeModalBtn.addEventListener('click', stopCamera);
+    closeModalBtn.addEventListener('click', stopCameraAndDestroyCropper);
     cameraSelect.addEventListener('change', startCamera);
-    captureBtn.addEventListener('click', capturePhotoAndOpenCropper);
-    cropCancelBtn.addEventListener('click', cancelCropping);
-    cropAndUploadBtn.addEventListener('click', cropAndUploadImage);
+    captureUploadBtn.addEventListener('click', captureAndUpload);
     publicSearchForm.addEventListener('submit', handlePublicSearch);
     adminSearchForm.addEventListener('submit', handleAdminSearch);
     loginForm.addEventListener('submit', handleLogin);
@@ -56,84 +50,87 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUserSession();
 });
 
-// === फोटो और कैमरा के फंक्शन्स ===
 
-function openCameraModal(aadhaarNumber) {
+// === नया कैमरा और क्रॉपिंग फ्लो ===
+
+async function openCameraModal(aadhaarNumber) {
     currentAadhaarForPhoto = aadhaarNumber;
     document.getElementById('camera-modal').style.display = 'flex';
-    populateCameraList().then(startCamera);
+    await populateCameraList();
+    await startCamera();
 }
 
-function stopCamera() {
+function stopCameraAndDestroyCropper() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
+    }
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
     }
     document.getElementById('camera-modal').style.display = 'none';
 }
 
-// BUG FIX: यह फंक्शन अब कैनवास का साइज वीडियो के हिसाब से सेट करेगा
-function capturePhotoAndOpenCropper() {
-    const canvas = document.getElementById('canvas');
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+
     const video = document.getElementById('video');
+    const cameraSelect = document.getElementById('camera-select');
+    const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined } };
     
-    // --- यहाँ बदलाव किया गया है ---
-    // कैनवास का साइज वीडियो के असली साइज के बराबर सेट करें
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    // --- बदलाव समाप्त ---
-
-    // अब वीडियो से फोटो खींचकर कैनवास पर बनाएं
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-    stopCamera();
-    
-    const cropModal = document.getElementById('crop-modal');
-    const imageToCrop = document.getElementById('image-to-crop');
-    cropModal.style.display = 'flex';
-    document.getElementById('crop-upload-status').innerHTML = '';
-    imageToCrop.src = imageDataUrl;
-
-    if (cropper) cropper.destroy();
-    cropper = new Cropper(imageToCrop, {
-        aspectRatio: 1,
-        viewMode: 1,
-        dragMode: 'move',
-        background: false,
-        autoCropArea: 0.8
-    });
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        video.onloadedmetadata = () => {
+            cropper = new Cropper(video, {
+                aspectRatio: 1,
+                viewMode: 1,
+                dragMode: 'move',
+                background: false,
+                autoCropArea: 0.8,
+            });
+        };
+    } catch (e) {
+        console.error("Error starting camera:", e);
+        showToast("Could not start camera. Please check permissions.", "error");
+    }
 }
 
-function cancelCropping() {
-    document.getElementById('crop-modal').style.display = 'none';
-    if (cropper) cropper.destroy();
-}
+async function captureAndUpload() {
+    if (!cropper) {
+        showToast('Cropper not ready.', 'error');
+        return;
+    }
+    const captureUploadBtn = document.getElementById('capture-upload-btn');
+    captureUploadBtn.disabled = true;
+    showToast('Processing image...', 'success');
 
-async function cropAndUploadImage() {
-    if (!cropper) return;
-
-    const cropAndUploadBtn = document.getElementById('crop-upload-btn');
-    cropAndUploadBtn.disabled = true;
-
+    // क्रॉप किए गए हिस्से को 400x400 पिक्सल के कैनवास पर ड्रा करें
     const croppedCanvas = cropper.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
 
     croppedCanvas.toBlob(async (blob) => {
         if (!blob) {
-            showToast('Cropping failed.', 'error');
-            cropAndUploadBtn.disabled = false;
+            showToast('Capture failed.', 'error');
+            captureUploadBtn.disabled = false;
             return;
         }
 
         const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`;
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false });
+        const { error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false });
 
         if (uploadError) {
             showToast(`Upload Failed: ${uploadError.message}`, 'error');
-            cropAndUploadBtn.disabled = false;
+            captureUploadBtn.disabled = false;
             return;
         }
 
-        const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(uploadData.path);
+        const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(fileName);
         const newPhotoLink = urlData.publicUrl;
 
         const { error: updateError } = await supabaseClient.from('farmers').update({ photo_link: newPhotoLink }).eq('aadhaar_number', currentAadhaarForPhoto);
@@ -143,14 +140,15 @@ async function cropAndUploadImage() {
         } else {
             showToast('Photo updated successfully!', 'success');
             document.getElementById(`photo-${currentAadhaarForPhoto}`).src = newPhotoLink;
-            setTimeout(cancelCropping, 1500);
+            setTimeout(stopCameraAndDestroyCropper, 1500);
         }
-        cropAndUploadBtn.disabled = false;
+        captureUploadBtn.disabled = false;
     }, 'image/jpeg', 0.8);
 }
 
 async function populateCameraList() {
     try {
+        await navigator.mediaDevices.getUserMedia({video: true}); // Request permission first
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         const cameraSelect = document.getElementById('camera-select');
@@ -162,19 +160,6 @@ async function populateCameraList() {
             cameraSelect.appendChild(option);
         });
     } catch (e) { console.error("Could not list devices:", e); }
-}
-
-async function startCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
-    const cameraSelect = document.getElementById('camera-select');
-    const video = document.getElementById('video');
-    const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } } };
-    try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = currentStream;
-    } catch (e) { console.error("Error starting camera:", e); }
 }
 
 function getGoogleDriveEmbedLink(driveLink) {
