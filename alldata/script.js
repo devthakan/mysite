@@ -34,19 +34,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadCsvBtn = document.getElementById('upload-csv-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cameraSelect = document.getElementById('camera-select');
-    const captureUploadBtn = document.getElementById('capture-upload-btn'); // Unified button
+    const captureUploadBtn = document.getElementById('capture-upload-btn');
     
-    // सभी इवेंट लिस्नर
-    closeModalBtn.addEventListener('click', stopCameraAndDestroyCropper);
-    cameraSelect.addEventListener('change', startCamera);
-    captureUploadBtn.addEventListener('click', captureAndUpload);
-    publicSearchForm.addEventListener('submit', handlePublicSearch);
-    adminSearchForm.addEventListener('submit', handleAdminSearch);
-    loginForm.addEventListener('submit', handleLogin);
-    loginButton.addEventListener('click', () => { loginSection.style.display = loginSection.style.display === 'block' ? 'none' : 'block'; });
-    logoutButton.addEventListener('click', handleLogout);
-    downloadTemplateBtn.addEventListener('click', downloadCSVTemplate);
-    uploadCsvBtn.addEventListener('click', uploadCSV);
+    // सभी इवेंट लिस्नर सही तरीके से अटैच करें
+    if (loginButton) loginButton.addEventListener('click', () => { loginSection.style.display = loginSection.style.display === 'block' ? 'none' : 'block'; });
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
+    if (publicSearchForm) publicSearchForm.addEventListener('submit', handlePublicSearch);
+    if (adminSearchForm) adminSearchForm.addEventListener('submit', handleAdminSearch);
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (downloadTemplateBtn) downloadTemplateBtn.addEventListener('click', downloadCSVTemplate);
+    if (uploadCsvBtn) uploadCsvBtn.addEventListener('click', uploadCSV);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', stopCameraAndDestroyCropper);
+    if (cameraSelect) cameraSelect.addEventListener('change', startCamera);
+    if (captureUploadBtn) captureUploadBtn.addEventListener('click', captureAndUpload);
 
     checkUserSession();
 });
@@ -127,7 +127,7 @@ async function captureAndUpload() {
 
 async function populateCameraList() {
     try {
-        await navigator.mediaDevices.getUserMedia({video: true}); // Request permission
+        await navigator.mediaDevices.getUserMedia({video: true});
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         const cameraSelect = document.getElementById('camera-select');
