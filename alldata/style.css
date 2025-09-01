@@ -51,10 +51,10 @@ button:hover {
     background-color: #0056b3; 
 }
 #logout-button { 
-    background-color: #dc3545; 
+    background-color: #6c757d; 
 }
 #logout-button:hover { 
-    background-color: #c82333; 
+    background-color: #5a6268; 
 }
 .results-container { 
     margin-top: 20px; 
@@ -73,17 +73,17 @@ button:hover {
 }
 .card strong { 
     color: #555; 
-    min-width: 180px; /* लेबल के लिए जगह निश्चित करता है */
+    min-width: 180px;
 }
 .card input { 
-    flex-grow: 1; /* बची हुई जगह ले लेता है */
+    flex-grow: 1;
 }
 .error { 
     color: red; 
 }
 #admin-search-form input { 
     width: 18%; 
-    min-width: 150px; /* छोटी स्क्रीन पर सिकुड़ने से बचाता है */
+    min-width: 150px;
 }
 #upload-status p {
     margin: 10px 0;
@@ -93,4 +93,11 @@ hr {
     border: none;
     border-top: 1px solid #eee;
     margin: 20px 0;
+}
+/* डिलीट बटन के लिए नई स्टाइल */
+.delete-btn {
+    background-color: #dc3545;
+}
+.delete-btn:hover {
+    background-color: #c82333;
 }
