@@ -1,4 +1,4 @@
-// आपकी Supabase प्रोजेक्ट की जानकारी (सही API Key के साथ)
+// आपकी Supabase प्रोजेक्ट की जानकारी
 const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
 
@@ -24,18 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadStatus = document.getElementById('upload-status');
 
     // पब्लिक सर्च फॉर्म
-    publicSearchForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
-        if (!aadhaarNumber) return;
-        publicResultsContainer.innerHTML = '<p>Searching...</p>';
-        const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single();
-        if (error || !data) {
-            publicResultsContainer.innerHTML = '<p class="error">No record found.</p>';
-        } else {
-            publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`;
-        }
-    });
+    publicSearchForm.addEventListener('submit', async (e) => { e.preventDefault(); const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim(); if (!aadhaarNumber) return; publicResultsContainer.innerHTML = '<p>Searching...</p>'; const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single(); if (error || !data) { publicResultsContainer.innerHTML = '<p class="error">No record found.</p>'; } else { publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`; } });
 
     // एडमिन सर्च फॉर्म
     adminSearchForm.addEventListener('submit', async (e) => {
@@ -65,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
+            // हर कार्ड को एक यूनिक ID दें ताकि डिलीट करने के बाद उसे हटा सकें
+            card.id = `card-${item.aadhaar_number}`;
             card.innerHTML = `<h4>Editing Record for: ${item.name}</h4>
                 <p><strong>Aadhaar Number:</strong> <input type="text" id="aadhaar_number-${item.aadhaar_number}" value="${item.aadhaar_number || ''}"></p>
                 <p><strong>Name:</strong> <input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p>
@@ -84,70 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Nominee Aadhaar:</strong> <input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p>
                 <p><strong>WhatsApp Number:</strong> <input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p>
                 <button onclick="updateRecord('${item.aadhaar_number}')">Save Changes</button>
-                <button style="background-color:#6c757d;">Update Photo (Soon)</button>`;
+                <button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')">Delete</button> <button style="background-color:#6c757d;">Update Photo (Soon)</button>`;
             dashboardResultsContainer.appendChild(card);
         });
     });
 
     // लॉगिन फॉर्म
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) { authError.textContent = error.message; } else { authError.textContent = ''; checkUserSession(); }
-    });
-
-    // लॉगिन/लॉगआउट बटन
+    loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('email').value; const password = document.getElementById('password').value; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { authError.textContent = error.message; } else { authError.textContent = ''; checkUserSession(); } });
     loginButton.addEventListener('click', () => { loginSection.style.display = loginSection.style.display === 'block' ? 'none' : 'block'; });
     logoutButton.addEventListener('click', async () => { await supabaseClient.auth.signOut(); checkUserSession(); });
+    downloadTemplateBtn.addEventListener('click', () => { const headers = "aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number"; const csvContent = "data:text/csv;charset=utf-8," + headers; const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "farmers_template.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); });
+    uploadCsvBtn.addEventListener('click', () => { const file = csvFileInput.files[0]; if (!file) { uploadStatus.innerHTML = `<p style="color: red;">Please select a CSV file first.</p>`; return; } uploadStatus.innerHTML = `<p>Parsing file...</p>`; Papa.parse(file, { header: true, skipEmptyLines: true, complete: async function(results) { const dataToInsert = results.data; if (dataToInsert.length === 0) { uploadStatus.innerHTML = `<p style="color: red;">The selected file is empty or invalid.</p>`; return; } uploadStatus.innerHTML = `<p>File parsed. Found ${dataToInsert.length} records. Uploading...</p>`; const { error } = await supabaseClient.from('farmers').insert(dataToInsert); if (error) { uploadStatus.innerHTML = `<p style="color: red;">Error uploading data: ${error.message}</p>`; } else { uploadStatus.innerHTML = `<p style="color: green;">Successfully added ${dataToInsert.length} new farmers!</p>`; csvFileInput.value = ''; } }, error: function(error) { uploadStatus.innerHTML = `<p style="color: red;">Error parsing file: ${error.message}</p>`; } }); });
 
-    // CSV टेम्पलेट डाउनलोड
-    downloadTemplateBtn.addEventListener('click', () => {
-        const headers = "aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number";
-        const csvContent = "data:text/csv;charset=utf-8," + headers;
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "farmers_template.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-
-    // CSV अपलोड
-    uploadCsvBtn.addEventListener('click', () => {
-        const file = csvFileInput.files[0];
-        if (!file) {
-            uploadStatus.innerHTML = `<p style="color: red;">Please select a CSV file first.</p>`;
-            return;
-        }
-        uploadStatus.innerHTML = `<p>Parsing file...</p>`;
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async function(results) {
-                const dataToInsert = results.data;
-                if (dataToInsert.length === 0) {
-                    uploadStatus.innerHTML = `<p style="color: red;">The selected file is empty or invalid.</p>`;
-                    return;
-                }
-                uploadStatus.innerHTML = `<p>File parsed. Found ${dataToInsert.length} records. Uploading...</p>`;
-                const { error } = await supabaseClient.from('farmers').insert(dataToInsert);
-                if (error) {
-                    uploadStatus.innerHTML = `<p style="color: red;">Error uploading data: ${error.message}</p>`;
-                } else {
-                    uploadStatus.innerHTML = `<p style="color: green;">Successfully added ${dataToInsert.length} new farmers!</p>`;
-                    csvFileInput.value = '';
-                }
-            },
-            error: function(error) {
-                uploadStatus.innerHTML = `<p style="color: red;">Error parsing file: ${error.message}</p>`;
-            }
-        });
-    });
-
-    // UI मैनेजमेंट फंक्शन
     async function checkUserSession() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -166,32 +105,36 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUserSession();
 });
 
-// ग्लोबल फंक्शन (HTML से कॉल करने के लिए)
+// === ग्लोबल फंक्शन्स ===
+
+// अपडेट फंक्शन
 async function updateRecord(aadhaarNumber) {
-    const updates = {
-        aadhaar_number: document.getElementById(`aadhaar_number-${aadhaarNumber}`).value,
-        name: document.getElementById(`name-${aadhaarNumber}`).value,
-        father_name: document.getElementById(`father_name-${aadhaarNumber}`).value,
-        bl_number: document.getElementById(`bl_number-${aadhaarNumber}`).value,
-        gender: document.getElementById(`gender-${aadhaarNumber}`).value,
-        share_capital: document.getElementById(`share_capital-${aadhaarNumber}`).value,
-        address: document.getElementById(`address-${aadhaarNumber}`).value,
-        age: document.getElementById(`age-${aadhaarNumber}`).value,
-        marriage_status: document.getElementById(`marriage_status-${aadhaarNumber}`).value,
-        mobile_number: document.getElementById(`mobile_number-${aadhaarNumber}`).value,
-        category: document.getElementById(`category-${aadhaarNumber}`).value,
-        account_number: document.getElementById(`account_number-${aadhaarNumber}`).value,
-        application_year: document.getElementById(`application_year-${aadhaarNumber}`).value,
-        nominee_name: document.getElementById(`nominee_name-${aadhaarNumber}`).value,
-        relation: document.getElementById(`relation-${aadhaarNumber}`).value,
-        nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${aadhaarNumber}`).value,
-        whatsapp_number: document.getElementById(`whatsapp_number-${aadhaarNumber}`).value,
-    };
+    const updates = { aadhaar_number: document.getElementById(`aadhaar_number-${aadhaarNumber}`).value, name: document.getElementById(`name-${aadhaarNumber}`).value, father_name: document.getElementById(`father_name-${aadhaarNumber}`).value, bl_number: document.getElementById(`bl_number-${aadhaarNumber}`).value, gender: document.getElementById(`gender-${aadhaarNumber}`).value, share_capital: document.getElementById(`share_capital-${aadhaarNumber}`).value, address: document.getElementById(`address-${aadhaarNumber}`).value, age: document.getElementById(`age-${aadhaarNumber}`).value, marriage_status: document.getElementById(`marriage_status-${aadhaarNumber}`).value, mobile_number: document.getElementById(`mobile_number-${aadhaarNumber}`).value, category: document.getElementById(`category-${aadhaarNumber}`).value, account_number: document.getElementById(`account_number-${aadhaarNumber}`).value, application_year: document.getElementById(`application_year-${aadhaarNumber}`).value, nominee_name: document.getElementById(`nominee_name-${aadhaarNumber}`).value, relation: document.getElementById(`relation-${aadhaarNumber}`).value, nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${aadhaarNumber}`).value, whatsapp_number: document.getElementById(`whatsapp_number-${aadhaarNumber}`).value, };
     const { error } = await supabaseClient.from('farmers').update(updates).eq('aadhaar_number', aadhaarNumber);
-    if (error) {
-        alert('Update failed: ' + error.message);
-    } else {
-        alert('Record updated successfully!');
+    if (error) { alert('Update failed: ' + error.message); } else { alert('Record updated successfully!'); }
+}
+
+// डिलीट फंक्शन (नया जोड़ा गया)
+async function deleteRecord(aadhaarNumber) {
+    // डिलीट करने से पहले कन्फर्मेशन पूछें
+    const confirmation = confirm('Are you sure you want to delete this record? This action cannot be undone.');
+    
+    if (confirmation) {
+        const { error } = await supabaseClient
+            .from('farmers')
+            .delete()
+            .eq('aadhaar_number', aadhaarNumber);
+
+        if (error) {
+            alert('Delete failed: ' + error.message);
+        } else {
+            alert('Record deleted successfully!');
+            // पेज से रिकॉर्ड वाले कार्ड को हटा दें
+            document.getElementById(`card-${aadhaarNumber}`).remove();
+        }
     }
 }
+
+// ग्लोबल फंक्शन्स को विंडो ऑब्जेक्ट से जोड़ना
 window.updateRecord = updateRecord;
+window.deleteRecord = deleteRecord;
