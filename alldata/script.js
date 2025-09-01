@@ -1,6 +1,6 @@
-// अपनी Supabase प्रोजेक्ट की जानकारी यहाँ डालें
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// आपकी Supabase प्रोजेक्ट की जानकारी
+const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
 const FOLDER_ID = "16RDylvBe--mJ66Mlt1L8AdM-yh179CHj"; // आपका Google Drive Folder ID
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -32,7 +32,7 @@ let imageBlob = null;
 // =================================================================
 async function loadPublicData() {
     const { data, error } = await supabase
-        .from('your_table_name')
+        .from('farmers')
         .select('name, father_name, bl_number, photo_link');
 
     if (error) {
@@ -59,7 +59,7 @@ async function loadPublicData() {
 // =================================================================
 async function loadDashboardData() {
     const { data, error } = await supabase
-        .from('your_table_name')
+        .from('farmers')
         .select('*'); // सारा डेटा सेलेक्ट करें
 
     if (error) {
@@ -74,12 +74,12 @@ async function loadDashboardData() {
         div.className = 'card';
         div.innerHTML = `
             <img src="${item.photo_link || 'default_avatar.png'}" alt="photo" style="width:100px;">
-            <p><strong>Name:</strong> <input type="text" id="name-${item.id}" value="${item.name}"></p>
-            <p><strong>Father's Name:</strong> <input type="text" id="father_name-${item.id}" value="${item.father_name}"></p>
-            <p><strong>Aadhaar:</strong> ${item.aadhaar_number}</p>
-            <p><strong>BL Number:</strong> <input type="text" id="bl_number-${item.id}" value="${item.bl_number}"></p>
-            <p><strong>Mobile:</strong> <input type="text" id="mobile_number-${item.id}" value="${item.mobile_number}"></p>
-            <p><strong>Address:</strong> <input type="text" id="address-${item.id}" value="${item.address}"></p>
+            <p><strong>Name:</strong> <input type="text" id="name-${item.id}" value="${item.name || ''}"></p>
+            <p><strong>Father's Name:</strong> <input type="text" id="father_name-${item.id}" value="${item.father_name || ''}"></p>
+            <p><strong>Aadhaar:</strong> ${item.aadhaar_number || ''}</p>
+            <p><strong>BL Number:</strong> <input type="text" id="bl_number-${item.id}" value="${item.bl_number || ''}"></p>
+            <p><strong>Mobile:</strong> <input type="text" id="mobile_number-${item.id}" value="${item.mobile_number || ''}"></p>
+            <p><strong>Address:</strong> <input type="text" id="address-${item.id}" value="${item.address || ''}"></p>
             <button onclick="updateRecord(${item.id})">Save</button>
             <button onclick="openCamera(${item.id})">Update Photo</button>
         `;
@@ -101,7 +101,7 @@ async function updateRecord(id) {
     };
 
     const { error } = await supabase
-        .from('your_table_name')
+        .from('farmers')
         .update(updates)
         .eq('id', id);
 
@@ -223,7 +223,7 @@ uploadPhotoButton.addEventListener('click', async () => {
         const newPhotoLink = data.photoLink;
         // टेबल में लिंक अपडेट करें
         const { error: updateError } = await supabase
-            .from('your_table_name')
+            .from('farmers')
             .update({ photo_link: newPhotoLink })
             .eq('id', currentRecordId);
 
