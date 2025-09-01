@@ -209,7 +209,6 @@ button:hover {
     box-sizing: border-box;
 }
 
-/* आधार नंबर को non-editable दिखाने के लिए नई स्टाइल */
 .readonly-field {
     padding: 12px 15px;
     background-color: var(--light-gray);
@@ -242,8 +241,28 @@ button:hover {
 }
 
 /* Toast Notifications */
-#toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; }
-.toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateX(100%); animation: slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    pointer-events: none; /* BUG FIX: यह कंटेनर को क्लिक होने से रोकता है */
+}
+.toast {
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    margin-bottom: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards;
+    pointer-events: auto; /* BUG FIX: यह हर एक नोटिफिकेशन को फिर से क्लिक करने योग्य बनाता है */
+}
 .toast.success { background-color: var(--success-color); }
 .toast.error { background-color: var(--danger-color); }
 @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
