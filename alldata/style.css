@@ -94,10 +94,25 @@ hr {
     border-top: 1px solid #eee;
     margin: 20px 0;
 }
-/* डिलीट बटन के लिए नई स्टाइल */
 .delete-btn {
     background-color: #dc3545;
 }
 .delete-btn:hover {
     background-color: #c82333;
 }
+.farmer-photo { 
+    width: 100px; 
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%; 
+    margin-right: 20px;
+    border: 2px solid #ddd;
+}
+
+/* === कैमरा मॉडल की स्टाइलिंग === */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background-color: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+#video { border: 1px solid #ddd; margin-top: 10px; background-color: #333; max-width: 100%; height: auto; }
+.camera-controls { margin-bottom: 15px; }
+.modal-buttons { margin-top: 15px; }
+#camera-upload-status { margin-top: 10px; font-weight: bold; }
