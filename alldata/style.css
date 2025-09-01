@@ -1,13 +1,42 @@
-body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 20px; border-bottom: 2px solid #ddd; }
-header h1 { margin: 0; }
-.section-container { background: #fff; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-input[type="text"], input[type="email"], input[type="password"] {
-    width: 250px;
+body { 
+    font-family: Arial, sans-serif; 
+    background-color: #f4f4f9; 
+    color: #333; 
+    margin: 0; 
+    padding: 20px; 
+}
+header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    background: #fff; 
+    padding: 10px 20px; 
+    border-bottom: 2px solid #ddd; 
+}
+header h1 { 
+    margin: 0; 
+    font-size: 1.5em;
+}
+.section-container { 
+    background: #fff; 
+    padding: 20px; 
+    margin-top: 20px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+}
+input[type="text"], 
+input[type="email"], 
+input[type="password"],
+input[type="file"] {
     padding: 10px;
     margin: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
+}
+input[type="text"], 
+input[type="email"], 
+input[type="password"] {
+    width: 250px;
 }
 button {
     padding: 10px 15px;
@@ -16,14 +45,52 @@ button {
     color: white;
     border-radius: 4px;
     cursor: pointer;
+    margin: 5px;
 }
-button:hover { background-color: #0056b3; }
-#logout-button { background-color: #dc3545; }
-#logout-button:hover { background-color: #c82333; }
-.results-container { margin-top: 20px; }
-.card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-.card p { margin: 8px 0; }
-.card strong { color: #555; }
-.card input { width: 95%; }
-.error { color: red; }
-#admin-search-form input { width: 18%; }
+button:hover { 
+    background-color: #0056b3; 
+}
+#logout-button { 
+    background-color: #dc3545; 
+}
+#logout-button:hover { 
+    background-color: #c82333; 
+}
+.results-container { 
+    margin-top: 20px; 
+}
+.card { 
+    border: 1px solid #ddd; 
+    padding: 15px; 
+    margin-bottom: 15px; 
+    border-radius: 5px; 
+    background-color: #f9f9f9;
+}
+.card p { 
+    margin: 8px 0; 
+    display: flex;
+    align-items: center;
+}
+.card strong { 
+    color: #555; 
+    min-width: 180px; /* लेबल के लिए जगह निश्चित करता है */
+}
+.card input { 
+    flex-grow: 1; /* बची हुई जगह ले लेता है */
+}
+.error { 
+    color: red; 
+}
+#admin-search-form input { 
+    width: 18%; 
+    min-width: 150px; /* छोटी स्क्रीन पर सिकुड़ने से बचाता है */
+}
+#upload-status p {
+    margin: 10px 0;
+    font-weight: bold;
+}
+hr {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+}
