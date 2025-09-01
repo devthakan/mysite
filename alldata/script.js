@@ -1,103 +1,147 @@
 // आपकी Supabase प्रोजेक्ट की जानकारी
 const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
-const FOLDER_ID = "16RDylvBe--mJ66Mlt1L8AdM-yh179CHj"; // आपका Google Drive Folder ID
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // DOM Elements
-const loginSection = document.getElementById('login-section');
-const publicView = document.getElementById('public-view');
-const dashboardSection = document.getElementById('dashboard-section');
-const loginForm = document.getElementById('login-form');
+const loginButton = document.getElementById('login-button');
 const logoutButton = document.getElementById('logout-button');
-const publicDataContainer = document.getElementById('public-data-container');
-const dashboardDataContainer = document.getElementById('dashboard-data-container');
+const loginSection = document.getElementById('login-section');
+const publicSection = document.getElementById('public-section');
+const dashboardSection = document.getElementById('dashboard-section');
+
+const publicSearchForm = document.getElementById('public-search-form');
+const publicResultsContainer = document.getElementById('public-results-container');
+
+const adminSearchForm = document.getElementById('admin-search-form');
+const dashboardResultsContainer = document.getElementById('dashboard-results-container');
+
+const loginForm = document.getElementById('login-form');
 const authError = document.getElementById('auth-error');
 
-// कैमरा Modal के Elements
-const cameraModal = document.getElementById('camera-modal');
-const video = document.getElementById('video');
-const clickPhotoButton = document.getElementById('click-photo');
-const canvas = document.getElementById('canvas');
-const uploadPhotoButton = document.getElementById('upload-photo');
-const closeModalButton = document.getElementById('close-modal');
-const uploadStatus = document.getElementById('upload-status');
-let currentRecordId = null;
-let imageBlob = null;
-
-
 // =================================================================
-// 1. पब्लिक डेटा दिखाने का फंक्शन
+// Event Listeners
 // =================================================================
-async function loadPublicData() {
+
+// पब्लिक सर्च फॉर्म सबमिट होने पर
+publicSearchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
+    if (!aadhaarNumber) return;
+
+    publicResultsContainer.innerHTML = '<p>Searching...</p>';
+
     const { data, error } = await supabase
         .from('farmers')
-        .select('name, father_name, bl_number, photo_link');
+        .select('name, father_name, bl_number')
+        .eq('aadhaar_number', aadhaarNumber)
+        .single(); // .single() क्योंकि आधार यूनिक होना चाहिए
 
-    if (error) {
-        console.error('Error fetching public data:', error);
-        return;
-    }
-
-    publicDataContainer.innerHTML = ''; // Clear previous data
-    data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-            <img src="${item.photo_link || 'default_avatar.png'}" alt="photo">
-            <h3>${item.name}</h3>
-            <p><strong>Father's Name:</strong> ${item.father_name}</p>
-            <p><strong>BL Number:</strong> ${item.bl_number}</p>
+    if (error || !data) {
+        publicResultsContainer.innerHTML = '<p class="error">No record found or there was an error.</p>';
+        console.error('Public search error:', error);
+    } else {
+        publicResultsContainer.innerHTML = `
+            <div class="card">
+                <p><strong>Name:</strong> ${data.name}</p>
+                <p><strong>Father's Name:</strong> ${data.father_name}</p>
+                <p><strong>BL Number:</strong> ${data.bl_number}</p>
+            </div>
         `;
-        publicDataContainer.appendChild(div);
-    });
-}
+    }
+});
 
-// =================================================================
-// 2. डैशबोर्ड का पूरा डेटा दिखाने का फंक्शन
-// =================================================================
-async function loadDashboardData() {
-    const { data, error } = await supabase
-        .from('farmers')
-        .select('*'); // सारा डेटा सेलेक्ट करें
+// एडमिन सर्च फॉर्म सबमिट होने पर
+adminSearchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    dashboardResultsContainer.innerHTML = '<p>Searching...</p>';
+    
+    // सभी इनपुट फील्ड्स से वैल्यू प्राप्त करें
+    const aadhaar = document.getElementById('admin-aadhaar-search').value.trim();
+    const account = document.getElementById('admin-account-search').value.trim();
+    const name = document.getElementById('admin-name-search').value.trim();
+    const bl = document.getElementById('admin-bl-search').value.trim();
+    const fatherName = document.getElementById('admin-father-search').value.trim();
+
+    // Supabase क्वेरी बनाएं
+    let query = supabase.from('farmers').select('*');
+
+    // जिस भी फील्ड में वैल्यू हो, उसके हिसाब से फ़िल्टर जोड़ें
+    if (aadhaar) query = query.eq('aadhaar_number', aadhaar);
+    if (account) query = query.eq('account_number', account);
+    if (bl) query = query.eq('bl_number', bl);
+    // नाम और पिता के नाम के लिए .ilike() का उपयोग करें ताकि छोटे-बड़े अक्षरों और अधूरे नाम से भी सर्च हो सके
+    if (name) query = query.ilike('name', `%${name}%`);
+    if (fatherName) query = query.ilike('father_name', `%${fatherName}%`);
+
+    const { data, error } = await query;
 
     if (error) {
-        console.error('Error fetching dashboard data:', error);
-        alert('डेटा लोड करने में विफल: ' + error.message);
+        dashboardResultsContainer.innerHTML = `<p class="error">Error fetching data: ${error.message}</p>`;
         return;
     }
 
-    dashboardDataContainer.innerHTML = '';
+    if (!data || data.length === 0) {
+        dashboardResultsContainer.innerHTML = '<p>No matching records found.</p>';
+        return;
+    }
+    
+    // मिले हुए हर रिकॉर्ड के लिए एडिटेबल फॉर्म दिखाएं
+    dashboardResultsContainer.innerHTML = ''; // पहले के नतीजे साफ़ करें
     data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-            <img src="${item.photo_link || 'default_avatar.png'}" alt="photo" style="width:100px;">
+        const recordCard = document.createElement('div');
+        recordCard.className = 'card';
+        recordCard.innerHTML = `
+            <h4>Editing Record for: ${item.name}</h4>
+            <p><strong>Aadhaar Number:</strong> <input type="text" id="aadhaar_number-${item.id}" value="${item.aadhaar_number || ''}"></p>
             <p><strong>Name:</strong> <input type="text" id="name-${item.id}" value="${item.name || ''}"></p>
             <p><strong>Father's Name:</strong> <input type="text" id="father_name-${item.id}" value="${item.father_name || ''}"></p>
-            <p><strong>Aadhaar:</strong> ${item.aadhaar_number || ''}</p>
             <p><strong>BL Number:</strong> <input type="text" id="bl_number-${item.id}" value="${item.bl_number || ''}"></p>
-            <p><strong>Mobile:</strong> <input type="text" id="mobile_number-${item.id}" value="${item.mobile_number || ''}"></p>
+            <p><strong>Gender:</strong> <input type="text" id="gender-${item.id}" value="${item.gender || ''}"></p>
+            <p><strong>Share Capital:</strong> <input type="text" id="share_capital-${item.id}" value="${item.share_capital || ''}"></p>
             <p><strong>Address:</strong> <input type="text" id="address-${item.id}" value="${item.address || ''}"></p>
-            <button onclick="updateRecord(${item.id})">Save</button>
-            <button onclick="openCamera(${item.id})">Update Photo</button>
+            <p><strong>Age:</strong> <input type="text" id="age-${item.id}" value="${item.age || ''}"></p>
+            <p><strong>Marriage Status:</strong> <input type="text" id="marriage_status-${item.id}" value="${item.marriage_status || ''}"></p>
+            <p><strong>Mobile Number:</strong> <input type="text" id="mobile_number-${item.id}" value="${item.mobile_number || ''}"></p>
+            <p><strong>Category:</strong> <input type="text" id="category-${item.id}" value="${item.category || ''}"></p>
+            <p><strong>Account Number:</strong> <input type="text" id="account_number-${item.id}" value="${item.account_number || ''}"></p>
+            <p><strong>Application Year:</strong> <input type="text" id="application_year-${item.id}" value="${item.application_year || ''}"></p>
+            <p><strong>Nominee Name:</strong> <input type="text" id="nominee_name-${item.id}" value="${item.nominee_name || ''}"></p>
+            <p><strong>Relation:</strong> <input type="text" id="relation-${item.id}" value="${item.relation || ''}"></p>
+            <p><strong>Nominee Aadhaar:</strong> <input type="text" id="nominee_aadhaar_number-${item.id}" value="${item.nominee_aadhaar_number || ''}"></p>
+            <p><strong>WhatsApp Number:</strong> <input type="text" id="whatsapp_number-${item.id}" value="${item.whatsapp_number || ''}"></p>
+            <button onclick="updateRecord(${item.id})">Save Changes</button>
+            <button style="background-color:#6c757d;">Update Photo (Soon)</button>
         `;
-        dashboardDataContainer.appendChild(div);
+        dashboardResultsContainer.appendChild(recordCard);
     });
-}
+});
 
 
 // =================================================================
-// 3. डेटा अपडेट करने का फंक्शन
+// फंक्शन: रिकॉर्ड अपडेट करने के लिए
 // =================================================================
 async function updateRecord(id) {
+    // सभी इनपुट फील्ड्स से नया डेटा इकट्ठा करें
     const updates = {
+        aadhaar_number: document.getElementById(`aadhaar_number-${id}`).value,
         name: document.getElementById(`name-${id}`).value,
         father_name: document.getElementById(`father_name-${id}`).value,
         bl_number: document.getElementById(`bl_number-${id}`).value,
-        mobile_number: document.getElementById(`mobile_number-${id}`).value,
+        gender: document.getElementById(`gender-${id}`).value,
+        share_capital: document.getElementById(`share_capital-${id}`).value,
         address: document.getElementById(`address-${id}`).value,
+        age: document.getElementById(`age-${id}`).value,
+        marriage_status: document.getElementById(`marriage_status-${id}`).value,
+        mobile_number: document.getElementById(`mobile_number-${id}`).value,
+        category: document.getElementById(`category-${id}`).value,
+        account_number: document.getElementById(`account_number-${id}`).value,
+        application_year: document.getElementById(`application_year-${id}`).value,
+        nominee_name: document.getElementById(`nominee_name-${id}`).value,
+        relation: document.getElementById(`relation-${id}`).value,
+        nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${id}`).value,
+        whatsapp_number: document.getElementById(`whatsapp_number-${id}`).value,
     };
 
     const { error } = await supabase
@@ -114,8 +158,10 @@ async function updateRecord(id) {
 
 
 // =================================================================
-// 4. लॉगिन और लॉगआउट के फंक्शन्स
+// ऑथेंटिकेशन और UI मैनेजमेंट
 // =================================================================
+
+// लॉगिन फॉर्म
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
@@ -127,124 +173,43 @@ loginForm.addEventListener('submit', async (e) => {
         authError.textContent = error.message;
     } else {
         authError.textContent = '';
-        checkUserSession(); // लॉगिन सफल होने पर UI अपडेट करें
+        loginSection.style.display = 'none'; // लॉगिन फॉर्म छिपाएं
+        checkUserSession(); // UI अपडेट करें
     }
 });
 
-logoutButton.addEventListener('click', async () => {
-    await supabase.auth.signOut();
-    checkUserSession(); // लॉगआउट होने पर UI अपडेट करें
+// लॉगिन बटन पर क्लिक करने पर फॉर्म दिखाना
+loginButton.addEventListener('click', () => {
+    loginSection.style.display = 'block';
 });
 
+// लॉगआउट बटन
+logoutButton.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    checkUserSession();
+});
 
-// =================================================================
-// 5. यूजर का सेशन चेक करने और UI बदलने का फंक्शन
-// =================================================================
+// यूजर सेशन चेक करने और UI को मैनेज करने का मुख्य फंक्शन
 async function checkUserSession() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
         // यूजर लॉग इन है
-        loginSection.style.display = 'none';
-        publicView.style.display = 'none';
+        publicSection.style.display = 'none';
         dashboardSection.style.display = 'block';
-        loadDashboardData();
+        loginButton.style.display = 'none';
+        logoutButton.style.display = 'block';
+        loginSection.style.display = 'none';
     } else {
         // यूजर लॉग इन नहीं है
-        loginSection.style.display = 'block';
-        publicView.style.display = 'block';
+        publicSection.style.display = 'block';
         dashboardSection.style.display = 'none';
-        loadPublicData();
+        loginButton.style.display = 'block';
+        logoutButton.style.display = 'none';
     }
 }
 
-// =================================================================
-// 6. कैमरा फंक्शन्स
-// =================================================================
+// पेज लोड होने पर तुरंत सेशन चेक करें
+document.addEventListener('DOMContentLoaded', checkUserSession);
 
-function openCamera(recordId) {
-    currentRecordId = recordId;
-    imageBlob = null;
-    uploadPhotoButton.disabled = true;
-    uploadStatus.textContent = '';
-
-    cameraModal.style.display = 'flex';
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => {
-            console.error("Error accessing camera: ", err);
-            alert("Could not access the camera.");
-        });
-}
-
-clickPhotoButton.addEventListener('click', () => {
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(blob => {
-        imageBlob = blob;
-        uploadPhotoButton.disabled = false;
-    }, 'image/jpeg');
-});
-
-closeModalButton.addEventListener('click', () => {
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-    }
-    cameraModal.style.display = 'none';
-});
-
-// =================================================================
-// 7. Google Drive पर फोटो अपलोड फंक्शन (Edge Function का उपयोग करके)
-// =================================================================
-
-uploadPhotoButton.addEventListener('click', async () => {
-    if (!imageBlob || !currentRecordId) return;
-
-    uploadStatus.textContent = 'Uploading...';
-    uploadPhotoButton.disabled = true;
-
-    // Supabase Edge Function को कॉल करें
-    const { data, error } = await supabase.functions.invoke('upload-to-drive', {
-        body: imageBlob,
-        headers: {
-            'Content-Type': 'image/jpeg',
-            'x-record-id': currentRecordId, // रिकॉर्ड आईडी भेजें
-            'x-folder-id': FOLDER_ID // फोल्डर आईडी भेजें
-        }
-    });
-
-    if (error) {
-        uploadStatus.textContent = `Upload failed: ${error.message}`;
-        console.error(error);
-        uploadPhotoButton.disabled = false;
-    } else {
-        // फंक्शन से मिला नया फोटो लिंक
-        const newPhotoLink = data.photoLink;
-        // टेबल में लिंक अपडेट करें
-        const { error: updateError } = await supabase
-            .from('farmers')
-            .update({ photo_link: newPhotoLink })
-            .eq('id', currentRecordId);
-
-        if (updateError) {
-             uploadStatus.textContent = `Failed to update photo link: ${updateError.message}`;
-        } else {
-            uploadStatus.textContent = 'Photo uploaded and link updated successfully!';
-            setTimeout(() => {
-                closeModalButton.click();
-                loadDashboardData(); // डेटा रिफ्रेश करें
-            }, 2000);
-        }
-    }
-});
-
-
-// पेज लोड होने पर सेशन चेक करें
-document.addEventListener('DOMContentLoaded', () => {
-    checkUserSession();
-});
-
-// इन फंक्शन्स को ग्लोबल स्कोप में रखना होगा ताकि HTML onclick उन्हें कॉल कर सके
+// updateRecord फंक्शन को ग्लोबल बनाना ताकि HTML onclick उसे एक्सेस कर सके
 window.updateRecord = updateRecord;
-window.openCamera = openCamera;
