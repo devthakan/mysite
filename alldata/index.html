@@ -69,24 +69,12 @@
         <div class="camera-controls">
             <select id="camera-select"></select>
         </div>
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <div class="modal-buttons">
-            <button id="capture-btn"><i class="fas fa-camera-retro"></i> Capture</button>
-            <button id="close-modal-btn" class="cancel-btn"><i class="fas fa-times"></i> Close</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="crop-modal" class="modal-overlay" style="display:none;">
-      <div class="modal-content">
-        <h2><i class="fas fa-crop-alt"></i> Crop Photo</h2>
-        <div class="crop-container">
-          <img id="image-to-crop" src="">
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
         </div>
         <div class="modal-buttons">
-            <button id="crop-upload-btn"><i class="fas fa-check"></i> Crop & Upload</button>
-            <button id="crop-cancel-btn" class="cancel-btn"><i class="fas fa-times"></i> Cancel</button>
+            <button id="capture-upload-btn"><i class="fas fa-check"></i> Capture & Upload</button>
+            <button id="close-modal-btn" class="cancel-btn"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
     </div>
