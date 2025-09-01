@@ -3,42 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Data</title>
+    <title>Farmer Data Search</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="login-section">
+
+    <header>
+        <h1>Farmer Information Portal</h1>
+        <button id="login-button">Admin Login</button>
+        <button id="logout-button" style="display: none;">Logout</button>
+    </header>
+
+    <div id="login-section" class="section-container" style="display: none;">
         <h2>Admin Login</h2>
         <form id="login-form">
-            <input type="email" id="email" placeholder="Email" required><br>
-            <input type="password" id="password" placeholder="Password" required><br>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
             <button type="submit">Login</button>
+            <p id="auth-error" class="error"></p>
         </form>
-        <p id="auth-error" class="error"></p>
     </div>
 
-    <div id="public-view">
-        <h1>Public Member Information</h1>
-        <div id="public-data-container">
+    <div id="public-section" class="section-container">
+        <h2>Search Farmer Details</h2>
+        <form id="public-search-form">
+            <input type="text" id="public-aadhaar-search" placeholder="Enter Aadhaar Number">
+            <button type="submit">Search</button>
+        </form>
+        <div id="public-results-container" class="results-container">
             </div>
     </div>
 
-    <div id="dashboard-section" style="display: none;">
-        <h1>Full Member Details (Admin View)</h1>
-        <button id="logout-button">Logout</button>
-        <div id="dashboard-data-container">
+    <div id="dashboard-section" class="section-container" style="display: none;">
+        <h2>Admin Search & Edit Panel</h2>
+        <form id="admin-search-form">
+            <input type="text" id="admin-aadhaar-search" placeholder="Search by Aadhaar">
+            <input type="text" id="admin-account-search" placeholder="Search by Account No.">
+            <input type="text" id="admin-name-search" placeholder="Search by Name">
+            <input type="text" id="admin-bl-search" placeholder="Search by BL No.">
+            <input type="text" id="admin-father-search" placeholder="Search by Father's Name">
+            <button type="submit">Search</button>
+        </form>
+        <div id="dashboard-results-container" class="results-container">
             </div>
-    </div>
-
-    <div id="camera-modal" style="display:none;">
-      <div class="modal-content">
-        <video id="video" width="320" height="240" autoplay></video>
-        <button id="click-photo">Click Photo</button>
-        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-        <button id="upload-photo" disabled>Upload to Google Drive</button>
-        <button id="close-modal">Close</button>
-        <p id="upload-status"></p>
-      </div>
     </div>
 
 
