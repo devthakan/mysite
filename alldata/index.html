@@ -44,12 +44,29 @@
             <input type="text" id="admin-father-search" placeholder="Search by Father's Name">
             <button type="submit">Search</button>
         </form>
+        <hr>
+        
+        <div id="bulk-add-section" class="card">
+            <h3>Add Multiple Farmers via Excel/CSV</h3>
+            <p>Step 1: Download the template, fill in the data in Excel, and save it as a CSV file.</p>
+            <button id="download-template-btn">Download CSV Template</button>
+            <hr>
+            <p>Step 2: Upload the filled CSV file here.</p>
+            <input type="file" id="csv-file-input" accept=".csv">
+            <button id="upload-csv-btn">Upload and Save Data</button>
+            <div id="upload-status"></div>
+        </div>
+        <hr>
+
         <div id="dashboard-results-container" class="results-container">
             </div>
     </div>
 
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script src="script.js"></script>
 </body>
 </html>
