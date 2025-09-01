@@ -1,11 +1,12 @@
 // आपकी Supabase प्रोजेक्ट की जानकारी
 const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzII1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // सभी HTML एलिमेंट्स
     const loginButton = document.getElementById('login-button');
     const logoutButton = document.getElementById('logout-button');
     const loginSection = document.getElementById('login-section');
@@ -17,8 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardResultsContainer = document.getElementById('dashboard-results-container');
     const loginForm = document.getElementById('login-form');
     const authError = document.getElementById('auth-error');
+    const downloadTemplateBtn = document.getElementById('download-template-btn');
+    const csvFileInput = document.getElementById('csv-file-input');
+    const uploadCsvBtn = document.getElementById('upload-csv-btn');
+    const uploadStatus = document.getElementById('upload-status');
 
-    // ... (बाकी सभी Event Listeners पहले जैसे ही रहेंगे) ...
+    // पब्लिक सर्च फॉर्म
+    publicSearchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
+        if (!aadhaarNumber) return;
+        publicResultsContainer.innerHTML = '<p>Searching...</p>';
+        const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single();
+        if (error || !data) {
+            publicResultsContainer.innerHTML = '<p class="error">No record found.</p>';
+        } else {
+            publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`;
+        }
+    });
+
     // एडमिन सर्च फॉर्म
     adminSearchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -28,14 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = document.getElementById('admin-name-search').value.trim();
         const bl = document.getElementById('admin-bl-search').value.trim();
         const fatherName = document.getElementById('admin-father-search').value.trim();
-
         let query = supabaseClient.from('farmers').select('*');
         if (aadhaar) query = query.eq('aadhaar_number', aadhaar);
         if (account) query = query.eq('account_number', account);
         if (bl) query = query.eq('bl_number', bl);
         if (name) query = query.ilike('name', `%${name}%`);
         if (fatherName) query = query.ilike('father_name', `%${fatherName}%`);
-
         const { data, error } = await query;
         if (error) {
             dashboardResultsContainer.innerHTML = `<p class="error">Error fetching data: ${error.message}</p>`;
@@ -45,18 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardResultsContainer.innerHTML = '<p>No matching records found.</p>';
             return;
         }
-        
         dashboardResultsContainer.innerHTML = '';
         data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
-            
-            // =================================================================
-            // बदलाव #1: यहाँ 'item.id' की जगह 'item.aadhaar_number' का उपयोग करें
-            // ध्यान दें: aadhaar_number एक स्ट्रिंग (टेक्स्ट) है, इसलिए उसे सिंगल कोट्स ('') में रखना ज़रूरी है।
-            // =================================================================
-            card.innerHTML = `
-                <h4>Editing Record for: ${item.name}</h4>
+            card.innerHTML = `<h4>Editing Record for: ${item.name}</h4>
                 <p><strong>Aadhaar Number:</strong> <input type="text" id="aadhaar_number-${item.aadhaar_number}" value="${item.aadhaar_number || ''}"></p>
                 <p><strong>Name:</strong> <input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p>
                 <p><strong>Father's Name:</strong> <input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p>
@@ -79,15 +88,66 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardResultsContainer.appendChild(card);
         });
     });
-    
-    // बाकी सारे listeners (publicSearchForm, loginForm, loginButton, logoutButton) पहले जैसे ही रहेंगे
-    
-    publicSearchForm.addEventListener('submit', async (e) => { e.preventDefault(); const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim(); if (!aadhaarNumber) return; publicResultsContainer.innerHTML = '<p>Searching...</p>'; const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single(); if (error || !data) { publicResultsContainer.innerHTML = '<p class="error">No record found.</p>'; } else { publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father\'s Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`; } });
-    loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('email').value; const password = document.getElementById('password').value; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { authError.textContent = error.message; } else { authError.textContent = ''; checkUserSession(); } });
+
+    // लॉगिन फॉर्म
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) { authError.textContent = error.message; } else { authError.textContent = ''; checkUserSession(); }
+    });
+
+    // लॉगिन/लॉगआउट बटन
     loginButton.addEventListener('click', () => { loginSection.style.display = loginSection.style.display === 'block' ? 'none' : 'block'; });
     logoutButton.addEventListener('click', async () => { await supabaseClient.auth.signOut(); checkUserSession(); });
 
+    // CSV टेम्पलेट डाउनलोड
+    downloadTemplateBtn.addEventListener('click', () => {
+        const headers = "aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number";
+        const csvContent = "data:text/csv;charset=utf-8," + headers;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "farmers_template.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
 
+    // CSV अपलोड
+    uploadCsvBtn.addEventListener('click', () => {
+        const file = csvFileInput.files[0];
+        if (!file) {
+            uploadStatus.innerHTML = `<p style="color: red;">Please select a CSV file first.</p>`;
+            return;
+        }
+        uploadStatus.innerHTML = `<p>Parsing file...</p>`;
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async function(results) {
+                const dataToInsert = results.data;
+                if (dataToInsert.length === 0) {
+                    uploadStatus.innerHTML = `<p style="color: red;">The selected file is empty or invalid.</p>`;
+                    return;
+                }
+                uploadStatus.innerHTML = `<p>File parsed. Found ${dataToInsert.length} records. Uploading...</p>`;
+                const { error } = await supabaseClient.from('farmers').insert(dataToInsert);
+                if (error) {
+                    uploadStatus.innerHTML = `<p style="color: red;">Error uploading data: ${error.message}</p>`;
+                } else {
+                    uploadStatus.innerHTML = `<p style="color: green;">Successfully added ${dataToInsert.length} new farmers!</p>`;
+                    csvFileInput.value = '';
+                }
+            },
+            error: function(error) {
+                uploadStatus.innerHTML = `<p style="color: red;">Error parsing file: ${error.message}</p>`;
+            }
+        });
+    });
+
+    // UI मैनेजमेंट फंक्शन
     async function checkUserSession() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -106,11 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUserSession();
 });
 
-// =================================================================
-// ग्लोबल फंक्शन
-// =================================================================
-async function updateRecord(aadhaarNumber) { // पैरामीटर को 'id' से 'aadhaarNumber' में बदल दिया
-    // हर input field के id में भी aadhaarNumber का उपयोग करें
+// ग्लोबल फंक्शन (HTML से कॉल करने के लिए)
+async function updateRecord(aadhaarNumber) {
     const updates = {
         aadhaar_number: document.getElementById(`aadhaar_number-${aadhaarNumber}`).value,
         name: document.getElementById(`name-${aadhaarNumber}`).value,
@@ -130,15 +187,7 @@ async function updateRecord(aadhaarNumber) { // पैरामीटर को 
         nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${aadhaarNumber}`).value,
         whatsapp_number: document.getElementById(`whatsapp_number-${aadhaarNumber}`).value,
     };
-
-    // =================================================================
-    // बदलाव #2: यहाँ .eq() में 'id' की जगह 'aadhaar_number' का उपयोग करें
-    // =================================================================
-    const { error } = await supabaseClient
-        .from('farmers')
-        .update(updates)
-        .eq('aadhaar_number', aadhaarNumber); // <-- यह मुख्य बदलाव है
-
+    const { error } = await supabaseClient.from('farmers').update(updates).eq('aadhaar_number', aadhaarNumber);
     if (error) {
         alert('Update failed: ' + error.message);
     } else {
