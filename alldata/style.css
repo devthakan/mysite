@@ -1,132 +1,372 @@
-body { 
-    font-family: Arial, sans-serif; 
-    background-color: #f4f4f9; 
-    color: #333; 
-    margin: 0; 
-    padding: 20px; 
+/* General Body & Layout */
+body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #eef2f6; /* Light gray-blue background */
+    color: #334155; /* Dark text */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    background: #fff; 
-    padding: 10px 20px; 
-    border-bottom: 2px solid #ddd; 
-}
-header h1 { 
-    margin: 0; 
-    font-size: 1.5em;
-}
-.section-container { 
-    background: #fff; 
-    padding: 20px; 
-    margin-top: 20px; 
-    border-radius: 8px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-}
-input[type="text"], 
-input[type="email"], 
-input[type="password"],
-input[type="file"] {
-    padding: 10px;
-    margin: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-input[type="text"], 
-input[type="email"], 
-input[type="password"] {
-    width: 250px;
-}
-button {
-    padding: 10px 15px;
-    border: none;
-    background-color: #007bff;
+
+/* Header */
+header {
+    background: linear-gradient(to right, #4a90e2, #6a5acd); /* Gradient blue-purple */
     color: white;
-    border-radius: 4px;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+/* Section Containers (Login, Public, Dashboard) */
+.section-container {
+    background: #ffffff;
+    padding: 30px;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+.section-container h2 {
+    color: #4a90e2;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+    border-bottom: 2px solid #eef2f6;
+    padding-bottom: 10px;
+}
+
+/* Forms & Inputs */
+form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+.card input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+form input:focus,
+.card input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    outline: none;
+}
+form button,
+.card button {
+    padding: 12px 25px;
+    border: none;
+    background-color: #4a90e2;
+    color: white;
+    border-radius: 8px;
     cursor: pointer;
-    margin: 5px;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
-button:hover { 
-    background-color: #0056b3; 
+form button:hover,
+.card button:hover {
+    background-color: #357bd8;
+    transform: translateY(-2px);
 }
-#logout-button { 
-    background-color: #6c757d; 
+form button:active,
+.card button:active {
+    transform: translateY(0);
 }
-#logout-button:hover { 
-    background-color: #5a6268; 
+#login-section input {
+    width: calc(100% - 24px); /* Full width minus padding */
+    margin-bottom: 15px;
 }
-.results-container { 
-    margin-top: 20px; 
+
+/* Buttons */
+button {
+    padding: 12px 20px;
+    border: none;
+    background-color: #4a90e2;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin: 5px; /* Adjust margin for general buttons */
 }
-.card { 
-    border: 1px solid #ddd; 
-    padding: 15px; 
-    margin-bottom: 15px; 
-    border-radius: 5px; 
-    background-color: #f9f9f9;
+button:hover {
+    background-color: #357bd8;
+    transform: translateY(-2px);
 }
-.card p { 
-    margin: 8px 0; 
+#logout-button {
+    background-color: #ef4444; /* Red for logout */
+}
+#logout-button:hover {
+    background-color: #dc2626;
+}
+.delete-btn {
+    background-color: #ef4444; /* Red for delete */
+}
+.delete-btn:hover {
+    background-color: #dc2626;
+}
+
+/* Results & Cards */
+.results-container {
+    margin-top: 25px;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); /* Responsive grid */
+}
+.card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+.card h4 {
+    color: #4a90e2;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+.card p {
+    margin: 10px 0;
     display: flex;
     align-items: center;
+    font-size: 0.95em;
+    color: #475569;
 }
-.card strong { 
-    color: #555; 
-    min-width: 180px;
+.card strong {
+    min-width: 150px;
+    font-weight: 600;
+    color: #1e293b;
 }
-.card input { 
+.card input[type="text"] {
+    padding: 8px;
+    margin-left: 10px;
+    border-radius: 6px;
     flex-grow: 1;
 }
-.error { 
-    color: red; 
-}
-#admin-search-form input { 
-    width: 18%; 
-    min-width: 150px;
-}
-#upload-status p, #crop-upload-status p {
-    margin: 10px 0;
-    font-weight: bold;
+
+/* Utilities */
+.error {
+    color: #ef4444;
+    font-weight: 500;
+    margin-top: 10px;
 }
 hr {
     border: none;
-    border-top: 1px solid #eee;
-    margin: 20px 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 30px 0;
 }
-.delete-btn {
-    background-color: #dc3545;
+#bulk-add-section {
+    background-color: #f0f9ff; /* Light blue background */
+    border-color: #bfdbfe;
 }
-.delete-btn:hover {
-    background-color: #c82333;
+#bulk-add-section h3 {
+    color: #2563eb;
+    margin-bottom: 15px;
 }
-.farmer-photo { 
-    width: 100px; 
-    height: 100px;
+#bulk-add-section button {
+    background-color: #22c55e; /* Green for upload/download */
+}
+#bulk-add-section button:hover {
+    background-color: #16a34a;
+}
+#csv-file-input {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 10px;
+    border-radius: 8px;
+    width: auto; /* Adjust width for file input */
+}
+#upload-status, #crop-upload-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #e0f2fe;
+    color: #0056b3;
+    font-weight: 600;
+}
+#upload-status p, #crop-upload-status p {
+    margin: 0;
+}
+
+/* Farmer Photo in Card */
+.farmer-photo {
+    width: 120px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 50%; 
-    margin-right: 20px;
-    border: 2px solid #ddd;
+    border-radius: 50%;
+    margin-right: 25px;
+    border: 4px solid #4a90e2;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+.farmer-photo:hover {
+    transform: scale(1.05);
 }
 
-/* === मॉडल की स्टाइलिंग === */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background-color: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-width: 90%; }
-#video { border: 1px solid #ddd; margin-top: 10px; background-color: #333; max-width: 100%; height: auto; }
-.camera-controls { margin-bottom: 15px; }
-.modal-buttons { margin-top: 15px; }
-#camera-upload-status { margin-top: 10px; font-weight: bold; }
 
-/* क्रॉपिंग मॉडल और इमेज के लिए स्टाइल */
+/* === Modal Overlays (Camera, Crop) === */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px); /* Blurry background */
+}
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    min-width: 400px; /* Ensure a decent minimum width */
+    transform: scale(0.9);
+    animation: modalAppear 0.3s forwards ease-out;
+}
+@keyframes modalAppear {
+    to { transform: scale(1); }
+}
+.modal-content h2 {
+    color: #4a90e2;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+.camera-controls {
+    margin-bottom: 20px;
+}
+.camera-controls select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 1em;
+    min-width: 200px;
+}
+#video {
+    width: 100%;
+    max-width: 700px;
+    height: auto;
+    border: 2px solid #4a90e2;
+    border-radius: 10px;
+    margin-top: 15px;
+    background-color: #333;
+}
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+.modal-buttons button {
+    flex: 1;
+    max-width: 180px;
+}
+
+/* Cropper specific styles */
 .crop-container {
-    width: 60vw;
-    height: 60vh;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 700px;
+    height: 450px; /* Fixed height for cropper to avoid jumpiness */
+    margin: 20px auto;
+    background-color: #f0f4f8;
+    border: 1px solid #cbd5e1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Important for cropper */
 }
 #image-to-crop {
-    display: block;
-    max-width: 100%; /* यह Cropper.js के लिए ज़रूरी है */
+    display: block; /* Important for Cropper.js */
+    max-width: 100%;
+    height: auto;
 }
-.cropper-container {
-    margin: 0 auto;
+/* Cropper library's own classes */
+.cropper-view-box,
+.cropper-face {
+    border-radius: 50%; /* Makes the cropping area circular if aspectRatio is 1/1 */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+    header h1 {
+        margin-bottom: 10px;
+    }
+    form {
+        flex-direction: column;
+    }
+    .section-container {
+        padding: 20px;
+        margin: 15px auto;
+    }
+    .results-container {
+        grid-template-columns: 1fr; /* Single column on small screens */
+    }
+    .card p {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .card strong {
+        margin-bottom: 5px;
+    }
+    .farmer-photo {
+        width: 80px;
+        height: 80px;
+        margin-right: 15px;
+    }
+    .modal-content {
+        min-width: unset; /* Remove min-width on smaller screens */
+        padding: 20px;
+    }
+    .modal-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .modal-buttons button {
+        max-width: 100%;
+    }
+    .crop-container {
+        height: 300px; /* Adjust height for smaller screens */
+    }
 }
