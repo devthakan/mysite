@@ -57,81 +57,141 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // === फोटो और कैमरा के फंक्शन्स ===
-function openCameraModal(aadhaarNumber) { currentAadhaarForPhoto = aadhaarNumber; document.getElementById('camera-modal').style.display = 'flex'; populateCameraList().then(startCamera); }
-function stopCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); } document.getElementById('camera-modal').style.display = 'none'; }
-function capturePhotoAndOpenCropper() { const canvas = document.getElementById('canvas'); const video = document.getElementById('video'); canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height); const imageDataUrl = canvas.toDataURL('image/jpeg'); stopCamera(); const cropModal = document.getElementById('crop-modal'); const imageToCrop = document.getElementById('image-to-crop'); cropModal.style.display = 'flex'; document.getElementById('crop-upload-status').innerHTML = ''; imageToCrop.src = imageDataUrl; if (cropper) cropper.destroy(); cropper = new Cropper(imageToCrop, { aspectRatio: 1, viewMode: 1, dragMode: 'move', background: false, autoCropArea: 0.8 }); }
-function cancelCropping() { document.getElementById('crop-modal').style.display = 'none'; if (cropper) cropper.destroy(); }
-async function cropAndUploadImage() { if (!cropper) return; const cropAndUploadBtn = document.getElementById('crop-upload-btn'); cropAndUploadBtn.disabled = true; const croppedCanvas = cropper.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' }); croppedCanvas.toBlob(async (blob) => { if (!blob) { showToast('Cropping failed.', 'error'); cropAndUploadBtn.disabled = false; return; } const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`; const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false }); if (uploadError) { showToast(`Upload Failed: ${uploadError.message}`, 'error'); cropAndUploadBtn.disabled = false; return; } const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(uploadData.path); const newPhotoLink = urlData.publicUrl; const { error: updateError } = await supabaseClient.from('farmers').update({ photo_link: newPhotoLink }).eq('aadhaar_number', currentAadhaarForPhoto); if (updateError) { showToast(`Failed to save link: ${updateError.message}`, 'error'); } else { showToast('Photo updated successfully!', 'success'); document.getElementById(`photo-${currentAadhaarForPhoto}`).src = newPhotoLink; setTimeout(cancelCropping, 1500); } cropAndUploadBtn.disabled = false; }, 'image/jpeg', 0.8); }
-async function populateCameraList() { try { const devices = await navigator.mediaDevices.enumerateDevices(); const videoDevices = devices.filter(device => device.kind === 'videoinput'); const cameraSelect = document.getElementById('camera-select'); cameraSelect.innerHTML = ''; videoDevices.forEach((device, index) => { const option = document.createElement('option'); option.value = device.deviceId; option.text = device.label || `Camera ${index + 1}`; cameraSelect.appendChild(option); }); } catch (e) { console.error("Could not list devices:", e); } }
-async function startCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); } const cameraSelect = document.getElementById('camera-select'); const video = document.getElementById('video'); const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } } }; try { currentStream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject = currentStream; } catch (e) { console.error("Error starting camera:", e); } }
-function getGoogleDriveEmbedLink(driveLink) { if (!driveLink || driveLink.includes('supabase.co')) { return driveLink; } const match = driveLink.match(/\/d\/(.+?)(?:\/view|$)/); if (match && match[1]) { return `https://drive.google.com/uc?export=view&id=${match[1]}`; } return driveLink; }
 
-// === डेटा और यूज़र मैनेजमेंट फंक्शन्स ===
-async function handlePublicSearch(e) {
-    e.preventDefault();
-    const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
-    if (!aadhaarNumber) return;
-    const publicResultsContainer = document.getElementById('public-results-container');
-    publicResultsContainer.innerHTML = '<div>Searching...</div>';
-    const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single();
-    if (error || !data) {
-        publicResultsContainer.innerHTML = '<p class="error">No record found.</p>';
-    } else {
-        publicResultsContainer.innerHTML = `<div class="card" style="grid-template-columns: 1fr;"><div class="card-header-text"><h4>${data.name}</h4><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div></div>`;
-    }
+function openCameraModal(aadhaarNumber) {
+    currentAadhaarForPhoto = aadhaarNumber;
+    document.getElementById('camera-modal').style.display = 'flex';
+    populateCameraList().then(startCamera);
 }
-async function handleAdminSearch(e) {
-    e.preventDefault();
-    const dashboardResultsContainer = document.getElementById('dashboard-results-container');
-    dashboardResultsContainer.innerHTML = '<div>Searching...</div>';
-    const aadhaar = document.getElementById('admin-aadhaar-search').value.trim();
-    const account = document.getElementById('admin-account-search').value.trim();
-    const name = document.getElementById('admin-name-search').value.trim();
-    const bl = document.getElementById('admin-bl-search').value.trim();
-    const fatherName = document.getElementById('admin-father-search').value.trim();
-    let query = supabaseClient.from('farmers').select('*');
-    if (aadhaar) query = query.eq('aadhaar_number', aadhaar);
-    if (account) query = query.eq('account_number', account);
-    if (bl) query = query.eq('bl_number', bl);
-    if (name) query = query.ilike('name', `%${name}%`);
-    if (fatherName) query = query.ilike('father_name', `%${fatherName}%`);
-    const { data, error } = await query;
-    if (error) { showToast(`Error fetching data: ${error.message}`, 'error'); dashboardResultsContainer.innerHTML = ''; return; }
-    if (!data || data.length === 0) { dashboardResultsContainer.innerHTML = '<p>No matching records found.</p>'; return; }
-    dashboardResultsContainer.innerHTML = '';
-    data.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.id = `card-${item.aadhaar_number}`;
-        const photoLink = getGoogleDriveEmbedLink(item.photo_link);
-        const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-        card.innerHTML = `<div class="card-header"><img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo"><div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div></div><div class="details-grid"><h5 class="group-title">Personal Details</h5><p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p><p><strong>Name:</strong><input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p><p><strong>Father's Name:</strong><input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p><p><strong>Gender:</strong><input type="text" id="gender-${item.aadhaar_number}" value="${item.gender || ''}"></p><p><strong>Age:</strong><input type="text" id="age-${item.aadhaar_number}" value="${item.age || ''}"></p><p><strong>Marriage Status:</strong><input type="text" id="marriage_status-${item.aadhaar_number}" value="${item.marriage_status || ''}"></p><p><strong>Category:</strong><input type="text" id="category-${item.aadhaar_number}" value="${item.category || ''}"></p><h5 class="group-title">Contact & Address</h5><p><strong>Mobile Number:</strong><input type="text" id="mobile_number-${item.aadhaar_number}" value="${item.mobile_number || ''}"></p><p><strong>WhatsApp Number:</strong><input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p><p style="grid-column: 1 / -1;"><strong>Address:</strong><input type="text" id="address-${item.aadhaar_number}" value="${item.address || ''}"></p><h5 class="group-title">Financial & Application Details</h5><p><strong>BL Number:</strong><input type="text" id="bl_number-${item.aadhaar_number}" value="${item.bl_number || ''}"></p><p><strong>Account Number:</strong><input type="text" id="account_number-${item.aadhaar_number}" value="${item.account_number || ''}"></p><p><strong>Share Capital:</strong><input type="text" id="share_capital-${item.aadhaar_number}" value="${item.share_capital || ''}"></p><p><strong>Application Year:</strong><input type="text" id="application_year-${item.aadhaar_number}" value="${item.application_year || ''}"></p><h5 class="group-title">Nominee Details</h5><p><strong>Nominee Name:</strong><input type="text" id="nominee_name-${item.aadhaar_number}" value="${item.nominee_name || ''}"></p><p><strong>Relation:</strong><input type="text" id="relation-${item.aadhaar_number}" value="${item.relation || ''}"></p><p><strong>Nominee Aadhaar:</strong><input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p><div class="card-actions"><button onclick="updateRecord('${item.aadhaar_number}')"><i class="fas fa-save"></i> Save Changes</button><button onclick="openCameraModal('${item.aadhaar_number}')"><i class="fas fa-camera"></i> Update Photo</button><button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')"><i class="fas fa-trash"></i> Delete</button></div></div>`;
-        dashboardResultsContainer.appendChild(card);
+
+function stopCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+    document.getElementById('camera-modal').style.display = 'none';
+}
+
+// BUG FIX: यह फंक्शन अब कैनवास का साइज वीडियो के हिसाब से सेट करेगा
+function capturePhotoAndOpenCropper() {
+    const canvas = document.getElementById('canvas');
+    const video = document.getElementById('video');
+    
+    // --- यहाँ बदलाव किया गया है ---
+    // कैनवास का साइज वीडियो के असली साइज के बराबर सेट करें
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    // --- बदलाव समाप्त ---
+
+    // अब वीडियो से फोटो खींचकर कैनवास पर बनाएं
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageDataUrl = canvas.toDataURL('image/jpeg');
+    
+    stopCamera();
+    
+    const cropModal = document.getElementById('crop-modal');
+    const imageToCrop = document.getElementById('image-to-crop');
+    cropModal.style.display = 'flex';
+    document.getElementById('crop-upload-status').innerHTML = '';
+    imageToCrop.src = imageDataUrl;
+
+    if (cropper) cropper.destroy();
+    cropper = new Cropper(imageToCrop, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        background: false,
+        autoCropArea: 0.8
     });
 }
-async function updateRecord(aadhaarNumber) {
-    const updates = {
-        name: document.getElementById(`name-${aadhaarNumber}`).value,
-        father_name: document.getElementById(`father_name-${aadhaarNumber}`).value,
-        bl_number: document.getElementById(`bl_number-${aadhaarNumber}`).value,
-        gender: document.getElementById(`gender-${aadhaarNumber}`).value,
-        share_capital: document.getElementById(`share_capital-${aadhaarNumber}`).value,
-        address: document.getElementById(`address-${aadhaarNumber}`).value,
-        age: document.getElementById(`age-${aadhaarNumber}`).value,
-        marriage_status: document.getElementById(`marriage_status-${aadhaarNumber}`).value,
-        mobile_number: document.getElementById(`mobile_number-${aadhaarNumber}`).value,
-        category: document.getElementById(`category-${aadhaarNumber}`).value,
-        account_number: document.getElementById(`account_number-${aadhaarNumber}`).value,
-        application_year: document.getElementById(`application_year-${aadhaarNumber}`).value,
-        nominee_name: document.getElementById(`nominee_name-${aadhaarNumber}`).value,
-        relation: document.getElementById(`relation-${aadhaarNumber}`).value,
-        nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${aadhaarNumber}`).value,
-        whatsapp_number: document.getElementById(`whatsapp_number-${aadhaarNumber}`).value,
-    };
-    const { error } = await supabaseClient.from('farmers').update(updates).eq('aadhaar_number', aadhaarNumber);
-    if (error) { showToast(`Update failed: ${error.message}`, 'error'); } 
-    else { showToast('Record updated successfully!', 'success'); }
+
+function cancelCropping() {
+    document.getElementById('crop-modal').style.display = 'none';
+    if (cropper) cropper.destroy();
 }
+
+async function cropAndUploadImage() {
+    if (!cropper) return;
+
+    const cropAndUploadBtn = document.getElementById('crop-upload-btn');
+    cropAndUploadBtn.disabled = true;
+
+    const croppedCanvas = cropper.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
+
+    croppedCanvas.toBlob(async (blob) => {
+        if (!blob) {
+            showToast('Cropping failed.', 'error');
+            cropAndUploadBtn.disabled = false;
+            return;
+        }
+
+        const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false });
+
+        if (uploadError) {
+            showToast(`Upload Failed: ${uploadError.message}`, 'error');
+            cropAndUploadBtn.disabled = false;
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(uploadData.path);
+        const newPhotoLink = urlData.publicUrl;
+
+        const { error: updateError } = await supabaseClient.from('farmers').update({ photo_link: newPhotoLink }).eq('aadhaar_number', currentAadhaarForPhoto);
+
+        if (updateError) {
+            showToast(`Failed to save new link: ${updateError.message}`, 'error');
+        } else {
+            showToast('Photo updated successfully!', 'success');
+            document.getElementById(`photo-${currentAadhaarForPhoto}`).src = newPhotoLink;
+            setTimeout(cancelCropping, 1500);
+        }
+        cropAndUploadBtn.disabled = false;
+    }, 'image/jpeg', 0.8);
+}
+
+async function populateCameraList() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        const cameraSelect = document.getElementById('camera-select');
+        cameraSelect.innerHTML = '';
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Camera ${index + 1}`;
+            cameraSelect.appendChild(option);
+        });
+    } catch (e) { console.error("Could not list devices:", e); }
+}
+
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+    const cameraSelect = document.getElementById('camera-select');
+    const video = document.getElementById('video');
+    const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } } };
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+    } catch (e) { console.error("Error starting camera:", e); }
+}
+
+function getGoogleDriveEmbedLink(driveLink) {
+    if (!driveLink || driveLink.includes('supabase.co')) {
+        return driveLink;
+    }
+    const match = driveLink.match(/\/d\/(.+?)(?:\/view|$)/);
+    if (match && match[1]) {
+        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+    return driveLink;
+}
+
+// === डेटा और यूज़र मैनेजमेंट फंक्शन्स (कोई बदलाव नहीं) ===
+async function handlePublicSearch(e) { e.preventDefault(); const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim(); if (!aadhaarNumber) return; const publicResultsContainer = document.getElementById('public-results-container'); publicResultsContainer.innerHTML = '<div>Searching...</div>'; const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single(); if (error || !data) { publicResultsContainer.innerHTML = '<p class="error">No record found.</p>'; } else { publicResultsContainer.innerHTML = `<div class="card" style="grid-template-columns: 1fr;"><div class="card-header-text"><h4>${data.name}</h4><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div></div>`; } }
+async function handleAdminSearch(e) { e.preventDefault(); const dashboardResultsContainer = document.getElementById('dashboard-results-container'); dashboardResultsContainer.innerHTML = '<div>Searching...</div>'; const aadhaar = document.getElementById('admin-aadhaar-search').value.trim(); const account = document.getElementById('admin-account-search').value.trim(); const name = document.getElementById('admin-name-search').value.trim(); const bl = document.getElementById('admin-bl-search').value.trim(); const fatherName = document.getElementById('admin-father-search').value.trim(); let query = supabaseClient.from('farmers').select('*'); if (aadhaar) query = query.eq('aadhaar_number', aadhaar); if (account) query = query.eq('account_number', account); if (bl) query = query.eq('bl_number', bl); if (name) query = query.ilike('name', `%${name}%`); if (fatherName) query = query.ilike('father_name', `%${fatherName}%`); const { data, error } = await query; if (error) { showToast(`Error fetching data: ${error.message}`, 'error'); dashboardResultsContainer.innerHTML = ''; return; } if (!data || data.length === 0) { dashboardResultsContainer.innerHTML = '<p>No matching records found.</p>'; return; } dashboardResultsContainer.innerHTML = ''; data.forEach(item => { const card = document.createElement('div'); card.className = 'card'; card.id = `card-${item.aadhaar_number}`; const photoLink = getGoogleDriveEmbedLink(item.photo_link); const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; card.innerHTML = `<div class="card-header"><img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo"><div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div></div><div class="details-grid"><h5 class="group-title">Personal Details</h5><p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p><p><strong>Name:</strong><input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p><p><strong>Father's Name:</strong><input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p><p><strong>Gender:</strong><input type="text" id="gender-${item.aadhaar_number}" value="${item.gender || ''}"></p><p><strong>Age:</strong><input type="text" id="age-${item.aadhaar_number}" value="${item.age || ''}"></p><p><strong>Marriage Status:</strong><input type="text" id="marriage_status-${item.aadhaar_number}" value="${item.marriage_status || ''}"></p><p><strong>Category:</strong><input type="text" id="category-${item.aadhaar_number}" value="${item.category || ''}"></p><h5 class="group-title">Contact & Address</h5><p><strong>Mobile Number:</strong><input type="text" id="mobile_number-${item.aadhaar_number}" value="${item.mobile_number || ''}"></p><p><strong>WhatsApp Number:</strong><input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p><p style="grid-column: 1 / -1;"><strong>Address:</strong><input type="text" id="address-${item.aadhaar_number}" value="${item.address || ''}"></p><h5 class="group-title">Financial & Application Details</h5><p><strong>BL Number:</strong><input type="text" id="bl_number-${item.aadhaar_number}" value="${item.bl_number || ''}"></p><p><strong>Account Number:</strong><input type="text" id="account_number-${item.aadhaar_number}" value="${item.account_number || ''}"></p><p><strong>Share Capital:</strong><input type="text" id="share_capital-${item.aadhaar_number}" value="${item.share_capital || ''}"></p><p><strong>Application Year:</strong><input type="text" id="application_year-${item.aadhaar_number}" value="${item.application_year || ''}"></p><h5 class="group-title">Nominee Details</h5><p><strong>Nominee Name:</strong><input type="text" id="nominee_name-${item.aadhaar_number}" value="${item.nominee_name || ''}"></p><p><strong>Relation:</strong><input type="text" id="relation-${item.aadhaar_number}" value="${item.relation || ''}"></p><p><strong>Nominee Aadhaar:</strong><input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p><div class="card-actions"><button onclick="updateRecord('${item.aadhaar_number}')"><i class="fas fa-save"></i> Save Changes</button><button onclick="openCameraModal('${item.aadhaar_number}')"><i class="fas fa-camera"></i> Update Photo</button><button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')"><i class="fas fa-trash"></i> Delete</button></div></div>`; dashboardResultsContainer.appendChild(card); }); }
+async function updateRecord(aadhaarNumber) { const updates = { name: document.getElementById(`name-${aadhaarNumber}`).value, father_name: document.getElementById(`father_name-${aadhaarNumber}`).value, bl_number: document.getElementById(`bl_number-${aadhaarNumber}`).value, gender: document.getElementById(`gender-${aadhaarNumber}`).value, share_capital: document.getElementById(`share_capital-${aadhaarNumber}`).value, address: document.getElementById(`address-${aadhaarNumber}`).value, age: document.getElementById(`age-${aadhaarNumber}`).value, marriage_status: document.getElementById(`marriage_status-${aadhaarNumber}`).value, mobile_number: document.getElementById(`mobile_number-${aadhaarNumber}`).value, category: document.getElementById(`category-${aadhaarNumber}`).value, account_number: document.getElementById(`account_number-${aadhaarNumber}`).value, application_year: document.getElementById(`application_year-${aadhaarNumber}`).value, nominee_name: document.getElementById(`nominee_name-${aadhaarNumber}`).value, relation: document.getElementById(`relation-${aadhaarNumber}`).value, nominee_aadhaar_number: document.getElementById(`nominee_aadhaar_number-${aadhaarNumber}`).value, whatsapp_number: document.getElementById(`whatsapp_number-${aadhaarNumber}`).value, }; const { error } = await supabaseClient.from('farmers').update(updates).eq('aadhaar_number', aadhaarNumber); if (error) { showToast(`Update failed: ${error.message}`, 'error'); } else { showToast('Record updated successfully!', 'success'); } }
 async function deleteRecord(aadhaarNumber) { if (confirm('Are you sure you want to delete this record?')) { const { error } = await supabaseClient.from('farmers').delete().eq('aadhaar_number', aadhaarNumber); if (error) { showToast(`Delete failed: ${error.message}`, 'error'); } else { showToast('Record deleted successfully!', 'success'); document.getElementById(`card-${aadhaarNumber}`).remove(); } } }
 async function handleLogin(e) { e.preventDefault(); const email = document.getElementById('email').value; const password = document.getElementById('password').value; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { showToast(error.message, 'error'); } else { showToast('Login Successful!', 'success'); checkUserSession(); } }
 async function handleLogout() { await supabaseClient.auth.signOut(); showToast('You have been logged out.', 'success'); checkUserSession(); }
