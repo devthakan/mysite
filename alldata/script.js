@@ -1,6 +1,6 @@
 // आपकी Supabase प्रोजेक्ट की जानकारी
 const SUPABASE_URL = 'https://sjfglhxjdyvcygunijvz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3l5Z3VuaWp2eiIsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM'; // आपकी एनोनिमस कुंजी
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// === फोटो और कैमरा के फंक्शन्स ===
+
 function openCameraModal(aadhaarNumber) {
     currentAadhaarForPhoto = aadhaarNumber;
     cameraModal.style.display = 'flex';
@@ -81,11 +83,11 @@ function capturePhotoAndOpenCropper() {
         cropper.destroy();
     }
     cropper = new Cropper(imageToCrop, {
-        aspectRatio: 1 / 1,
-        viewMode: 1,
+        aspectRatio: 1 / 1, // चौकोर क्रॉपिंग
+        viewMode: 1, // Cropper को पूरी तरह से दिखने दें
         dragMode: 'move',
         background: false,
-        autoCropArea: 0.8,
+        autoCropArea: 0.8, // अपने आप 80% एरिया को क्रॉप करे
     });
 }
 
@@ -96,18 +98,20 @@ function cancelCropping() {
     }
 }
 
-function cropAndUploadImage() {
+async function cropAndUploadImage() {
     if (!cropper) return;
 
     cropUploadStatus.innerHTML = '<p>Cropping and compressing image...</p>';
     cropAndUploadBtn.disabled = true;
 
+    // क्रॉप किए गए हिस्से को 400x400 पिक्सल के कैनवास पर ड्रा करें
     const croppedCanvas = cropper.getCroppedCanvas({
         width: 400,
         height: 400,
         imageSmoothingQuality: 'high',
     });
 
+    // कैनवास से Blob (फाइल का डेटा) बनाएं
     croppedCanvas.toBlob(async (blob) => {
         if (!blob) {
             alert('Cropping failed.');
@@ -118,6 +122,7 @@ function cropAndUploadImage() {
         cropUploadStatus.innerHTML = '<p>Uploading to Supabase Storage...</p>';
         const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`;
         
+        // Supabase Storage पर फाइल अपलोड करें
         const { data: uploadData, error: uploadError } = await supabaseClient
             .storage
             .from('farmer-photos')
@@ -130,9 +135,11 @@ function cropAndUploadImage() {
         }
 
         cropUploadStatus.innerHTML = '<p style="color: green;">Upload successful! Saving link...</p>';
+        // अपलोड की गई फाइल का पब्लिक URL प्राप्त करें
         const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(uploadData.path);
         const newPhotoLink = urlData.publicUrl;
 
+        // farmers टेबल में नया लिंक अपडेट करें
         const { error: updateError } = await supabaseClient
             .from('farmers')
             .update({ photo_link: newPhotoLink })
@@ -142,17 +149,79 @@ function cropAndUploadImage() {
             cropUploadStatus.innerHTML = `<p style="color: red;">Failed to save link: ${updateError.message}</p>`;
         } else {
             cropUploadStatus.innerHTML = '<p style="color: green;">All done!</p>';
+            // पेज पर फोटो को तुरंत अपडेट करें
             document.getElementById(`photo-${currentAadhaarForPhoto}`).src = newPhotoLink;
             setTimeout(cancelCropping, 1500);
         }
         cropAndUploadBtn.disabled = false;
-    }, 'image/jpeg', 0.8);
+    }, 'image/jpeg', 0.8); // 80% क्वालिटी पर JPEG बनाएं ताकि साइज कम हो
 }
 
-async function populateCameraList() { try { const devices = await navigator.mediaDevices.enumerateDevices(); const videoDevices = devices.filter(device => device.kind === 'videoinput'); const cameraSelect = document.getElementById('camera-select'); cameraSelect.innerHTML = ''; videoDevices.forEach((device, index) => { const option = document.createElement('option'); option.value = device.deviceId; option.text = device.label || `Camera ${index + 1}`; cameraSelect.appendChild(option); }); } catch (e) { console.error("Could not list devices:", e); } }
-async function startCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); } const cameraSelect = document.getElementById('camera-select'); const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } } }; try { currentStream = await navigator.mediaDevices.getUserMedia(constraints); videoElement.srcObject = currentStream; } catch (e) { console.error("Error starting camera:", e); } }
+async function populateCameraList() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        const cameraSelect = document.getElementById('camera-select');
+        cameraSelect.innerHTML = '';
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Camera ${index + 1}`;
+            cameraSelect.appendChild(option);
+        });
+    } catch (e) {
+        console.error("Could not list devices:", e);
+    }
+}
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+    const cameraSelect = document.getElementById('camera-select');
+    const constraints = {
+        video: {
+            deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        }
+    };
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElement.srcObject = currentStream;
+    } catch (e) {
+        console.error("Error starting camera:", e);
+    }
+}
 
-async function handlePublicSearch(e) { e.preventDefault(); const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim(); if (!aadhaarNumber) return; const publicResultsContainer = document.getElementById('public-results-container'); publicResultsContainer.innerHTML = '<p>Searching...</p>'; const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single(); if (error || !data) { publicResultsContainer.innerHTML = '<p class="error">No record found.</p>'; } else { publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`; } }
+// === Google Drive Link Fixer ===
+function getGoogleDriveEmbedLink(driveLink) {
+    if (!driveLink || driveLink.startsWith(SUPABASE_URL)) { // अगर Supabase का लिंक है, तो उसे वैसे ही रखें
+        return driveLink;
+    }
+    const match = driveLink.match(/\/d\/(.+?)\/view/);
+    if (match && match[1]) {
+        const fileId = match[1];
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+    // अगर लिंक Google Drive का नहीं है या फॉर्मेट गलत है, तो ओरिजिनल लिंक वापस कर दें
+    return driveLink;
+}
+
+// === डेटा और यूज़र मैनेजमेंट फंक्शन्स ===
+
+async function handlePublicSearch(e) {
+    e.preventDefault();
+    const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
+    if (!aadhaarNumber) return;
+    const publicResultsContainer = document.getElementById('public-results-container');
+    publicResultsContainer.innerHTML = '<p>Searching...</p>';
+    const { data, error } = await supabaseClient.from('farmers').select('name, father_name, bl_number').eq('aadhaar_number', aadhaarNumber).single();
+    if (error || !data) {
+        publicResultsContainer.innerHTML = '<p class="error">No record found.</p>';
+    } else {
+        publicResultsContainer.innerHTML = `<div class="card"><p><strong>Name:</strong> ${data.name}</p><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div>`;
+    }
+}
 
 async function handleAdminSearch(e) {
     e.preventDefault();
@@ -177,7 +246,11 @@ async function handleAdminSearch(e) {
         const card = document.createElement('div');
         card.className = 'card';
         card.id = `card-${item.aadhaar_number}`;
-        const imgSrc = item.photo_link || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+        
+        // यहाँ Google Drive लिंक को एम्बेड लिंक में बदलें
+        const photoLink = getGoogleDriveEmbedLink(item.photo_link);
+        const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
         card.innerHTML = `
             <div style="display: flex; align-items: flex-start;">
                 <img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo">
