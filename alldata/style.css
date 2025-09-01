@@ -215,6 +215,8 @@ button:hover {
     border-radius: 8px;
     color: var(--dark-gray);
     font-weight: 500;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .group-title {
@@ -246,7 +248,7 @@ button:hover {
     top: 20px;
     right: 20px;
     z-index: 2000;
-    pointer-events: none; /* BUG FIX: यह कंटेनर को क्लिक होने से रोकता है */
+    pointer-events: none;
 }
 .toast {
     padding: 15px 20px;
@@ -261,7 +263,7 @@ button:hover {
     opacity: 0;
     transform: translateX(100%);
     animation: slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards;
-    pointer-events: auto; /* BUG FIX: यह हर एक नोटिफिकेशन को फिर से क्लिक करने योग्य बनाता है */
+    pointer-events: auto;
 }
 .toast.success { background-color: var(--success-color); }
 .toast.error { background-color: var(--danger-color); }
