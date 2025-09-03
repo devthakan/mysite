@@ -50,6 +50,135 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkUserSession();
 });
+// 🔎 PUBLIC SEARCH (Aadhaar)
+async function handlePublicSearch(e) {
+  e.preventDefault();
+  const raw = document.getElementById('public-aadhaar-search').value || '';
+  const aadhaar = raw.replace(/\D/g, ''); // सिर्फ digits
+  const box = document.getElementById('public-results-container');
+
+  if (!aadhaar) { box.innerHTML = '<p class="error">कृपया आधार नंबर डालें.</p>'; return; }
+  box.innerHTML = '<div>Searching...</div>';
+
+  // .maybeSingle() = no row मिला तो error नहीं फेंकेगा
+  const { data, error } = await supabaseClient
+    .from('farmers')
+    .select('name,father_name,bl_number')
+    .eq('aadhaar_number', aadhaar)
+    .maybeSingle();
+
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('permission denied') || msg.includes('rls')) {
+      box.innerHTML = `<p class="error">
+        Permission denied / RLS issue.<br>
+        Public search चलाने के लिए DB में policy या RPC बनानी होगी (नीचे नोट देखें)।
+      </p>`;
+    } else {
+      box.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+    return;
+  }
+
+  if (!data) { box.innerHTML = '<p class="error">कोई रिकॉर्ड नहीं मिला।</p>'; return; }
+
+  box.innerHTML = `
+    <div class="card" style="grid-template-columns:1fr;">
+      <div class="card-header-text">
+        <h4>${data.name}</h4>
+        <p><strong>Father's Name:</strong> ${data.father_name}</p>
+        <p><strong>BL Number:</strong> ${data.bl_number}</p>
+      </div>
+    </div>`;
+}
+
+// 🧭 ADMIN SEARCH (multi-field filters + बेहतर हैंडलिंग)
+async function handleAdminSearch(e) {
+  e.preventDefault();
+  const out = document.getElementById('dashboard-results-container');
+  out.innerHTML = '<div>Searching...</div>';
+
+  const aadhaar = (document.getElementById('admin-aadhaar-search').value || '').replace(/\D/g,'');
+  const account = (document.getElementById('admin-account-search').value || '').trim();
+  const name = (document.getElementById('admin-name-search').value || '').trim();
+  const bl = (document.getElementById('admin-bl-search').value || '').trim();
+  const fatherName = (document.getElementById('admin-father-search').value || '').trim();
+
+  // कम-से-कम एक फिल्टर ज़रूर
+  if (!aadhaar && !account && !name && !bl && !fatherName) {
+    out.innerHTML = '<p class="error">कम-से-कम एक search फ़िल्टर डालें।</p>';
+    return;
+  }
+
+  let q = supabaseClient.from('farmers').select('*').order('name', { ascending: true }).limit(200);
+
+  if (aadhaar)    q = q.eq('aadhaar_number', aadhaar);
+  if (account)    q = q.eq('account_number', account);
+  if (bl)         q = q.eq('bl_number', bl);
+  if (name)       q = q.ilike('name', `%${name}%`);
+  if (fatherName) q = q.ilike('father_name', `%${fatherName}%`);
+
+  const { data, error } = await q;
+  if (error) {
+    showToast(`Error fetching data: ${error.message}`, 'error');
+    out.innerHTML = '';
+    return;
+  }
+
+  if (!data || data.length === 0) { out.innerHTML = '<p>No matching records found.</p>'; return; }
+
+  out.innerHTML = '';
+  data.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = `card-${item.aadhaar_number}`;
+
+    const photoLink = getGoogleDriveEmbedLink(item.photo_link);
+    const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+    const formattedExpireDate = item.application_expire ? new Date(item.application_expire).toISOString().split('T')[0] : '';
+
+    card.innerHTML = `
+      <div class="card-header">
+        <img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo">
+        <div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div>
+      </div>
+
+      <div class="details-grid">
+        <h5 class="group-title">Personal Details</h5>
+        <p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p>
+        <p><strong>Name:</strong><input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p>
+        <p><strong>Father's Name:</strong><input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p>
+        <p><strong>Gender:</strong><input type="text" id="gender-${item.aadhaar_number}" value="${item.gender || ''}"></p>
+        <p><strong>Age:</strong><input type="text" id="age-${item.aadhaar_number}" value="${item.age || ''}"></p>
+        <p><strong>Marriage Status:</strong><input type="text" id="marriage_status-${item.aadhaar_number}" value="${item.marriage_status || ''}"></p>
+        <p><strong>Category:</strong><input type="text" id="category-${item.aadhaar_number}" value="${item.category || ''}"></p>
+
+        <h5 class="group-title">Contact & Address</h5>
+        <p><strong>Mobile Number:</strong><input type="text" id="mobile_number-${item.aadhaar_number}" value="${item.mobile_number || ''}"></p>
+        <p><strong>WhatsApp Number:</strong><input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p>
+        <p style="grid-column: 1 / -1;"><strong>Address:</strong><input type="text" id="address-${item.aadhaar_number}" value="${item.address || ''}"></p>
+
+        <h5 class="group-title">Financial & Application Details</h5>
+        <p><strong>BL Number:</strong><input type="text" id="bl_number-${item.aadhaar_number}" value="${item.bl_number || ''}"></p>
+        <p><strong>Account Number:</strong><input type="text" id="account_number-${item.aadhaar_number}" value="${item.account_number || ''}"></p>
+        <p><strong>Share Capital:</strong><input type="text" id="share_capital-${item.aadhaar_number}" value="${item.share_capital || ''}"></p>
+        <p><strong>Application Year:</strong><input type="text" id="application_year-${item.aadhaar_number}" value="${item.application_year || ''}"></p>
+        <p><strong>Application Expire:</strong><input type="date" id="application_expire-${item.aadhaar_number}" value="${formattedExpireDate}"></p>
+
+        <h5 class="group-title">Nominee Details</h5>
+        <p><strong>Nominee Name:</strong><input type="text" id="nominee_name-${item.aadhaar_number}" value="${item.nominee_name || ''}"></p>
+        <p><strong>Relation:</strong><input type="text" id="relation-${item.aadhaar_number}" value="${item.relation || ''}"></p>
+        <p><strong>Nominee Aadhaar:</strong><input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p>
+
+        <div class="card-actions">
+          <button onclick="updateRecord('${item.aadhaar_number}')"><i class="fas fa-save"></i> Save Changes</button>
+          <button onclick="openCameraModal('${item.aadhaar_number}')"><i class="fas fa-camera"></i> Update Photo</button>
+          <button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </div>`;
+    out.appendChild(card);
+  });
+}
 
 
 // === कैमरा और क्रॉपिंग के फंक्शन्स (आपके पसंदीदा लॉजिक के साथ) ===
