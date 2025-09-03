@@ -50,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUserSession();
 });
 
-
 // === कैमरा और क्रॉपिंग के फंक्शन्स ===
 async function openCameraModal(aadhaarNumber) {
     currentAadhaarForPhoto = aadhaarNumber;
@@ -59,22 +58,18 @@ async function openCameraModal(aadhaarNumber) {
     await populateCameraList();
     await startCamera();
 }
-
 function stopCameraAndDestroyCropper() {
     if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
     if (cropper) { cropper.destroy(); cropper = null; }
     document.getElementById('camera-modal').style.display = 'none';
 }
-
 async function startCamera() {
     if (cropper) { cropper.destroy(); cropper = null; }
     if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
-
     const video = document.getElementById('video');
     const cameraSelect = document.getElementById('camera-select');
     const captureUploadBtn = document.getElementById('capture-upload-btn');
     const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined } };
-    
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
@@ -82,34 +77,25 @@ async function startCamera() {
             if (cropper) return;
             cropper = new Cropper(video, {
                 aspectRatio: 1, viewMode: 1, dragMode: 'move', background: false, autoCropArea: 0.8,
-                ready() {
-                    captureUploadBtn.disabled = false;
-                }
+                ready() { captureUploadBtn.disabled = false; }
             });
         }, { once: true });
-    } catch (e) {
-        console.error("Error starting camera:", e);
-        showToast("Could not start camera. Please check permissions.", "error");
-    }
+    } catch (e) { console.error("Error starting camera:", e); showToast("Could not start camera.", "error"); }
 }
-
 async function captureAndUpload() {
     if (!cropper) { showToast('Cropper not ready.', 'error'); return; }
     const captureUploadBtn = document.getElementById('capture-upload-btn');
     captureUploadBtn.disabled = true;
     showToast('Processing image...', 'success');
-
     const croppedCanvas = cropper.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
     croppedCanvas.toBlob(async (blob) => {
         if (!blob) { showToast('Capture failed.', 'error'); captureUploadBtn.disabled = false; return; }
         const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`;
         const { error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false });
-
         if (uploadError) { showToast(`Upload Failed: ${uploadError.message}`, 'error'); captureUploadBtn.disabled = false; return; }
         const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(fileName);
         const newPhotoLink = urlData.publicUrl;
         const { error: updateError } = await supabaseClient.from('farmers').update({ photo_link: newPhotoLink }).eq('aadhaar_number', currentAadhaarForPhoto);
-
         if (updateError) { showToast(`Failed to save new link: ${updateError.message}`, 'error'); } 
         else {
             showToast('Photo updated successfully!', 'success');
@@ -118,7 +104,6 @@ async function captureAndUpload() {
         }
     }, 'image/jpeg', 0.8);
 }
-
 async function populateCameraList() {
     try {
         await navigator.mediaDevices.getUserMedia({video: true});
@@ -134,14 +119,13 @@ async function populateCameraList() {
         });
     } catch (e) { console.error("Could not list devices:", e); }
 }
-
 function getGoogleDriveEmbedLink(driveLink) {
     if (!driveLink || driveLink.includes('supabase.co')) return driveLink;
     const match = driveLink.match(/\/d\/(.+?)(?:\/view|$)/);
     if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
     return driveLink;
 }
-
+// === डेटा और यूज़र मैनेजमेंट फंक्शन्स ===
 async function handlePublicSearch(e) {
     e.preventDefault();
     const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
@@ -155,7 +139,6 @@ async function handlePublicSearch(e) {
         publicResultsContainer.innerHTML = `<div class="card" style="grid-template-columns: 1fr;"><div class="card-header-text"><h4>${data.name}</h4><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div></div>`;
     }
 }
-
 async function handleAdminSearch(e) {
     e.preventDefault();
     const dashboardResultsContainer = document.getElementById('dashboard-results-container');
@@ -191,41 +174,7 @@ async function deleteRecord(aadhaarNumber) { if (confirm('Are you sure you want 
 async function handleLogin(e) { e.preventDefault(); const email = document.getElementById('email').value; const password = document.getElementById('password').value; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { showToast(error.message, 'error'); } else { showToast('Login Successful!', 'success'); checkUserSession(); } }
 async function handleLogout() { await supabaseClient.auth.signOut(); showToast('You have been logged out.', 'success'); checkUserSession(); }
 function downloadCSVTemplate() { const headers = "aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number"; const link = document.createElement("a"); link.setAttribute("href", 'data:text/csv;charset=utf-8,' + encodeURI(headers)); link.setAttribute("download", "farmers_template.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
-async function uploadCSV() {
-    const file = document.getElementById('csv-file-input').files[0];
-    if (!file) { showToast('Please select a CSV file first.', 'error'); return; }
-
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async function(results) {
-            const dataToInsert = results.data;
-            if (dataToInsert.length === 0) {
-                showToast('File is empty or invalid.', 'error');
-                return;
-            }
-            showToast(`Processing ${dataToInsert.length} records... Please wait.`, 'success');
-
-            let successCount = 0;
-            let errorCount = 0;
-
-            for (const row of dataToInsert) {
-                // Ensure aadhaar_number is treated as string and not null
-                if (row.aadhaar_number) {
-                    const { error } = await supabaseClient.rpc('upsert_farmer_conditionally', { new_data: row });
-                    if (error) {
-                        console.error('Upsert error for', row.aadhaar_number, error);
-                        errorCount++;
-                    } else {
-                        successCount++;
-                    }
-                }
-            }
-            showToast(`Process complete! ${successCount} records processed, ${errorCount} failed.`, 'success');
-            document.getElementById('csv-file-input').value = '';
-        }
-    });
-}
+async function uploadCSV() { const file = document.getElementById('csv-file-input').files[0]; if (!file) { showToast('Please select a CSV file first.', 'error'); return; } showToast(`Processing file... Please wait.`, 'success'); Papa.parse(file, { header: true, skipEmptyLines: true, complete: async function(results) { const dataToInsert = results.data; if (dataToInsert.length === 0) { showToast('File is empty or invalid.', 'error'); return; } let successCount = 0; let errorCount = 0; for (const row of dataToInsert) { if (row.aadhaar_number) { const { error } = await supabaseClient.rpc('upsert_farmer_conditionally', { new_data: row }); if (error) { console.error('Upsert error for', row.aadhaar_number, error); errorCount++; } else { successCount++; } } } showToast(`Process complete! ${successCount} records processed, ${errorCount} failed.`, 'success'); document.getElementById('csv-file-input').value = ''; } }); }
 async function checkUserSession() { const { data: { session } } = await supabaseClient.auth.getSession(); const loginButton = document.getElementById('login-button'); const logoutButton = document.getElementById('logout-button'); const loginSection = document.getElementById('login-section'); const publicSection = document.getElementById('public-section'); const dashboardSection = document.getElementById('dashboard-section'); if (session) { publicSection.style.display = 'none'; dashboardSection.style.display = 'block'; loginButton.style.display = 'none'; logoutButton.style.display = 'block'; loginSection.style.display = 'none'; } else { publicSection.style.display = 'block'; dashboardSection.style.display = 'none'; loginButton.style.display = 'block'; logoutButton.style.display = 'none'; } }
 
 // ग्लोबल फंक्शन्स को विंडो ऑब्जेक्ट से जोड़ना
