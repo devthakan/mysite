@@ -21,7 +21,6 @@ function showToast(message, type = 'success') {
     setTimeout(() => { toast.remove(); }, 5000);
 }
 
-// === DOMContentLoaded: यह सुनिश्चित करता है कि HTML लोड होने के बाद ही कोड चले ===
 document.addEventListener('DOMContentLoaded', () => {
     // सभी HTML एलिमेंट्स का रेफरेंस
     const loginButton = document.getElementById('login-button');
@@ -62,13 +61,8 @@ async function openCameraModal(aadhaarNumber) {
 }
 
 function stopCameraAndDestroyCropper() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
-    if (cropper) {
-        cropper.destroy();
-        cropper = null;
-    }
+    if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+    if (cropper) { cropper.destroy(); cropper = null; }
     document.getElementById('camera-modal').style.display = 'none';
 }
 
@@ -148,7 +142,6 @@ function getGoogleDriveEmbedLink(driveLink) {
     return driveLink;
 }
 
-// === डेटा और यूज़र मैनेजमेंट फंक्शन्स ===
 async function handlePublicSearch(e) {
     e.preventDefault();
     const aadhaarNumber = document.getElementById('public-aadhaar-search').value.trim();
@@ -198,7 +191,41 @@ async function deleteRecord(aadhaarNumber) { if (confirm('Are you sure you want 
 async function handleLogin(e) { e.preventDefault(); const email = document.getElementById('email').value; const password = document.getElementById('password').value; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { showToast(error.message, 'error'); } else { showToast('Login Successful!', 'success'); checkUserSession(); } }
 async function handleLogout() { await supabaseClient.auth.signOut(); showToast('You have been logged out.', 'success'); checkUserSession(); }
 function downloadCSVTemplate() { const headers = "aadhaar_number,name,father_name,bl_number,gender,share_capital,address,age,marriage_status,mobile_number,category,account_number,application_year,application_expire,nominee_name,relation,nominee_aadhaar_number,whatsapp_number"; const link = document.createElement("a"); link.setAttribute("href", 'data:text/csv;charset=utf-8,' + encodeURI(headers)); link.setAttribute("download", "farmers_template.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
-function uploadCSV() { const file = document.getElementById('csv-file-input').files[0]; if (!file) { showToast('Please select a CSV file first.', 'error'); return; } Papa.parse(file, { header: true, skipEmptyLines: true, complete: async function(results) { const data = results.data; if (data.length === 0) { showToast('File is empty or invalid.', 'error'); return; } const { error } = await supabaseClient.from('farmers').insert(data); if (error) { showToast(`Upload Error: ${error.message}`, 'error'); } else { showToast(`Successfully added ${data.length} new farmers!`, 'success'); document.getElementById('csv-file-input').value = ''; } } }); }
+async function uploadCSV() {
+    const file = document.getElementById('csv-file-input').files[0];
+    if (!file) { showToast('Please select a CSV file first.', 'error'); return; }
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+            const dataToInsert = results.data;
+            if (dataToInsert.length === 0) {
+                showToast('File is empty or invalid.', 'error');
+                return;
+            }
+            showToast(`Processing ${dataToInsert.length} records... Please wait.`, 'success');
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const row of dataToInsert) {
+                // Ensure aadhaar_number is treated as string and not null
+                if (row.aadhaar_number) {
+                    const { error } = await supabaseClient.rpc('upsert_farmer_conditionally', { new_data: row });
+                    if (error) {
+                        console.error('Upsert error for', row.aadhaar_number, error);
+                        errorCount++;
+                    } else {
+                        successCount++;
+                    }
+                }
+            }
+            showToast(`Process complete! ${successCount} records processed, ${errorCount} failed.`, 'success');
+            document.getElementById('csv-file-input').value = '';
+        }
+    });
+}
 async function checkUserSession() { const { data: { session } } = await supabaseClient.auth.getSession(); const loginButton = document.getElementById('login-button'); const logoutButton = document.getElementById('logout-button'); const loginSection = document.getElementById('login-section'); const publicSection = document.getElementById('public-section'); const dashboardSection = document.getElementById('dashboard-section'); if (session) { publicSection.style.display = 'none'; dashboardSection.style.display = 'block'; loginButton.style.display = 'none'; logoutButton.style.display = 'block'; loginSection.style.display = 'none'; } else { publicSection.style.display = 'block'; dashboardSection.style.display = 'none'; loginButton.style.display = 'block'; logoutButton.style.display = 'none'; } }
 
 // ग्लोबल फंक्शन्स को विंडो ऑब्जेक्ट से जोड़ना
