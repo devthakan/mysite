@@ -49,7 +49,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkUserSession();
 });
+async function handleAdminSearch(e) {
+    e.preventDefault();
+    const dashboardResultsContainer = document.getElementById('dashboard-results-container');
+    dashboardResultsContainer.innerHTML = '<div>Searching...</div>';
 
+    // 1. सभी इनपुट फील्ड्स से वैल्यू प्राप्त करें
+    const aadhaar = document.getElementById('admin-aadhaar-search').value.trim();
+    const account = document.getElementById('admin-account-search').value.trim();
+    const name = document.getElementById('admin-name-search').value.trim();
+    const bl = document.getElementById('admin-bl-search').value.trim();
+    const fatherName = document.getElementById('admin-father-search').value.trim();
+
+    // 2. OR फिल्टर बनाने के लिए एक ऐरे बनाएं
+    const filters = [];
+
+    // हर फील्ड के लिए, अगर उसमें वैल्यू है, तो उसे फिल्टर ऐरे में जोड़ें
+    if (aadhaar) filters.push(`aadhaar_number.eq.${aadhaar}`);
+    if (account) filters.push(`account_number.eq.${account}`);
+    if (bl) filters.push(`bl_number.eq.${bl}`);
+    
+    // BUG FIX: 'ilike' के लिए सही वाइल्डकार्ड '*' का उपयोग करें, '%' का नहीं
+    if (name) filters.push(`name.ilike.*${name}*`);
+    if (fatherName) filters.push(`father_name.ilike.*${fatherName}*`);
+
+    let query = supabaseClient.from('farmers').select('*');
+
+    // 3. अगर कोई फिल्टर मौजूद है, तो .or() का उपयोग करें
+    if (filters.length > 0) {
+        query = query.or(filters.join(','));
+    }
+    
+    const { data, error } = await query;
+
+    if (error) { 
+        showToast(`Error fetching data: ${error.message}`, 'error'); 
+        dashboardResultsContainer.innerHTML = ''; 
+        return; 
+    }
+    if (!data || data.length === 0) { 
+        dashboardResultsContainer.innerHTML = '<p style="text-align: center; font-weight: 500; color: var(--dark-gray);">No matching records found.</p>'; 
+        return; 
+    }
+    
+    dashboardResultsContainer.innerHTML = '';
+    data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${item.aadhaar_number}`;
+        const photoLink = getGoogleDriveEmbedLink(item.photo_link);
+        const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+        const formattedExpireDate = item.application_expire ? new Date(item.application_expire).toISOString().split('T')[0] : '';
+        
+        card.innerHTML = `
+            <div class="card-header"><img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo"><div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div></div>
+            <div class="details-grid">
+                <h5 class="group-title">Personal Details</h5>
+                <p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p>
+                <p><strong>Name:</strong><input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p>
+                <p><strong>Father's Name:</strong><input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p>
+                <p><strong>Gender:</strong><input type="text" id="gender-${item.aadhaar_number}" value="${item.gender || ''}"></p>
+                <p><strong>Age:</strong><input type="text" id="age-${item.aadhaar_number}" value="${item.age || ''}"></p>
+                <p><strong>Marriage Status:</strong><input type="text" id="marriage_status-${item.aadhaar_number}" value="${item.marriage_status || ''}"></p>
+                <p><strong>Category:</strong><input type="text" id="category-${item.aadhaar_number}" value="${item.category || ''}"></p>
+                <h5 class="group-title">Contact & Address</h5>
+                <p><strong>Mobile Number:</strong><input type="text" id="mobile_number-${item.aadhaar_number}" value="${item.mobile_number || ''}"></p>
+                <p><strong>WhatsApp Number:</strong><input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p>
+                <p style="grid-column: 1 / -1;"><strong>Address:</strong><input type="text" id="address-${item.aadhaar_number}" value="${item.address || ''}"></p>
+                <h5 class="group-title">Financial & Application Details</h5>
+                <p><strong>BL Number:</strong><input type="text" id="bl_number-${item.aadhaar_number}" value="${item.bl_number || ''}"></p>
+                <p><strong>Account Number:</strong><input type="text" id="account_number-${item.aadhaar_number}" value="${item.account_number || ''}"></p>
+                <p><strong>Share Capital:</strong><input type="text" id="share_capital-${item.aadhaar_number}" value="${item.share_capital || ''}"></p>
+                <p><strong>Application Year:</strong><input type="text" id="application_year-${item.aadhaar_number}" value="${item.application_year || ''}"></p>
+                <p><strong>Application Expire:</strong><input type="date" id="application_expire-${item.aadhaar_number}" value="${formattedExpireDate}"></p>
+                <h5 class="group-title">Nominee Details</h5>
+                <p><strong>Nominee Name:</strong><input type="text" id="nominee_name-${item.aadhaar_number}" value="${item.nominee_name || ''}"></p>
+                <p><strong>Relation:</strong><input type="text" id="relation-${item.aadhaar_number}" value="${item.relation || ''}"></p>
+                <p><strong>Nominee Aadhaar:</strong><input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p>
+                <div class="card-actions">
+                    <button onclick="updateRecord('${item.aadhaar_number}')"><i class="fas fa-save"></i> Save Changes</button>
+                    <button onclick="openCameraModal('${item.aadhaar_number}')"><i class="fas fa-camera"></i> Update Photo</button>
+                    <button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </div>`;
+        dashboardResultsContainer.appendChild(card);
+    });
+}
 
 // === कैमरा और क्रॉपिंग के फंक्शन्स (BUG FIXED) ===
 async function openCameraModal(aadhaarNumber) {
