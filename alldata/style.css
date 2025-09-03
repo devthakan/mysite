@@ -1,4 +1,3 @@
-/* All previous styles remain the same */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 :root { --primary-color: #4f46e5; --primary-hover: #4338ca; --danger-color: #ef4444; --danger-hover: #dc2626; --success-color: #22c55e; --success-hover: #16a34a; --light-gray: #f1f5f9; --medium-gray: #e2e8f0; --dark-gray: #64748b; --text-color: #1e293b; --border-radius: 12px; --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 body { font-family: 'Poppins', sans-serif; background-color: var(--light-gray); color: var(--text-color); margin: 0; }
@@ -47,38 +46,15 @@ button:hover { background-color: var(--primary-hover); transform: translateY(-2p
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
 .modal-content { background-color: white; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.3); max-width: 90%; width: 700px; transform: scale(0.9); animation: modalAppear 0.3s forwards ease-out; }
 @keyframes modalAppear { to { transform: scale(1); } }
-.video-container { width: 100%; height: 480px; margin-bottom: 15px; background: #000; }
-#video { display: block; max-width: 100%; }
+.video-container { width: 100%; height: 480px; margin-bottom: 15px; background: #000; position: relative; }
+#video, #preview-img { display: block; max-width: 100%; height: 100%; object-fit: contain; }
+#preview-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .modal-buttons { display: flex; justify-content: center; gap: 15px; }
 .cropper-view-box, .cropper-face { border-radius: 50%; }
-
-/* --- NEW TABLE STYLES --- */
-#farmer-table-container {
-    overflow-x: auto; /* For responsiveness on small screens */
-}
-.farmer-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    font-size: 0.95em;
-}
-.farmer-table th, .farmer-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid var(--medium-gray);
-}
-.farmer-table thead {
-    background-color: var(--light-gray);
-    color: var(--dark-gray);
-    font-weight: 600;
-}
-.farmer-table tbody tr:hover {
-    background-color: #f8fafc;
-}
-.farmer-table .action-cell {
-    text-align: right;
-}
-.farmer-table .view-btn {
-    padding: 6px 12px;
-    font-size: 0.9em;
-}
+#farmer-table-container { overflow-x: auto; }
+.farmer-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.95em; }
+.farmer-table th, .farmer-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--medium-gray); }
+.farmer-table thead { background-color: var(--light-gray); color: var(--dark-gray); font-weight: 600; }
+.farmer-table tbody tr:hover { background-color: #f8fafc; }
+.farmer-table .action-cell { text-align: right; }
+.farmer-table .view-btn { padding: 6px 12px; font-size: 0.9em; }
