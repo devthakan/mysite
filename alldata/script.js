@@ -98,33 +98,28 @@ async function handleAdminSearch(e) {
   const out = document.getElementById('dashboard-results-container');
   out.innerHTML = '<div>Searching...</div>';
 
-  const aadhaar = (document.getElementById('admin-aadhaar-search').value || '').replace(/\D/g,'');
-  const account = (document.getElementById('admin-account-search').value || '').trim();
-  const name = (document.getElementById('admin-name-search').value || '').trim();
-  const bl = (document.getElementById('admin-bl-search').value || '').trim();
-  const fatherName = (document.getElementById('admin-father-search').value || '').trim();
+  const aadhaar   = normalizeDigits(document.getElementById('admin-aadhaar-search').value);
+  const account   = (document.getElementById('admin-account-search').value || '').trim();
+  const name      = (document.getElementById('admin-name-search').value || '').trim();
+  const bl        = (document.getElementById('admin-bl-search').value || '').trim();
+  const father    = (document.getElementById('admin-father-search').value || '').trim();
 
-  // कम-से-कम एक फिल्टर ज़रूर
-  if (!aadhaar && !account && !name && !bl && !fatherName) {
+  if (!aadhaar && !account && !name && !bl && !father) {
     out.innerHTML = '<p class="error">कम-से-कम एक search फ़िल्टर डालें।</p>';
     return;
   }
 
   let q = supabaseClient.from('farmers').select('*').order('name', { ascending: true }).limit(200);
 
-  if (aadhaar)    q = q.eq('aadhaar_number', aadhaar);
-  if (account)    q = q.eq('account_number', account);
-  if (bl)         q = q.eq('bl_number', bl);
-  if (name)       q = q.ilike('name', `%${name}%`);
-  if (fatherName) q = q.ilike('father_name', `%${fatherName}%`);
+  // AND semantics: जो-जो दिया है, उसी पर filter chain करो
+  if (aadhaar) q = q.eq('aadhaar_number', aadhaar);
+  if (account) q = q.eq('account_number', account);
+  if (bl)      q = q.eq('bl_number', bl);
+  if (name)    q = q.ilike('name', `%${name}%`);
+  if (father)  q = q.ilike('father_name', `%${father}%`);
 
   const { data, error } = await q;
-  if (error) {
-    showToast(`Error fetching data: ${error.message}`, 'error');
-    out.innerHTML = '';
-    return;
-  }
-
+  if (error) { showToast(`Error fetching data: ${error.message}`, 'error'); out.innerHTML = ''; return; }
   if (!data || data.length === 0) { out.innerHTML = '<p>No matching records found.</p>'; return; }
 
   out.innerHTML = '';
@@ -142,7 +137,6 @@ async function handleAdminSearch(e) {
         <img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo">
         <div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div>
       </div>
-
       <div class="details-grid">
         <h5 class="group-title">Personal Details</h5>
         <p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p>
@@ -179,7 +173,6 @@ async function handleAdminSearch(e) {
     out.appendChild(card);
   });
 }
-
 
 // === कैमरा और क्रॉपिंग के फंक्शन्स (आपके पसंदीदा लॉजिक के साथ) ===
 async function openCameraModal(aadhaarNumber) {
