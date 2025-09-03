@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,41 +39,51 @@
 
         <div id="dashboard-section" class="section-container" style="display: none;">
             <h2><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
-            <div class="card search-card">
-                <form id="admin-search-form">
-                    <input type="text" id="admin-aadhaar-search" placeholder="Aadhaar No.">
-                    <input type="text" id="admin-account-search" placeholder="Account No.">
-                    <input type="text" id="admin-name-search" placeholder="Name">
-                    <input type="text" id="admin-bl-search" placeholder="BL No.">
-                    <input type="text" id="admin-father-search" placeholder="Father's Name">
-                    <button type="submit"><i class="fas fa-search"></i> Search</button>
-                </form>
-            </div>
             
-            <div id="bulk-add-section" class="card">
-                <h3><i class="fas fa-file-excel"></i> Add or Update via CSV</h3>
-                <div class="bulk-add-content">
-                    <button id="download-template-btn"><i class="fas fa-download"></i> Download Template</button>
-                    <input type="file" id="csv-file-input" accept=".csv">
-                    <button id="upload-csv-btn"><i class="fas fa-upload"></i> Upload Data</button>
+            <div id="dashboard-content">
+
+                <div id="table-view">
+                    <div class="card search-card">
+                        <form id="admin-search-form">
+                            <input type="text" id="admin-aadhaar-search" placeholder="Aadhaar No.">
+                            <input type="text" id="admin-account-search" placeholder="Account No.">
+                            <input type="text" id="admin-name-search" placeholder="Name">
+                            <input type="text" id="admin-bl-search" placeholder="BL No.">
+                            <input type="text" id="admin-father-search" placeholder="Father's Name">
+                            <button type="submit"><i class="fas fa-search"></i> Search</button>
+                        </form>
+                    </div>
+                    
+                    <div id="bulk-add-section" class="card">
+                        <h3><i class="fas fa-file-excel"></i> Add or Update via CSV</h3>
+                        <div class="bulk-add-content">
+                            <button id="download-template-btn"><i class="fas fa-download"></i> Download Template</button>
+                            <input type="file" id="csv-file-input" accept=".csv">
+                            <button id="upload-csv-btn"><i class="fas fa-upload"></i> Upload Data</button>
+                        </div>
+                    </div>
+                    
+                    <div id="farmer-table-container" class="results-container">
+                        </div>
                 </div>
+
+                <div id="detail-view" style="display: none;">
+                    </div>
             </div>
-            
-            <div id="dashboard-results-container" class="results-container"></div>
         </div>
     </main>
 
     <div id="camera-modal" class="modal-overlay" style="display:none;">
       <div class="modal-content">
-        <h2 id="camera-modal-title"><i class="fas fa-camera"></i> Update Photo</h2>
+        <h2><i class="fas fa-camera"></i> Update Photo</h2>
         <div class="camera-controls">
             <select id="camera-select"></select>
         </div>
         <div class="video-container">
             <video id="video" autoplay playsinline></video>
-            </div>
+        </div>
         <div class="modal-buttons">
-            <button id="capture-upload-btn"><i class="fas fa-camera-retro"></i> Capture</button>
+            <button id="capture-upload-btn" disabled><i class="fas fa-check"></i> Capture & Upload</button>
             <button id="close-modal-btn" class="cancel-btn"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
