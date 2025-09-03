@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUserSession();
 });
 
+
 // === कैमरा और क्रॉपिंग के फंक्शन्स ===
 async function openCameraModal(aadhaarNumber) {
     currentAadhaarForPhoto = aadhaarNumber;
@@ -58,18 +59,22 @@ async function openCameraModal(aadhaarNumber) {
     await populateCameraList();
     await startCamera();
 }
+
 function stopCameraAndDestroyCropper() {
     if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
     if (cropper) { cropper.destroy(); cropper = null; }
     document.getElementById('camera-modal').style.display = 'none';
 }
+
 async function startCamera() {
     if (cropper) { cropper.destroy(); cropper = null; }
     if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+
     const video = document.getElementById('video');
     const cameraSelect = document.getElementById('camera-select');
     const captureUploadBtn = document.getElementById('capture-upload-btn');
     const constraints = { video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined } };
+    
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
@@ -77,25 +82,34 @@ async function startCamera() {
             if (cropper) return;
             cropper = new Cropper(video, {
                 aspectRatio: 1, viewMode: 1, dragMode: 'move', background: false, autoCropArea: 0.8,
-                ready() { captureUploadBtn.disabled = false; }
+                ready() {
+                    captureUploadBtn.disabled = false;
+                }
             });
         }, { once: true });
-    } catch (e) { console.error("Error starting camera:", e); showToast("Could not start camera.", "error"); }
+    } catch (e) {
+        console.error("Error starting camera:", e);
+        showToast("Could not start camera. Please check permissions.", "error");
+    }
 }
+
 async function captureAndUpload() {
     if (!cropper) { showToast('Cropper not ready.', 'error'); return; }
     const captureUploadBtn = document.getElementById('capture-upload-btn');
     captureUploadBtn.disabled = true;
     showToast('Processing image...', 'success');
+
     const croppedCanvas = cropper.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
     croppedCanvas.toBlob(async (blob) => {
         if (!blob) { showToast('Capture failed.', 'error'); captureUploadBtn.disabled = false; return; }
         const fileName = `${currentAadhaarForPhoto}_${Date.now()}.jpg`;
         const { error: uploadError } = await supabaseClient.storage.from('farmer-photos').upload(fileName, blob, { upsert: false });
+
         if (uploadError) { showToast(`Upload Failed: ${uploadError.message}`, 'error'); captureUploadBtn.disabled = false; return; }
         const { data: urlData } = supabaseClient.storage.from('farmer-photos').getPublicUrl(fileName);
         const newPhotoLink = urlData.publicUrl;
         const { error: updateError } = await supabaseClient.from('farmers').update({ photo_link: newPhotoLink }).eq('aadhaar_number', currentAadhaarForPhoto);
+
         if (updateError) { showToast(`Failed to save new link: ${updateError.message}`, 'error'); } 
         else {
             showToast('Photo updated successfully!', 'success');
@@ -104,6 +118,7 @@ async function captureAndUpload() {
         }
     }, 'image/jpeg', 0.8);
 }
+
 async function populateCameraList() {
     try {
         await navigator.mediaDevices.getUserMedia({video: true});
@@ -119,12 +134,14 @@ async function populateCameraList() {
         });
     } catch (e) { console.error("Could not list devices:", e); }
 }
+
 function getGoogleDriveEmbedLink(driveLink) {
     if (!driveLink || driveLink.includes('supabase.co')) return driveLink;
     const match = driveLink.match(/\/d\/(.+?)(?:\/view|$)/);
     if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
     return driveLink;
 }
+
 // === डेटा और यूज़र मैनेजमेंट फंक्शन्स ===
 async function handlePublicSearch(e) {
     e.preventDefault();
@@ -139,6 +156,7 @@ async function handlePublicSearch(e) {
         publicResultsContainer.innerHTML = `<div class="card" style="grid-template-columns: 1fr;"><div class="card-header-text"><h4>${data.name}</h4><p><strong>Father's Name:</strong> ${data.father_name}</p><p><strong>BL Number:</strong> ${data.bl_number}</p></div></div>`;
     }
 }
+
 async function handleAdminSearch(e) {
     e.preventDefault();
     const dashboardResultsContainer = document.getElementById('dashboard-results-container');
@@ -163,8 +181,20 @@ async function handleAdminSearch(e) {
         card.className = 'card';
         card.id = `card-${item.aadhaar_number}`;
         const photoLink = getGoogleDriveEmbedLink(item.photo_link);
-        const imgSrc = photoLink || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-        const formattedExpireDate = item.application_expire ? new Date(item.application_expire).toISOString().split('T')[0] : '';
+        const imgSrc = photoLink || 'data:image/gif;base64,RO0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+        
+        // --- BUG FIX STARTS HERE ---
+        // तारीख को सुरक्षित रूप से फॉर्मेट करें
+        let formattedExpireDate = '';
+        if (item.application_expire) {
+            const date = new Date(item.application_expire);
+            // जांचें कि तारीख मान्य है या नहीं
+            if (!isNaN(date.getTime())) {
+                formattedExpireDate = date.toISOString().split('T')[0];
+            }
+        }
+        // --- BUG FIX ENDS HERE ---
+        
         card.innerHTML = `<div class="card-header"><img id="photo-${item.aadhaar_number}" src="${imgSrc}" alt="Farmer Photo" class="farmer-photo"><div class="card-header-text"><h4>${item.name || 'N/A'}</h4></div></div><div class="details-grid"><h5 class="group-title">Personal Details</h5><p><strong>Aadhaar Number:</strong><span class="readonly-field">${item.aadhaar_number || ''}</span></p><p><strong>Name:</strong><input type="text" id="name-${item.aadhaar_number}" value="${item.name || ''}"></p><p><strong>Father's Name:</strong><input type="text" id="father_name-${item.aadhaar_number}" value="${item.father_name || ''}"></p><p><strong>Gender:</strong><input type="text" id="gender-${item.aadhaar_number}" value="${item.gender || ''}"></p><p><strong>Age:</strong><input type="text" id="age-${item.aadhaar_number}" value="${item.age || ''}"></p><p><strong>Marriage Status:</strong><input type="text" id="marriage_status-${item.aadhaar_number}" value="${item.marriage_status || ''}"></p><p><strong>Category:</strong><input type="text" id="category-${item.aadhaar_number}" value="${item.category || ''}"></p><h5 class="group-title">Contact & Address</h5><p><strong>Mobile Number:</strong><input type="text" id="mobile_number-${item.aadhaar_number}" value="${item.mobile_number || ''}"></p><p><strong>WhatsApp Number:</strong><input type="text" id="whatsapp_number-${item.aadhaar_number}" value="${item.whatsapp_number || ''}"></p><p style="grid-column: 1 / -1;"><strong>Address:</strong><input type="text" id="address-${item.aadhaar_number}" value="${item.address || ''}"></p><h5 class="group-title">Financial & Application Details</h5><p><strong>BL Number:</strong><input type="text" id="bl_number-${item.aadhaar_number}" value="${item.bl_number || ''}"></p><p><strong>Account Number:</strong><input type="text" id="account_number-${item.aadhaar_number}" value="${item.account_number || ''}"></p><p><strong>Share Capital:</strong><input type="text" id="share_capital-${item.aadhaar_number}" value="${item.share_capital || ''}"></p><p><strong>Application Year:</strong><input type="text" id="application_year-${item.aadhaar_number}" value="${item.application_year || ''}"></p><p><strong>Application Expire:</strong><input type="date" id="application_expire-${item.aadhaar_number}" value="${formattedExpireDate}"></p><h5 class="group-title">Nominee Details</h5><p><strong>Nominee Name:</strong><input type="text" id="nominee_name-${item.aadhaar_number}" value="${item.nominee_name || ''}"></p><p><strong>Relation:</strong><input type="text" id="relation-${item.aadhaar_number}" value="${item.relation || ''}"></p><p><strong>Nominee Aadhaar:</strong><input type="text" id="nominee_aadhaar_number-${item.aadhaar_number}" value="${item.nominee_aadhaar_number || ''}"></p><div class="card-actions"><button onclick="updateRecord('${item.aadhaar_number}')"><i class="fas fa-save"></i> Save Changes</button><button onclick="openCameraModal('${item.aadhaar_number}')"><i class="fas fa-camera"></i> Update Photo</button><button class="delete-btn" onclick="deleteRecord('${item.aadhaar_number}')"><i class="fas fa-trash"></i> Delete</button></div></div>`;
         dashboardResultsContainer.appendChild(card);
     });
