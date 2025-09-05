@@ -19,7 +19,7 @@
   </header>
 
   <main class="container">
-    <!-- Login Card -->
+    <!-- Login -->
     <div id="login-card" class="card">
       <h2>लॉगिन</h2>
       <div class="form">
@@ -27,17 +27,19 @@
         <input id="password" type="password" placeholder="Password">
         <button id="login" class="btn">Login</button>
       </div>
-      <p class="muted">लॉगिन के बाद आप पेमेंट एंट्री कर पाएँगे।</p>
+      <p class="muted">लॉगिन के बाद आप पेमेंट एंट्री व WhatsApp मैसेज कर पाएँगे।</p>
     </div>
 
-    <!-- App Card -->
+    <!-- App -->
     <div id="app-card" class="card" style="display:none;">
       <h2>पेमेंट एंट्री</h2>
 
       <div class="form row">
         <input id="shop-query" type="text" placeholder="दुकान नंबर / नाम से खोजें...">
         <button id="shop-search" class="btn">Search</button>
+        <button id="bulk-remind" class="btn btn-ghost">सबको रिमाइंडर (बकाया)</button>
       </div>
+      <p id="bulk-status" class="muted"></p>
 
       <div id="shop-results" class="list"></div>
 
@@ -50,15 +52,26 @@
           <input id="pf-whatsapp" type="text" placeholder="WhatsApp" readonly>
           <input id="pf-rent" type="text" placeholder="Monthly Rent" readonly>
         </div>
+
         <div class="grid2">
           <input id="pf-amount" type="number" min="1" step="0.01" placeholder="जमा राशि (₹)">
           <input id="pf-receipt" type="text" placeholder="रसीद नंबर (वैकल्पिक)">
         </div>
+
         <div class="grid2">
           <input id="pf-date" type="date" value="">
           <input id="pf-notes" type="text" placeholder="नोट (वैकल्पिक)">
         </div>
-        <button id="pf-save" class="btn">जमा सेव करें + WhatsApp भेजें</button>
+
+        <div class="grid2">
+          <input id="pf-month-to" type="text" placeholder="MonthTo (उदा: Sep 2025)">
+          <input id="pf-month" type="text" placeholder="Month (उदा: Sep)">
+        </div>
+
+        <div class="row">
+          <button id="pf-save" class="btn">जमा सेव करें + WhatsApp रसीद</button>
+          <button id="pf-remind" class="btn btn-ghost">रिमाइंडर भेजें</button>
+        </div>
         <p id="pf-status" class="muted"></p>
       </div>
     </div>
