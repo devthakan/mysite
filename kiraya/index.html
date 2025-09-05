@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>बकाया किराया सूची</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="./supabaseClient.js"></script>
+  <script defer src="./app-public.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>बकाया किराया सूची</h1>
+    <a class="btn" href="./admin.html">Admin Login</a>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="row">
+        <input id="search" type="text" placeholder="दुकान नंबर / नाम से खोजें..." />
+        <button id="refresh" class="btn">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table id="dues-table">
+          <thead>
+            <tr>
+              <th>दुकान नंबर</th>
+              <th>धारक का नाम</th>
+              <th>काम्प्लेक्स</th>
+              <th>खुलने की तिथि</th>
+              <th>मासिक किराया</th>
+              <th>कुल देय</th>
+              <th>कुल जमा</th>
+              <th>बकाया</th>
+            </tr>
+          </thead>
+          <tbody id="dues-body">
+            <!-- Rows via JS -->
+          </tbody>
+        </table>
+      </div>
+      <p id="empty" class="muted" style="display:none;">कोई बकाया रिकॉर्ड नहीं मिला।</p>
+    </div>
+  </main>
+</body>
+</html>
