@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>दुकान किराया (एडमिन)</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="./supabaseClient.js"></script>
+  <script defer src="./app-admin.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>दुकान किराया मैनेजमेंट</h1>
+    <div class="right">
+      <span id="user-email" class="muted"></span>
+      <button id="logout" class="btn btn-ghost" style="display:none;">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Login Card -->
+    <div id="login-card" class="card">
+      <h2>लॉगिन</h2>
+      <div class="form">
+        <input id="email" type="email" placeholder="Email">
+        <input id="password" type="password" placeholder="Password">
+        <button id="login" class="btn">Login</button>
+      </div>
+      <p class="muted">लॉगिन के बाद आप पेमेंट एंट्री कर पाएँगे।</p>
+    </div>
+
+    <!-- App Card -->
+    <div id="app-card" class="card" style="display:none;">
+      <h2>पेमेंट एंट्री</h2>
+
+      <div class="form row">
+        <input id="shop-query" type="text" placeholder="दुकान नंबर / नाम से खोजें...">
+        <button id="shop-search" class="btn">Search</button>
+      </div>
+
+      <div id="shop-results" class="list"></div>
+
+      <hr/>
+
+      <div id="payment-form" class="form" style="display:none;">
+        <div class="grid2">
+          <input id="pf-shop-no" type="text" placeholder="दुकान नंबर" readonly>
+          <input id="pf-holder" type="text" placeholder="धारक का नाम" readonly>
+          <input id="pf-whatsapp" type="text" placeholder="WhatsApp" readonly>
+          <input id="pf-rent" type="text" placeholder="Monthly Rent" readonly>
+        </div>
+        <div class="grid2">
+          <input id="pf-amount" type="number" min="1" step="0.01" placeholder="जमा राशि (₹)">
+          <input id="pf-receipt" type="text" placeholder="रसीद नंबर (वैकल्पिक)">
+        </div>
+        <div class="grid2">
+          <input id="pf-date" type="date" value="">
+          <input id="pf-notes" type="text" placeholder="नोट (वैकल्पिक)">
+        </div>
+        <button id="pf-save" class="btn">जमा सेव करें + WhatsApp भेजें</button>
+        <p id="pf-status" class="muted"></p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
