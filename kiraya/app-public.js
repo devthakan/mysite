@@ -1,17 +1,11 @@
 // app-public.js
-
 const tbody = document.getElementById('dues-body');
 const empty = document.getElementById('empty');
 const search = document.getElementById('search');
 const refreshBtn = document.getElementById('refresh');
 
-function fmtMoney(n) {
-  return '₹' + Number(n).toFixed(2);
-}
-function fmtDate(d) {
-  const dd = new Date(d);
-  return dd.toLocaleDateString('en-IN');
-}
+function fmtMoney(n) { return '₹' + Number(n).toFixed(2); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('en-IN'); }
 
 let cache = [];
 
@@ -61,5 +55,4 @@ search.addEventListener('input', () => {
 });
 
 refreshBtn.addEventListener('click', loadDues);
-
 document.addEventListener('DOMContentLoaded', loadDues);
