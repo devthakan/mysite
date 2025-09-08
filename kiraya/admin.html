@@ -9,72 +9,135 @@
   <script defer src="./supabaseClient.js"></script>
   <script defer src="./app-admin.js"></script>
 </head>
-<body>
-  <header class="topbar">
-    <h1>दुकान किराया मैनेजमेंट</h1>
-    <div class="right">
-      <span id="user-email" class="muted"></span>
-      <button id="logout" class="btn btn-ghost" style="display:none;">Logout</button>
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- Login -->
-    <div id="login-card" class="card">
-      <h2>लॉगिन</h2>
-      <div class="form">
-        <input id="email" type="email" placeholder="Email">
-        <input id="password" type="password" placeholder="Password">
-        <button id="login" class="btn">Login</button>
-      </div>
-      <p class="muted">लॉगिन के बाद आप पेमेंट एंट्री व WhatsApp मैसेज कर पाएँगे।</p>
-    </div>
-
-    <!-- App -->
-    <div id="app-card" class="card" style="display:none;">
-      <h2>पेमेंट एंट्री</h2>
-
-      <div class="form row">
-        <input id="shop-query" type="text" placeholder="दुकान नंबर / नाम से खोजें...">
-        <button id="shop-search" class="btn">Search</button>
-        <button id="bulk-remind" class="btn btn-ghost">सबको रिमाइंडर (बकाया)</button>
-      </div>
-      <p id="bulk-status" class="muted"></p>
-
-      <div id="shop-results" class="list"></div>
-
-      <hr/>
-
-      <div id="payment-form" class="form" style="display:none;">
-        <div class="grid2">
-          <input id="pf-shop-no" type="text" placeholder="दुकान नंबर" readonly>
-          <input id="pf-holder" type="text" placeholder="धारक का नाम" readonly>
-          <input id="pf-whatsapp" type="text" placeholder="WhatsApp" readonly>
-          <input id="pf-rent" type="text" placeholder="Monthly Rent" readonly>
-        </div>
-
-        <div class="grid2">
-          <input id="pf-amount" type="number" min="1" step="0.01" placeholder="जमा राशि (₹)">
-          <input id="pf-receipt" type="text" placeholder="रसीद नंबर (वैकल्पिक)">
-        </div>
-
-        <div class="grid2">
-          <input id="pf-date" type="date" value="">
-          <input id="pf-notes" type="text" placeholder="नोट (वैकल्पिक)">
-        </div>
-
-        <div class="grid2">
-          <input id="pf-month-to" type="text" placeholder="MonthTo (उदा: Sep 2025)">
-          <input id="pf-month" type="text" placeholder="Month (उदा: Sep)">
-        </div>
-
-        <div class="row">
-          <button id="pf-save" class="btn">जमा सेव करें + WhatsApp रसीद</button>
-          <button id="pf-remind" class="btn btn-ghost">रिमाइंडर भेजें</button>
-        </div>
-        <p id="pf-status" class="muted"></p>
+<body class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏪</div>
+      <div class="brand-text">
+        <h2>किराया मैनेजमेंट</h2>
+        <span class="muted">Kanod GSSS</span>
       </div>
     </div>
-  </main>
+
+    <nav class="menu">
+      <a class="menu-item active">दुकानों की सूची</a>
+      <a class="menu-item" href="./index.html" target="_blank">पब्लिक बकाया</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <small class="muted">v1.2 · Modern UI</small>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="searchbar">
+        <input id="q" type="text" placeholder="दुकान नंबर / नाम / कॉम्प्लेक्स से खोजें…">
+        <button id="btn-search" class="btn">खोजें</button>
+        <button id="btn-clear" class="btn btn-ghost">क्लियर</button>
+      </div>
+      <div class="userbox">
+        <span id="user-email" class="muted"></span>
+        <button id="logout" class="btn btn-ghost" style="display:none;">Logout</button>
+      </div>
+    </header>
+
+    <!-- Login Card -->
+    <section id="login-card" class="center-wrap">
+      <div class="card card-lg">
+        <h2>एडमिन लॉगिन</h2>
+        <div class="form grid2">
+          <input id="email" type="email" placeholder="Email">
+          <input id="password" type="password" placeholder="Password">
+        </div>
+        <button id="login" class="btn btn-wide">Login</button>
+        <p class="muted">लॉगिन होते ही दुकानों की सूची अपने आप लोड हो जाएगी।</p>
+      </div>
+    </section>
+
+    <!-- Content -->
+    <section id="content" class="content" style="display:none;">
+      <div class="toolbar">
+        <div class="chips">
+          <button class="chip active" data-filter="all">सभी</button>
+          <button class="chip" data-filter="due">बकाया</button>
+          <button class="chip" data-filter="active">सक्रिय</button>
+        </div>
+        <div class="actions">
+          <button id="bulk-remind" class="btn btn-ghost">बकाया वालों को रिमाइंडर</button>
+        </div>
+      </div>
+
+      <!-- Shops grid -->
+      <div id="shops-grid" class="grid-cards"></div>
+
+      <div class="center">
+        <button id="load-more" class="btn btn-ghost">और लोड करें</button>
+      </div>
+
+      <p id="bulk-status" class="muted center"></p>
+    </section>
+  </div>
+
+  <!-- Drawer (Payment) -->
+  <div id="drawer" class="drawer">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h3>किराया जमा</h3>
+        <button id="drawer-close" class="btn btn-ghost">✕</button>
+      </div>
+      <div class="drawer-body">
+        <div class="kv">
+          <div><b>दुकान:</b> <span id="d-shop"></span></div>
+          <div><b>धारक:</b> <span id="d-holder"></span></div>
+          <div><b>कॉम्प्लेक्स:</b> <span id="d-complex"></span></div>
+          <div><b>WhatsApp:</b> <span id="d-wa"></span></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-ttl">मासिक किराया</div>
+            <div class="stat-val" id="d-rent">₹0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-ttl">कुल देय</div>
+            <div class="stat-val" id="d-due">₹0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-ttl">कुल जमा</div>
+            <div class="stat-val" id="d-paid">₹0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-ttl">बकाया</div>
+            <div class="stat-val highlight" id="d-balance">₹0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>पेमेंट डिटेल</h4>
+          <div class="form grid2">
+            <input id="pf-amount" type="number" min="1" step="0.01" placeholder="राशि (₹)">
+            <input id="pf-receipt" type="text" placeholder="रसीद नंबर (वैकल्पिक)">
+            <input id="pf-date" type="date">
+            <input id="pf-notes" type="text" placeholder="नोट (वैकल्पिक)">
+            <input id="pf-month-to" type="text" placeholder="MonthTo (उदा: Sep 2025)">
+            <input id="pf-month" type="text" placeholder="Month (उदा: Sep)">
+          </div>
+          <div class="row">
+            <button id="pf-save" class="btn">जमा सेव + रसीद WhatsApp</button>
+            <button id="pf-remind" class="btn btn-ghost">रिमाइंडर भेजें</button>
+          </div>
+          <p id="pf-status" class="muted"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 </body>
 </html>
