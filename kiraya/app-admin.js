@@ -1,158 +1,233 @@
 // app-admin.js
-const loginCard = document.getElementById('login-card');
-const appCard = document.getElementById('app-card');
-const userEmail = document.getElementById('user-email');
-const logoutBtn = document.getElementById('logout');
 
-const email = document.getElementById('email');
-const password = document.getElementById('password');
-const loginBtn = document.getElementById('login');
+// ------------ Helpers ------------
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
 
-const shopQuery = document.getElementById('shop-query');
-const shopSearch = document.getElementById('shop-search');
-const shopResults = document.getElementById('shop-results');
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2500);
+}
+const money = (n)=> '₹' + (Number(n||0).toFixed(2));
 
-const bulkBtn = document.getElementById('bulk-remind');
-const bulkStatus = document.getElementById('bulk-status');
+// Drawer refs
+const drawer = $('#drawer');
+const dShop = $('#d-shop');
+const dHolder = $('#d-holder');
+const dComplex = $('#d-complex');
+const dWA = $('#d-wa');
+const dRent = $('#d-rent');
+const dDue = $('#d-due');
+const dPaid = $('#d-paid');
+const dBalance = $('#d-balance');
 
 const pf = {
-  wrap: document.getElementById('payment-form'),
-  shopNo: document.getElementById('pf-shop-no'),
-  holder: document.getElementById('pf-holder'),
-  whatsapp: document.getElementById('pf-whatsapp'),
-  rent: document.getElementById('pf-rent'),
-  amount: document.getElementById('pf-amount'),
-  receipt: document.getElementById('pf-receipt'),
-  date: document.getElementById('pf-date'),
-  notes: document.getElementById('pf-notes'),
-  monthTo: document.getElementById('pf-month-to'),
-  month: document.getElementById('pf-month'),
-  save: document.getElementById('pf-save'),
-  remind: document.getElementById('pf-remind'),
-  status: document.getElementById('pf-status'),
+  amount: $('#pf-amount'),
+  receipt: $('#pf-receipt'),
+  date: $('#pf-date'),
+  notes: $('#pf-notes'),
+  monthTo: $('#pf-month-to'),
+  month: $('#pf-month'),
+  save: $('#pf-save'),
+  remind: $('#pf-remind'),
+  status: $('#pf-status'),
 };
 
-let selectedShop = null;
+// Auth refs
+const loginCard = $('#login-card');
+const content = $('#content');
+const userEmail = $('#user-email');
+const logoutBtn = $('#logout');
+const loginBtn = $('#login');
+const email = $('#email');
+const password = $('#password');
 
-function setLoggedIn(session) {
+// Search / list refs
+const q = $('#q');
+const btnSearch = $('#btn-search');
+const btnClear = $('#btn-clear');
+const chips = $$('.chip');
+const grid = $('#shops-grid');
+const loadMore = $('#load-more');
+
+let session = null;
+let selectedShop = null;
+let filterMode = 'all';
+let query = '';
+let page = 0;
+const PAGE_SIZE = 24;
+
+// ------------ Auth ------------
+function setLoggedIn(s) {
+  session = s;
   if (session?.user) {
     userEmail.textContent = session.user.email;
     logoutBtn.style.display = 'inline-flex';
     loginCard.style.display = 'none';
-    appCard.style.display = 'block';
+    content.style.display = 'block';
+    // auto-load shops on login
+    hardRefresh();
   } else {
     userEmail.textContent = '';
     logoutBtn.style.display = 'none';
-    appCard.style.display = 'none';
-    loginCard.style.display = 'block';
+    content.style.display = 'none';
+    loginCard.style.display = 'flex';
   }
 }
 
-function monthLabel(d = new Date()) {
-  return d.toLocaleString('en-US', { month: 'short' }); // "Sep"
-}
-
 async function init() {
-  const { data: { session } } = await supabase.auth.getSession();
-  setLoggedIn(session);
-  supabase.auth.onAuthStateChange((_e, s) => setLoggedIn(s));
+  const { data: { session: s } } = await supabase.auth.getSession();
+  setLoggedIn(s);
+  supabase.auth.onAuthStateChange((_e, s2) => setLoggedIn(s2));
   pf.date.valueAsDate = new Date();
   const now = new Date();
-  pf.month.value = monthLabel(now);
-  pf.monthTo.value = `${monthLabel(now)} ${now.getFullYear()}`;
+  pf.month.value = now.toLocaleString('en-US',{month:'short'});
+  pf.monthTo.value = pf.month.value + ' ' + now.getFullYear();
 }
 document.addEventListener('DOMContentLoaded', init);
 
-// ========== AUTH ==========
 loginBtn.addEventListener('click', async () => {
   loginBtn.disabled = true;
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value, password: password.value
   });
   loginBtn.disabled = false;
-  if (error) alert('Login failed: ' + error.message);
+  if (error) toast('Login failed: ' + error.message);
 });
+logoutBtn.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
 
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-});
+// ------------ Shops Load ------------
+async function fetchShops({ q='', page=0, mode='all' }) {
+  // Base query
+  let qb = supabase.from('shops')
+    .select('id, sn, shop_no, holder_name, father_name, whatsapp, monthly_rent, open_date, complex, is_active')
+    .order('shop_no', { ascending: true })
+    .range(page*PAGE_SIZE, page*PAGE_SIZE + PAGE_SIZE - 1);
 
-// ========== SEARCH ==========
-shopSearch.addEventListener('click', async () => {
-  const q = shopQuery.value.trim();
-  if (!q) return;
-  shopResults.innerHTML = 'Searching...';
-  const { data, error } = await supabase
-    .from('shops')
-    .select('id, shop_no, holder_name, father_name, whatsapp, monthly_rent, open_date, complex')
-    .or(`shop_no.ilike.%${q}%,holder_name.ilike.%${q}%`)
-    .limit(20);
-
-  if (error) {
-    shopResults.innerHTML = '<div class="muted">Error: '+error.message+'</div>';
-    return;
+  // Search
+  if (q) {
+    qb = qb.or(`shop_no.ilike.%${q}%,holder_name.ilike.%${q}%,complex.ilike.%${q}%`);
   }
-  if (!data.length) {
-    shopResults.innerHTML = '<div class="muted">कोई रिकॉर्ड नहीं मिला</div>';
-    return;
-  }
-  renderShopResults(data);
-});
 
-function renderShopResults(rows) {
-  shopResults.innerHTML = '';
-  rows.forEach(row => {
-    const el = document.createElement('div');
-    el.className = 'result-item';
-    el.innerHTML = `
-      <div>
-        <div><b>${row.shop_no}</b> — ${row.holder_name}</div>
-        <div class="meta">Father: ${row.father_name || '-'} | WhatsApp: ${row.whatsapp || '-'} | Rent: ₹${Number(row.monthly_rent).toFixed(2)}</div>
-        <div class="meta">Complex: ${row.complex || '-'} | Opened: ${new Date(row.open_date).toLocaleDateString('en-IN')}</div>
-      </div>
-      <button class="btn">Select</button>
-    `;
-    el.querySelector('button').addEventListener('click', () => pickShop(row));
-    shopResults.appendChild(el);
-  });
+  // Filter (client/basic server)
+  // For 'due' we will color via RPC (per shop dues fetched lazily in drawer).
+  if (mode === 'active') qb = qb.eq('is_active', true);
+
+  const { data, error } = await qb;
+  if (error) { toast('Load error: '+error.message); return []; }
+  return data || [];
 }
 
-function pickShop(row) {
-  selectedShop = row;
-  pf.wrap.style.display = 'block';
-  pf.shopNo.value = row.shop_no;
-  pf.holder.value = row.holder_name;
-  pf.whatsapp.value = row.whatsapp || '';
-  pf.rent.value = Number(row.monthly_rent).toFixed(2);
-  pf.amount.value = row.monthly_rent ? Number(row.monthly_rent).toFixed(2) : '';
+function shopCard(shop) {
+  const el = document.createElement('div');
+  el.className = 'card-shop';
+  el.innerHTML = `
+    <div class="title">${shop.shop_no} — ${shop.holder_name}</div>
+    <div class="tags">
+      <span class="tag">${shop.complex || '-'}</span>
+      <span class="tag">Open: ${new Date(shop.open_date).toLocaleDateString('en-IN')}</span>
+      <span class="tag">Rent: ${money(shop.monthly_rent)}</span>
+      ${shop.is_active ? '<span class="badge positive">Active</span>' : '<span class="badge warn">Inactive</span>'}
+    </div>
+    <div class="actions">
+      <button class="btn btn-collect">किराया जमा</button>
+      <button class="btn btn-ghost btn-remind">रिमाइंडर</button>
+    </div>
+  `;
+  // actions
+  el.querySelector('.btn-collect').addEventListener('click', () => openDrawer(shop));
+  el.querySelector('.btn-remind').addEventListener('click', () => remindOne(shop));
+  return el;
+}
+
+async function renderPage() {
+  const rows = await fetchShops({ q: query, page, mode: filterMode });
+  if (!rows.length && page===0) {
+    grid.innerHTML = '<div class="card">कोई दुकान नहीं मिली।</div>';
+    loadMore.style.display = 'none';
+    return;
+  }
+  if (rows.length < PAGE_SIZE) loadMore.style.display = 'none';
+  else loadMore.style.display = 'inline-flex';
+
+  const frag = document.createDocumentFragment();
+  rows.forEach(r => frag.appendChild(shopCard(r)));
+  grid.appendChild(frag);
+}
+
+function hardRefresh() {
+  page = 0;
+  grid.innerHTML = '';
+  loadMore.style.display = 'inline-flex';
+  renderPage();
+}
+
+btnSearch.addEventListener('click', ()=>{ query = q.value.trim(); hardRefresh(); });
+btnClear.addEventListener('click', ()=>{ q.value=''; query=''; hardRefresh(); });
+loadMore.addEventListener('click', ()=>{ page++; renderPage(); });
+
+chips.forEach(ch => ch.addEventListener('click', ()=>{
+  chips.forEach(c=>c.classList.remove('active'));
+  ch.classList.add('active');
+  filterMode = ch.dataset.filter;
+  hardRefresh();
+}));
+
+// ------------ Drawer (Payment) ------------
+function openDrawer(shop) {
+  selectedShop = shop;
+  // Fill static
+  dShop.textContent = shop.shop_no;
+  dHolder.textContent = shop.holder_name + (shop.father_name ? ` (S/O ${shop.father_name})` : '');
+  dComplex.textContent = shop.complex || '-';
+  dWA.textContent = shop.whatsapp || '-';
+  dRent.textContent = money(shop.monthly_rent);
+
+  // Defaults
+  pf.amount.value = Number(shop.monthly_rent || 0).toFixed(2);
   pf.receipt.value = '';
   pf.notes.value = '';
   pf.status.textContent = '';
+
+  // Dynamic dues (via RPC list then filter by this shop_no)
+  loadDuesForShop(shop.shop_no);
+
+  drawer.classList.add('open');
+}
+$('#drawer-close').addEventListener('click', ()=> drawer.classList.remove('open'));
+
+async function loadDuesForShop(shop_no) {
+  const { data, error } = await supabase.rpc('get_public_dues');
+  if (error) { dDue.textContent = '—'; dPaid.textContent='—'; dBalance.textContent='—'; return; }
+  const row = (data||[]).find(r => String(r.shop_no) === String(shop_no));
+  if (!row) { dDue.textContent = '—'; dPaid.textContent='—'; dBalance.textContent='₹0'; return; }
+  dDue.textContent = money(row.expected);
+  dPaid.textContent = money(row.paid);
+  dBalance.textContent = money(row.balance);
 }
 
-// ========== SAVE PAYMENT + RECEIPT TEMPLATE ==========
+// ------------ Actions: Save + Reminder ------------
 pf.save.addEventListener('click', async () => {
   if (!selectedShop) return;
-  const amount = Number(pf.amount.value);
-  if (!amount || amount <= 0) {
-    pf.status.textContent = 'राशि सही डालें';
-    return;
-  }
+
+  const amount = Number((pf.amount.value || "0").toString().replace(/[^\d.]/g, ''));
+  if (!amount || amount <= 0) { pf.status.textContent = 'राशि सही डालें'; return; }
+
   pf.save.disabled = true;
   pf.status.textContent = 'Saving...';
 
-  // 1) Save in ledger
-  const { data, error } = await supabase
+  // 1) Save ledger
+  const { error } = await supabase
     .from('rent_ledger')
     .insert({
       shop_id: selectedShop.id,
       amount,
-      receipt_no: pf.receipt.value || null,
+      receipt_no: (pf.receipt.value || '').toString().trim() || '-',
       payment_date: pf.date.value || null,
-      notes: pf.notes.value || null
-    })
-    .select()
-    .single();
+      notes: (pf.notes.value || '').toString().trim() || null
+    });
 
   if (error) {
     pf.status.textContent = 'Error: ' + error.message;
@@ -160,120 +235,111 @@ pf.save.addEventListener('click', async () => {
     return;
   }
 
-  // 2) WhatsApp receipt template (receivekiraya01)
+  // 2) Send receipt (Edge Function) — हिंदी टेम्पलेट पहले से ready
   try {
-    await supabase.functions.invoke('send-whatsapp', {
+    const father = (selectedShop.father_name || '').toString().trim() || '---';
+    const complex = (selectedShop.complex || '').toString().trim() || '---';
+    const mto = (pf.monthTo.value || '').toString().trim() ||
+      new Date().toLocaleString('en-US',{month:'short',year:'numeric'});
+    const m = (pf.month.value || '').toString().trim() ||
+      new Date().toLocaleString('en-US',{month:'short'});
+
+    const resp = await supabase.functions.invoke('send-whatsapp', {
       body: {
         kind: 'receipt',
         to: selectedShop.whatsapp || '',
-        name: selectedShop.holder_name || '',
-        father_name: selectedShop.father_name || '(Father Name)',
-        shop_no: selectedShop.shop_no,
-        complex: selectedShop.complex || '',
-        month_to: pf.monthTo.value || '',
-        month: pf.month.value || '',
+        name: (selectedShop.holder_name || '').toString().trim() || '---',
+        father_name: father,
+        shop_no: (selectedShop.shop_no || '').toString().trim(),
+        complex: complex,
+        month_to: mto,
+        month: m,
         amount: amount,
-        receipt_no: pf.receipt.value || undefined
+        receipt_no: (pf.receipt.value || '').toString().trim() || '-'
       }
     });
+    if (!resp.data?.ok) {
+      pf.status.textContent = 'WA error: ' + (resp.data?.reason||'') + ' ' + (resp.data?.status||'');
+      console.log('WA detail:', resp.data);
+    } else {
+      pf.status.textContent = 'सेव + रसीद भेजी गई ✅';
+      toast('रसीद WhatsApp पर भेजी गई');
+      // refresh dues quick
+      loadDuesForShop(selectedShop.shop_no);
+    }
   } catch (e) {
-    console.warn('WhatsApp receipt send failed:', e);
+    pf.status.textContent = 'WhatsApp exception: ' + e;
   }
 
-  pf.status.textContent = 'सेव हो गया ✅';
   pf.save.disabled = false;
 });
 
-// ========== REMINDER (Single) ==========
-async function fetchSelectedShopBalance() {
-  const { data, error } = await supabase.rpc('get_public_dues');
-  if (error) return null;
-  const row = (data || []).find(r => String(r.shop_no) === String(selectedShop.shop_no));
-  return row ? Number(row.balance) : null;
-}
-
-pf.remind.addEventListener('click', async () => {
-  if (!selectedShop) return;
-  pf.remind.disabled = true;
-  pf.status.textContent = 'रिमाइंडर भेज रहा हूँ...';
-
-  const balance = await fetchSelectedShopBalance();
-
+async function remindOne(shop) {
   try {
-    await supabase.functions.invoke('send-whatsapp', {
+    toast('रिमाइंडर भेज रहे हैं…');
+    // balance निकालने के लिए RPC
+    const { data } = await supabase.rpc('get_public_dues');
+    const row = (data||[]).find(r => String(r.shop_no) === String(shop.shop_no));
+    const balance = row ? Number(row.balance) : Number(shop.monthly_rent) || 0;
+
+    const r = await supabase.functions.invoke('send-whatsapp', {
       body: {
-        kind: 'reminder',
-        to: selectedShop.whatsapp || '',
-        name: selectedShop.holder_name || '',
-        father_name: selectedShop.father_name || '(Father Name)',
-        balance: (balance != null ? balance : Number(pf.rent.value) || 0)
+        kind:'reminder',
+        to: shop.whatsapp || '',
+        name: shop.holder_name || '',
+        father_name: shop.father_name || '(Father Name)',
+        balance
       }
     });
-    pf.status.textContent = 'रिमाइंडर भेज दिया ✅';
+    if (!r.data?.ok) { toast('WA error (reminder)'); console.log(r.data); }
+    else toast('रिमाइंडर भेजा गया ✅');
   } catch (e) {
-    pf.status.textContent = 'रिमाइंडर भेजने में समस्या: ' + e;
-  } finally {
-    pf.remind.disabled = false;
+    toast('Exception (reminder)');
+    console.error(e);
   }
-});
-
-// ========== BULK REMINDER (All dues) ==========
-async function getAllDues() {
-  const { data, error } = await supabase.rpc('get_public_dues');
-  if (error) throw error;
-  return data || [];
 }
 
-async function findShopByShopNo(shop_no) {
-  const { data, error } = await supabase
-    .from('shops')
-    .select('id, shop_no, holder_name, father_name, whatsapp, complex')
-    .eq('shop_no', shop_no)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-bulkBtn?.addEventListener('click', async () => {
+// Bulk remind
+$('#bulk-remind').addEventListener('click', async ()=>{
   if (!confirm('बकाया वालों को WhatsApp रिमाइंडर भेजें?')) return;
-  bulkBtn.disabled = true;
-  bulkStatus.textContent = 'रिमाइंडर भेज रहा हूँ...';
+  $('#bulk-remind').disabled = true;
+  $('#bulk-status').textContent = 'रिमाइंडर भेज रहे हैं...';
 
   try {
-    const dues = await getAllDues();  // {shop_no, holder_name, complex, balance, ...}
-    let sent = 0, skipped = 0, failed = 0;
+    const { data, error } = await supabase.rpc('get_public_dues');
+    if (error) throw error;
+    const dues = data || [];
+    let sent=0, skipped=0, failed=0;
 
     for (const r of dues) {
-      try {
-        const shop = await findShopByShopNo(r.shop_no);
-        if (!shop?.whatsapp) { skipped++; continue; }
+      const { data: shop, error: e2 } = await supabase
+        .from('shops')
+        .select('shop_no, holder_name, father_name, whatsapp')
+        .eq('shop_no', r.shop_no)
+        .maybeSingle();
+      if (e2 || !shop?.whatsapp) { skipped++; continue; }
 
-        await supabase.functions.invoke('send-whatsapp', {
+      try {
+        const res = await supabase.functions.invoke('send-whatsapp', {
           body: {
-            kind: 'reminder',
+            kind:'reminder',
             to: shop.whatsapp,
             name: shop.holder_name,
             father_name: shop.father_name || '(Father Name)',
             balance: Number(r.balance || 0)
           }
         });
+        if (!res.data?.ok) failed++; else sent++;
+      } catch { failed++; }
 
-        sent++;
-        bulkStatus.textContent = `भेजे गए: ${sent} | स्किप: ${skipped} | फेल: ${failed}`;
-        await sleep(1000); // throttle (1/sec)
-      } catch {
-        failed++;
-        bulkStatus.textContent = `भेजे गए: ${sent} | स्किप: ${skipped} | फेल: ${failed}`;
-        await sleep(1000);
-      }
+      $('#bulk-status').textContent = `भेजे गए: ${sent} | स्किप: ${skipped} | फेल: ${failed}`;
+      await new Promise(r=>setTimeout(r, 900));
     }
 
-    bulkStatus.textContent = `पूर्ण ✅ भेजे गए: ${sent}, स्किप: ${skipped}, फेल: ${failed}`;
+    $('#bulk-status').textContent = `पूर्ण ✅ भेजे गए: ${sent}, स्किप: ${skipped}, फेल: ${failed}`;
   } catch (e) {
-    bulkStatus.textContent = 'Error: ' + e.message;
+    $('#bulk-status').textContent = 'Error: ' + e.message;
   } finally {
-    bulkBtn.disabled = false;
+    $('#bulk-remind').disabled = false;
   }
 });
