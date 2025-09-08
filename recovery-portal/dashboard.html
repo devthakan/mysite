@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>कानोड़ GSSS | रिकवरी डैशबोर्ड</title>
+<link rel="stylesheet" href="style.css" />
+<script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script defer src="app.js"></script>
+<script defer src="dashboard.js"></script>
+</head>
+<body class="bg">
+<header class="topbar">
+<div class="left">
+<a href="index.html" class="brand">कानोड़ GSSS</a>
+<nav class="tabs">
+<a class="tab active" data-tab="overview">डैशबोर्ड</a>
+<a class="tab" data-tab="list">बकाया सूची</a>
+<a class="tab" data-tab="collect">रिकवरी एंट्री</a>
+<a class="tab" data-tab="reports">रिपोर्ट</a>
+</nav>
+</div>
+<div class="right">
+<span id="userEmail" class="muted"></span>
+<button id="btnLogout" class="btn ghost">लॉगआउट</button>
+</div>
+</header>
+
+
+<main class="wrap" id="guarded">
+<!-- OVERVIEW -->
+<section class="tabpanel show" id="tab-overview">
+<div class="grid cards-4">
+<div class="card stat">
+<div class="stat-k">कुल मेम्बर</div>
+<div class="stat-v" id="totalMembers">—</div>
+</div>
+<div class="card stat">
+<div class="stat-k">कुल बकाया (₹)</div>
+<div class="stat-v" id="totalDue">—</div>
+</div>
+<div class="card stat">
+<div class="stat-k">अब तक वसूली (₹)</div>
+<div class="stat-v" id="totalCollected">—</div>
+</div>
+<div class="card stat">
+<div class="stat-k">शेष बकाया (₹)</div>
+<div class="stat-v" id="remainingDue">—</div>
+</div>
+</div>
+
+
+<div class="grid cards-3 mt">
+<div class="card stat">
+<div class="stat-k">बकाया मेम्बर</div>
+<div class="stat-v" id="unpaidMembers">—</div>
+</div>
+<div class="card stat">
+<div class="stat-k">वसूली वाले मेम्बर</div>
+<div class="stat-v" id="paidMembers">—</div>
+</div>
+<div class="card stat">
+<div class="stat-k">आज की वसूली (₹)</div>
+<div class="stat-v" id="todayCollected">—</div>
+</div>
+</div>
+</section>
+
+
+<!-- LIST -->
+<section class="tabpanel" id="tab-list">
+<div class="card">
+<div class="row gap">
+<input id="q" class="input" placeholder="खोजें: आधार/नाम/खाता/DMR" />
+<button id="btnSearch" class="btn">खोजें</button>
+<button id="btnClear" class="btn ghost">साफ़</button>
+</div>
+</html>
