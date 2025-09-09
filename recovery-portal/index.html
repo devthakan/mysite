@@ -3,31 +3,44 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>कानोड़ GSSS | रिकवरी पोर्टल – लॉगिन</title>
+<title>कानोड़ GSSS | बकाया ऋण देखें</title>
 <link rel="stylesheet" href="style.css" />
 <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script defer src="app.js"></script>
+<script defer src="home.js"></script>
 </head>
 <body class="bg">
-<div class="container center">
-<div class="card login">
-<img src="assets/logo.png" class="logo" alt="GSSS Kanod" onerror="this.style.display='none'" />
-<h1>रिकवरी पोर्टल</h1>
-<p class="muted">लॉगिन के बाद आप डैशबोर्ड, रिकवरी एंट्री, व्हाट्सऐप मैसेज और रिपोर्ट देख/डाउनलोड कर पाएँगे।</p>
-
-
-<form id="loginForm" class="form">
-<label>ईमेल</label>
-<input id="email" type="email" placeholder="aapka@samiti.in" required />
-<label>पासवर्ड</label>
-<input id="password" type="password" placeholder="********" required />
-<button type="submit" class="btn primary full">लॉगिन</button>
-</form>
-
-
-<div id="loginMsg" class="msg"></div>
-<div class="footnote">समस्या हो तो व्यवस्थापक से संपर्क करें।</div>
+<header class="topbar">
+<div class="left"><a class="brand" href="#">कानोड़ GSSS</a></div>
+<div class="right">
+<a href="login.html" class="btn">व्यवस्थापक लॉगिन</a>
 </div>
+</header>
+
+
+<main class="wrap">
+<section class="card" style="max-width:740px;margin:24px auto;">
+<h1 style="margin:0 0 6px">बकाया ऋण देखें</h1>
+<p class="muted">कृपया 12 अंकों का आधार नंबर दर्ज करें और बकाया राशि देखें।</p>
+
+
+<div class="form" style="margin-top:12px">
+<label>आधार संख्या (12 अं.)</label>
+<input id="adhar" maxlength="12" inputmode="numeric" placeholder="उदा. 123412341234" />
+<button id="btnCheck" class="btn primary">खोजें</button>
 </div>
+
+
+<div id="homeMsg" class="msg"></div>
+
+
+<div id="resultCard" class="card" style="margin-top:12px; display:none">
+<div id="resultText" style="font-size:18px;font-weight:600"></div>
+<div id="resultSub" class="muted" style="margin-top:6px"></div>
+</div>
+
+
+<div class="muted" style="margin-top:10px">सूचना: यह सुविधा केवल बकाया/जमा स्थिति बताती है। विस्तृत जानकारी के लिए समिति कार्यालय से संपर्क करें।</div>
+</section>
+</main>
 </body>
 </html>
