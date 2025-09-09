@@ -31,67 +31,8 @@
 <!-- OVERVIEW -->
 <section class="tabpanel show" id="tab-overview">
 <div class="grid cards-4">
-<div class="card stat">
-<div class="stat-k">कुल मेम्बर</div>
-<div class="stat-v" id="totalMembers">—</div>
-</div>
-<div class="card stat">
-<div class="stat-k">कुल बकाया (₹)</div>
-<div class="stat-v" id="totalDue">—</div>
-</div>
-<div class="card stat">
-<div class="stat-k">अब तक वसूली (₹)</div>
-<div class="stat-v" id="totalCollected">—</div>
-</div>
-<div class="card stat">
-<div class="stat-k">शेष बकाया (₹)</div>
-<div class="stat-v" id="remainingDue">—</div>
-</div>
-</div>
-
-
-<div class="grid cards-3 mt">
-<div class="card stat">
-<div class="stat-k">बकाया मेम्बर</div>
-<div class="stat-v" id="unpaidMembers">—</div>
-</div>
-<div class="card stat">
-<div class="stat-k">वसूली वाले मेम्बर</div>
-<div class="stat-v" id="paidMembers">—</div>
-</div>
-<div class="card stat">
-<div class="stat-k">आज की वसूली (₹)</div>
-<div class="stat-v" id="todayCollected">—</div>
-</div>
-</div>
-</section>
-<section class="tabpanel" id="tab-collect">
-<div class="grid two">
-<div class="card">
-<h3>रिकवरी एंट्री</h3>
-<!-- फॉर्म (जैसा पहले था) -->
-</div>
-
-
-<div class="card">
-<h3>टेम्पलेट / अपलोड</h3>
-<div class="row gap">
-<button id="btnDownloadTemplate" class="btn">रिकवरी CSV टेम्पलेट डाउनलोड</button>
-<input type="file" id="csvFile" accept=".csv" />
-<button id="btnImportCsv" class="btn ghost">CSV अपलोड</button>
-</div>
-<p class="muted">CSV कॉलम: <code>adhar_number,name,account_number,dmr_number,amount_due,amount_collected,whatsapp_number,notes</code></p>
-<div id="importMsg" class="msg"></div>
-</div>
-</div>
-</section>
-
-<!-- LIST -->
-<section class="tabpanel" id="tab-list">
-<div class="card">
-<div class="row gap">
-<input id="q" class="input" placeholder="खोजें: आधार/नाम/खाता/DMR" />
-<button id="btnSearch" class="btn">खोजें</button>
-<button id="btnClear" class="btn ghost">साफ़</button>
-</div>
+<div class="card stat"><div class="stat-k">कुल मेम्बर</div><div class="stat-v" id="totalMembers">—</div></div>
+<div class="card stat"><div class="stat-k">कुल बकाया (₹)</div><div class="stat-v" id="totalDue">—</div></div>
+<div class="card stat"><div class="stat-k">अब तक वसूली (₹)</div><div class="stat-v" id="totalCollected">—</div></div>
+<div class="card stat"><div class="stat-k">शेष बकाया (₹)</div><div class="stat-v" id="remainingDue">—</div></div>
 </html>
