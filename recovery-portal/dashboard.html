@@ -25,7 +25,26 @@
 <button id="btnLogout" class="btn ghost">लॉगआउट</button>
 </div>
 </header>
+<section class="tabpanel" id="tab-collect">
+<div class="grid two">
+<div class="card">
+<h3>रिकवरी एंट्री</h3>
+<!-- फॉर्म (जैसा पहले था) -->
+</div>
 
+
+<div class="card">
+<h3>टेम्पलेट / अपलोड</h3>
+<div class="row gap">
+<button id="btnDownloadTemplate" class="btn">रिकवरी CSV टेम्पलेट डाउनलोड</button>
+<input type="file" id="csvFile" accept=".csv" />
+<button id="btnImportCsv" class="btn ghost">CSV अपलोड</button>
+</div>
+<p class="muted">CSV कॉलम: <code>adhar_number,name,account_number,dmr_number,amount_due,amount_collected,whatsapp_number,notes</code></p>
+<div id="importMsg" class="msg"></div>
+</div>
+</div>
+</section>
 
 <main class="wrap" id="guarded">
 <!-- OVERVIEW -->
