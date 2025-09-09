@@ -37,6 +37,49 @@ document.getElementById('btnSearch').addEventListener('click', ()=> loadList(q.v
 document.getElementById('btnClear').addEventListener('click', ()=> { q.value=''; loadList(''); });
 loadList('');
 }
+// Download Template CSV
+function downloadTemplate(){
+downloadCsv('recovery_entry_template.csv', [[
+'adhar_number','name','account_number','dmr_number','amount_due','amount_collected','whatsapp_number','notes'
+]]);
+}
 
+
+document.getElementById('btnDownloadTemplate')?.addEventListener('click', downloadTemplate);
+
+
+// Import CSV
+async function importCsv(){
+const file = document.getElementById('csvFile').files[0];
+const msg = document.getElementById('importMsg');
+if(!file){ msg.className='msg err'; msg.textContent='कृपया CSV चुनें'; return; }
+
+
+const text = await file.text();
+const rows = text.split(/\r?\n/).filter(Boolean).map(line => line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(s=>s.replace(/^"|"$/g,'')));
+const [header, ...data] = rows;
+
+
+const idx = (name)=> header.indexOf(name);
+const payload = data.map(c => ({
+adhar_number: c[idx('adhar_number')],
+name: c[idx('name')],
+account_number: c[idx('account_number')],
+dmr_number: c[idx('dmr_number')],
+amount_due: Number(c[idx('amount_due')]||0),
+amount_collected: Number(c[idx('amount_collected')]||0),
+whatsapp_number: c[idx('whatsapp_number')],
+notes: c[idx('notes')]
+})).filter(x=>x.name);
+
+
+const { error } = await sb.from('collections').insert(payload);
+if (error){ msg.className='msg err'; msg.textContent = 'त्रुटि: '+error.message; return; }
+msg.className='msg ok'; msg.textContent = 'CSV अपलोड सफल';
+await loadOverview();
+}
+
+
+document.getElementById('btnImportCsv')?.addEventListener('click', importCsv);
 
 }
