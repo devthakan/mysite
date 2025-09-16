@@ -1,293 +1,281 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>बकाया रिकवरी सूची</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --light-gray: #f8f9fa;
-            --border-color: #dee2e6;
-            --text-color: #212529;
-            --header-bg: #ffffff;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background-color: var(--light-gray);
-            color: var(--text-color);
-        }
-        #app-container {
-            max-width: 1400px;
-            margin: 25px auto;
-            background-color: var(--header-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        header h2 { margin: 0; font-weight: 600; }
-        #auth-controls button {
-            background: none; border: none; font-size: 1rem; cursor: pointer;
-            margin-left: 15px; padding: 8px 15px; border-radius: 8px;
-            transition: background-color 0.2s, color 0.2s;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
-        #add-entry-btn { background-color: var(--success-color); color: white; }
-        #login-btn, #logout-btn { background-color: #6c757d; color: white; }
-        #add-entry-btn:hover { background-color: #157347; }
-        #login-btn:hover, #logout-btn:hover { background-color: #5c636a; }
-        table {
-            width: 100%; border-collapse: collapse; margin-top: 25px;
-            font-size: 0.9rem;
-        }
-        th, td { border: 1px solid var(--border-color); padding: 14px; text-align: left; }
-        th { background-color: var(--primary-color); color: white; font-weight: 500; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        tr:hover { background-color: #e9ecef; }
-        .hidden { display: none !important; }
-        .modal { position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: var(--shadow); }
-        .modal-content h3 { margin-top: 0; }
-        .modal-content .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
-        .modal-buttons { margin-top: 25px; text-align: right; }
-        .modal-buttons button { padding: 10px 20px; }
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; margin: 0 6px; }
-        .edit-btn { color: #0dcaf0; }
-        .delete-btn { color: var(--danger-color); }
-        .edit-btn:hover { color: #0aa8c2; }
-        .delete-btn:hover { color: #b02a37; }
-        #notification { padding: 15px; margin: 20px 0 0 0; border-radius: 8px; color: #fff; text-align: center; }
-        .notification-success { background-color: var(--success-color); }
-        .notification-error { background-color: var(--danger-color); }
-        body.is-admin .admin-only { display: revert; }
-        body.is-admin #login-btn { display: none; }
-        body:not(.is-admin) .admin-only { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>कानोड़ GSSS — जीवन सुरक्षा क्लेम</title>
+  <meta name="theme-color" content="#4f46e5" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --bg2:#111827;          /* gray-900 */
+      --card:#0b1224aa;       /* glass card */
+      --text:#e5e7eb;         /* gray-200 */
+      --muted:#9ca3af;        /* gray-400 */
+      --brand:#4f46e5;        /* indigo-600 */
+      --brand-2:#22d3ee;      /* cyan-400 */
+      --ring:#93c5fd55;       /* blue-300/33 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family:"Inter","Noto Sans Devanagari",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background: radial-gradient(1200px 1200px at 10% 10%, #1e293b 0%, #0b1020 50%, #05070f 100%);
+      overflow-x:hidden;
+    }
+
+    /* ---------- Top Nav ---------- */
+    .nav{
+      position:sticky; top:0; z-index:40;
+      backdrop-filter:saturate(120%) blur(10px);
+      background:linear-gradient(180deg, rgba(5,7,15,.8), rgba(5,7,15,.35));
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .nav-inner{
+      max-width:1100px; margin:auto; padding:14px 18px;
+      display:flex; align-items:center; gap:14px; justify-content:space-between;
+    }
+    .brand{
+      display:flex; gap:12px; align-items:center; font-weight:700; letter-spacing:.2px;
+    }
+    .logo{
+      width:34px; height:34px; display:grid; place-items:center;
+      border-radius:12px;
+      background: conic-gradient(from 30deg, var(--brand), #7c3aed, var(--brand-2), var(--brand));
+      box-shadow:0 8px 32px #4f46e544, inset 0 0 18px #ffffff22;
+    }
+    .brand-title{font-size:1.05rem}
+    .nav-actions a{
+      color:var(--text); text-decoration:none; font-weight:600;
+      padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background:#0b1020a6;
+    }
+    .nav-actions a:hover{border-color:#ffffff22}
+
+    /* ---------- Hero Section ---------- */
+    .hero{
+      max-width:1100px; margin:36px auto 18px; padding:0 18px;
+    }
+    .title{
+      font-size: clamp(1.4rem, 1.1rem + 1.8vw, 2rem);
+      font-weight:800; line-height:1.2;
+      background:linear-gradient(90deg, #fff, #c7d2fe, #a5f3fc);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      margin:0 0 8px 0;
+    }
+    .subtitle{color:var(--muted); margin:0}
+
+    /* ---------- Card ---------- */
+    .card{
+      position:relative;
+      max-width:1100px; margin:22px auto; padding:0; border-radius:20px;
+      background:linear-gradient(180deg, #0b1224cc, #0b122499);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 40px #00000066, inset 0 0 0 1px rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+    .card-head{
+      padding:16px 18px; display:flex; align-items:center; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .chip{
+      font-weight:700; font-size:.74rem; letter-spacing:.3px;
+      padding:6px 10px; border-radius:999px; color:#0b1224;
+      background:linear-gradient(90deg, #a5f3fc, #c7d2fe);
+      box-shadow:0 6px 20px #22d3ee33;
+    }
+    .card-body{position:relative; min-height:70vh; background:#05070f;}
+
+    /* ---------- Loader Overlay ---------- */
+    .overlay{
+      position:absolute; inset:0; display:grid; place-items:center;
+      padding:24px; background:linear-gradient(180deg, rgba(5,7,15,.92), rgba(5,7,15,.75));
+    }
+    .overlay.hidden{display:none;}
+
+    .loader{
+      width:min(540px, 92vw);
+      padding:26px 22px; border-radius:18px;
+      background:linear-gradient(180deg, rgba(15,23,42,.8), rgba(15,23,42,.6));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 20px 60px #00000088, inset 0 0 0 1px rgba(255,255,255,.05);
+    }
+    .loader-top{
+      display:flex; align-items:center; gap:14px; margin-bottom:14px;
+    }
+    .pulse-dots{display:flex; gap:8px;}
+    .dot{
+      width:10px; height:10px; border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #fff, #a5f3fc);
+      box-shadow:0 0 16px #22d3ee88;
+      animation:bounce 1.1s infinite ease-in-out;
+    }
+    .dot:nth-child(2){animation-delay:.15s}
+    .dot:nth-child(3){animation-delay:.3s}
+    @keyframes bounce{
+      0%,80%,100%{ transform:translateY(0); opacity:.75}
+      40%{ transform:translateY(-6px); opacity:1}
+    }
+
+    .loader-title{font-weight:800; font-size:1.05rem; margin:0}
+    .loader-text{margin:2px 0 10px; color:var(--muted); font-size:.95rem}
+
+    .progress{
+      width:100%; height:10px; border-radius:999px; background:#0b1224;
+      overflow:hidden; border:1px solid rgba(255,255,255,.07);
+    }
+    .bar{
+      height:100%; width:30%; border-radius:999px;
+      background:linear-gradient(90deg, var(--brand), #7c3aed, var(--brand-2));
+      animation:load 1.6s ease-in-out infinite;
+      box-shadow:0 0 18px #4f46e577;
+    }
+    @keyframes load{
+      0%{transform:translateX(-120%)}
+      50%{transform:translateX(35%) scaleX(1.2)}
+      100%{transform:translateX(220%)}
+    }
+
+    /* ---------- Failure state ---------- */
+    .fail{ text-align:center; display:none; }
+    .fail.show{ display:block; }
+    .fail p{ color:var(--muted); margin:10px 0 18px; }
+    .btn{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:12px 16px; border-radius:12px; font-weight:700;
+      color:white; background:linear-gradient(90deg, var(--brand), #7c3aed);
+      border:0; cursor:pointer;
+      box-shadow:0 10px 30px #4f46e544;
+    }
+    .btn:active{ transform:translateY(1px) }
+
+    /* ---------- Iframe ---------- */
+    iframe{
+      width:100%; height:70vh; border:0; display:block;
+    }
+    .iframe--hidden{visibility:hidden}
+
+    /* ---------- Footer ---------- */
+    footer{
+      max-width:1100px; margin:18px auto 40px; padding:0 18px; color:#94a3b8; font-size:.9rem;
+    }
+  </style>
 </head>
 <body>
-    <div id="app-container">
-        <header>
-            <h2>बकाया रिकवरी सूची</h2>
-            <div id="auth-controls">
-                <button id="add-entry-btn" class="admin-only"><i class="fas fa-plus"></i> नई एंट्री</button>
-                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> एडमिन लॉगिन</button>
-                <button id="logout-btn" class="admin-only"><i class="fas fa-sign-out-alt"></i> लॉगआउट</button>
+  <!-- Top nav -->
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="brand-title">कानोड़ ग्राम सेवा सहकारी समिति लि०</div>
+      </div>
+      <div class="nav-actions">
+        <a href="#" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">सहायता</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1 class="title">जीवन सुरक्षा क्लेम फॉर्म — तेज़ और सुरक्षित</h1>
+    <p class="subtitle">आधार संख्या डालकर जानकारी देखें। नीचे दिया गया फॉर्म सीधे समिति के वेब-ऐप से लोड होता है।</p>
+  </section>
+
+  <!-- Card -->
+  <section class="card" aria-label="जीवन सुरक्षा फॉर्म">
+    <div class="card-head">
+      <span class="chip">LIVE FORM</span>
+      <span style="color:var(--muted)">Kanod GSSS • Google Apps Script</span>
+    </div>
+
+    <div class="card-body">
+      <!-- Loader while iframe loads -->
+      <div id="overlay" class="overlay" role="status" aria-live="polite">
+        <div class="loader">
+          <div class="loader-top">
+            <div class="pulse-dots" aria-hidden="true">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
             </div>
-        </header>
-        <div id="notification" class="hidden"></div>
-        <div style="overflow-x:auto;">
-            <table id="recovery-table">
-                <thead>
-                    <tr>
-                        <th>क्र.सं.</th>
-                        <th>नाम</th>
-                        <th>पिता का नाम</th>
-                        <th>आधार नंबर</th>
-                        <th>खाता संख्या</th>
-                        <th>DMR नंबर</th>
-                        <th>राशि</th>
-                        <th>वर्ष</th>
-                        <th>रिकवरी हुई?</th>
-                        <th class="admin-only" style="width: 120px; text-align: center;">कार्यवाही</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <h3 class="loader-title">पेज तैयार किया जा रहा है…</h3>
+          </div>
+          <p class="loader-text" id="loaderMsg">सुरक्षित कनेक्शन बना रहे हैं। कृपया कुछ क्षण प्रतीक्षा करें।</p>
+          <div class="progress" aria-hidden="true"><div class="bar"></div></div>
+
+          <div class="fail" id="failBox">
+            <p>लगता है नेटवर्क धीमा है या पेज एम्बेड होने में दिक्कत आ रही है।</p>
+            <button class="btn" id="retryBtn">फिर से लोड करें</button>
+            <a class="btn" style="margin-left:8px; text-decoration:none"
+               id="openNew" target="_blank" rel="noopener">नये टैब में खोलें</a>
+          </div>
         </div>
+      </div>
+
+      <!-- Embedded App Script -->
+      <iframe id="appFrame" class="iframe--hidden"
+        title="जीवन सुरक्षा क्लेम फॉर्म"
+        referrerpolicy="no-referrer-when-downgrade"
+        allow="fullscreen; clipboard-write">
+      </iframe>
     </div>
+  </section>
 
-    <div id="login-modal" class="modal hidden">
-        <div class="modal-content">
-            <form id="login-form">
-                <h3>एडमिन लॉगिन</h3><label for="email">ईमेल:</label><input type="email" id="email" required><label for="password">पासवर्ड:</label><input type="password" id="password" required>
-                <div class="modal-buttons"><button type="submit" class="submit-btn">लॉगिन</button><button type="button" class="cancel-btn" data-close-modal>कैंसिल</button></div>
-            </form>
-        </div>
-    </div>
-    <div id="entry-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="modal-title"></h3>
-            <form id="entry-form">
-                <input type="hidden" id="entry-sn">
-                <div class="form-grid">
-                    <div><label for="name">नाम:</label><input type="text" id="name" required></div>
-                    <div><label for="father_name">पिता का नाम:</label><input type="text" id="father_name"></div>
-                    <div><label for="adhar_number">आधार नंबर:</label><input type="text" id="adhar_number"></div>
-                    <div><label for="account_number">खाता संख्या:</label><input type="text" id="account_number"></div>
-                    <div><label for="intrestdmr_number">DMR नंबर:</label><input type="text" id="intrestdmr_number"></div>
-                    <div><label for="amount">राशि:</label><input type="number" id="amount"></div>
-                    <div><label for="year">वर्ष:</label><input type="number" id="year"></div>
-                    <div><label for="recovery_done">रिकवरी हुई?</label><select id="recovery_done"><option value="नहीं">नहीं</option><option value="हाँ">हाँ</option></select></div>
-                </div>
-                <div class="modal-buttons"><button type="submit" class="submit-btn">सहेजें</button><button type="button" class="cancel-btn" data-close-modal>कैंसिल</button></div>
-            </form>
-        </div>
-    </div>
+  <footer>
+    © <span id="yr"></span> Kanod GSSS • Built for members. यदि पेज embed न हो तो ऊपर “नये टैब में खोलें” दबाएँ।
+  </footer>
 
-    <script>
-        const SUPABASE_URL = "https://sjfglhxjdyvcygunijvz.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmdsaHhqZHl2Y3lndW5panZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDkyMDcsImV4cCI6MjA3MDgyNTIwN30.HduOuf_wdZ4iHHNN26ECilX_ALCHfnPPC07gYPN2tsM";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <script>
+    // --------- CONFIG ---------
+    const APP_URL = "https://script.google.com/macros/s/AKfycbxJULwbQuH3exucCeKjltraQkV_xRWxKynMXnH89iL175t98UyoNSKBsmcCjJNIf3E72Q/exec";
 
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const addEntryBtn = document.getElementById('add-entry-btn');
-        const loginModal = document.getElementById('login-modal');
-        const entryModal = document.getElementById('entry-modal');
-        const recoveryTableBody = document.querySelector('#recovery-table tbody');
-        const notification = document.getElementById('notification');
-        const loginForm = document.getElementById('login-form');
-        const entryForm = document.getElementById('entry-form');
-        const modalTitle = document.getElementById('modal-title');
-        
-        const showNotification = (message, type = 'success') => {
-            notification.textContent = message;
-            notification.className = `notification-${type}`;
-            notification.classList.remove('hidden');
-            setTimeout(() => notification.classList.add('hidden'), 4000);
-        };
+    const frame = document.getElementById("appFrame");
+    const overlay = document.getElementById("overlay");
+    const failBox = document.getElementById("failBox");
+    const retryBtn = document.getElementById("retryBtn");
+    const openNew = document.getElementById("openNew");
+    const loaderMsg = document.getElementById("loaderMsg");
+    document.getElementById("yr").textContent = new Date().getFullYear();
 
-        const fetchAndDisplayData = async () => {
-            recoveryTableBody.innerHTML = `<tr><td colspan="10">डेटा लोड हो रहा है...</td></tr>`;
-            const { data, error } = await supabaseClient.from('recovrybakimember').select('*').order('sn', { ascending: false });
-            if (error) {
-                recoveryTableBody.innerHTML = `<tr><td colspan="10" style="color:red;">डेटा लोड नहीं हो सका।</td></tr>`; return;
-            }
-            recoveryTableBody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.sn}</td>
-                    <td>${row.name || ''}</td>
-                    <td>${row.father_name || ''}</td>
-                    <td>${row.adhar_number || ''}</td>
-                    <td>${row.account_number || ''}</td>
-                    <td>${row.intrestdmr_number || ''}</td>
-                    <td>${row.amount || ''}</td>
-                    <td>${row.year || ''}</td>
-                    <td>${row.recovery_done || ''}</td>
-                    <td class="admin-only" style="text-align: center;">
-                        <button class="action-btn edit-btn" onclick='editEntry(${JSON.stringify(row)})' title="संपादित करें"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="action-btn delete-btn" onclick="deleteEntry(${row.sn})" title="हटाएं"><i class="fas fa-trash-alt"></i></button>
-                    </td>`;
-                recoveryTableBody.appendChild(tr);
-            });
-            updateAdminUI();
-        };
+    // Helper: show/hide
+    function hide(el){ el.classList.add("hidden"); }
+    function show(el){ el.classList.remove("hidden"); }
 
-        const updateAdminUI = async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                document.body.classList.add('is-admin');
-            } else {
-                document.body.classList.remove('is-admin');
-            }
-        };
+    // Load iframe
+    function mountIframe(){
+      failBox.classList.remove("show");
+      loaderMsg.textContent = "सुरक्षित कनेक्शन बना रहे हैं। कृपया कुछ क्षण प्रतीक्षा करें।";
+      show(overlay);
+      frame.classList.add("iframe--hidden");
+      frame.src = APP_URL + (APP_URL.includes("?") ? "&" : "?") + "t=" + Date.now(); // cache-bust
+    }
 
-        window.editEntry = (rowData) => {
-            modalTitle.textContent = `रिकॉर्ड #${rowData.sn} संपादित करें`;
-            entryForm.reset();
-            document.getElementById('entry-sn').value = rowData.sn;
-            document.getElementById('name').value = rowData.name || '';
-            document.getElementById('father_name').value = rowData.father_name || '';
-            document.getElementById('adhar_number').value = rowData.adhar_number || '';
-            document.getElementById('account_number').value = rowData.account_number || '';
-            document.getElementById('amount').value = rowData.amount || '';
-            document.getElementById('year').value = rowData.year || '';
-            document.getElementById('intrestdmr_number').value = rowData.intrestdmr_number || '';
-            document.getElementById('recovery_done').value = rowData.recovery_done || 'नहीं';
-            entryModal.classList.remove('hidden');
-        };
+    // When iframe is ready
+    let done = false;
+    frame.addEventListener("load", ()=>{
+      done = true;
+      hide(overlay);
+      frame.classList.remove("iframe--hidden");
+    });
 
-        window.deleteEntry = async (id) => {
-            if (confirm(`क्या आप वाकई रिकॉर्ड नंबर #${id} को हटाना चाहते हैं?`)) {
-                const { error } = await supabaseClient.from('recovrybakimember').delete().eq('sn', id);
-                if (error) {
-                    showNotification(`त्रुटि: ${error.message}`, 'error');
-                } else {
-                    showNotification(`रिकॉर्ड #${id} सफलतापूर्वक हटा दिया गया है।`, 'success');
-                    fetchAndDisplayData();
-                }
-            }
-        };
+    // Progressive status nudges
+    setTimeout(()=>{ if(!done) loaderMsg.textContent = "डेटा ला रहे हैं… इंटरनेट स्पीड पर निर्भर है."; }, 3000);
+    setTimeout(()=>{ if(!done) loaderMsg.textContent = "लगभग हो गया! कृपया थोड़ा और इंतज़ार करें…"; }, 7000);
 
-        loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
-        logoutBtn.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            showNotification('आप सफलतापूर्वक लॉगआउट हो गए हैं।', 'success');
-            updateAdminUI();
-        });
-        addEntryBtn.addEventListener('click', () => {
-            modalTitle.textContent = 'नई एंट्री जोड़ें';
-            entryForm.reset();
-            document.getElementById('entry-sn').value = '';
-            entryModal.classList.remove('hidden');
-        });
+    // Failover after 20s
+    setTimeout(()=>{
+      if(!done){
+        loaderMsg.textContent = "लोड होने में अपेक्षा से अधिक समय लग रहा है।";
+        failBox.classList.add("show");
+      }
+    }, 20000);
 
-        document.querySelectorAll('[data-close-modal]').forEach(button => {
-            button.addEventListener('click', () => button.closest('.modal').classList.add('hidden'));
-        });
+    retryBtn.addEventListener("click", mountIframe);
+    openNew.href = APP_URL;
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const { error } = await supabaseClient.auth.signInWithPassword({
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            });
-            if (error) {
-                showNotification('लॉगिन विफल: अमान्य ईमेल या पासवर्ड।', 'error');
-            } else {
-                showNotification('सफलतापूर्वक लॉगिन हो गया!', 'success');
-                loginModal.classList.add('hidden');
-                loginForm.reset();
-                updateAdminUI();
-            }
-        });
-
-        entryForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sn = document.getElementById('entry-sn').value;
-            const formData = {
-                name: document.getElementById('name').value,
-                father_name: document.getElementById('father_name').value,
-                adhar_number: document.getElementById('adhar_number').value,
-                account_number: document.getElementById('account_number').value,
-                amount: document.getElementById('amount').value,
-                year: document.getElementById('year').value,
-                intrestdmr_number: document.getElementById('intrestdmr_number').value,
-                recovery_done: document.getElementById('recovery_done').value,
-            };
-            const { error } = sn 
-                ? await supabaseClient.from('recovrybakimember').update(formData).eq('sn', sn)
-                : await supabaseClient.from('recovrybakimember').insert([formData]);
-            
-            if (error) {
-                showNotification(`त्रुटि: ${error.message}`, 'error');
-            } else {
-                showNotification(sn ? 'रिकॉर्ड सफलतापूर्वक अपडेट किया गया!' : 'नई एंट्री सफलतापूर्वक जोड़ी गई!', 'success');
-                entryModal.classList.add('hidden');
-                fetchAndDisplayData();
-            }
-        });
-
-        fetchAndDisplayData();
-    </script>
+    // Kick-off
+    mountIframe();
+  </script>
 </body>
 </html>
