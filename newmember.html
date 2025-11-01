@@ -25,13 +25,19 @@
 <!-- Header (Optional: You can remove this and keep only the iframe) -->
 <header class="bg-green-700 h-16 flex items-center shadow-lg relative z-10">
     <div class="max-w-7xl mx-auto px-4 w-full">
-        <h1 class="text-2xl font-extrabold text-white">KANOD GRAM SEWA SAHKARI SAMITI Portal</h1>
+        <h1 class="text-xl sm:text-2xl font-extrabold text-white">KANOD GRAM SEWA SAHKARI SAMITI Portal</h1>
     </div>
 </header>
 
 <!-- Main Iframe Container -->
-<main class="full-viewport-height w-full bg-gray-100">
+<main class="full-viewport-height w-full bg-gray-100 relative">
     
+    <!-- LOADING SPINNER (Shows while iframe loads) -->
+    <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-100/90 z-20 transition-opacity duration-300">
+        <div class="w-12 h-12 border-4 border-green-700 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p class="text-gray-600 font-semibold">पोर्टल लोड हो रहा है... (Loading Portal)</p>
+    </div>
+
     <!-- 
         अति महत्वपूर्ण:
         नीचे दिए गए 'src' एट्रिब्यूट में "YOUR_GAS_WEB_APP_URL_HERE" को अपने Google App Script के
@@ -39,14 +45,14 @@
     -->
     <iframe 
         id="gas-portal-iframe"
-        src="https://script.google.com/macros/s/AKfycbxIN6ti_IK1fJA-nkGWTnW2m-IbZxEGAoprpjqNJw2Qzd3eQArkawMah99PxG73aag6/exec" 
-        class="w-full h-full border-0" 
+        src="https://script.google.com/macros/s/AKfycbxLnfUA7o36MbaXDPHBGJ69gwoOJNgjdCfG9Q3o8qTsc1Og6NpBm-kifOM8PkeHhI9f/exec" 
+        class="w-full h-full border-0 opacity-0 transition-opacity duration-500" 
         title="KANOD GRAM SEWA SAHKARI SAMITI Application Portal"
         allowfullscreen
     ></iframe>
     
     <!-- Fallback/Error Message -->
-    <div id="iframe-fallback" class="p-8 text-center hidden">
+    <div id="iframe-fallback" class="p-8 text-center hidden absolute inset-0 z-30 bg-white">
         <p class="text-red-500 font-semibold">पोर्टल लोड नहीं हो रहा है। कृपया सुनिश्चित करें कि आपने सही Google App Script URL दर्ज किया है और इसे 'Anyone' के लिए डिप्लॉय किया गया है।</p>
     </div>
 
@@ -55,21 +61,33 @@
 <script>
     const iframe = document.getElementById('gas-portal-iframe');
     const fallback = document.getElementById('iframe-fallback');
+    const spinner = document.getElementById('loading-spinner');
     
     // Check if the placeholder URL is still present.
-    if (iframe.src.includes("YOUR_GAS_WEB_APP_URL_HERE")) {
+    if (iframe.src.includes("https://script.google.com/macros/s/AKfycbxLnfUA7o36MbaXDPHBGJ69gwoOJNgjdCfG9Q3o8qTsc1Og6NpBm-kifOM8PkeHhI9f/exec")) {
         iframe.style.display = 'none';
+        spinner.style.display = 'none'; // Hide spinner too
         fallback.classList.remove('hidden');
         fallback.innerHTML = '<p class="text-xl font-bold text-red-700">❌ URL त्रुटि: कृपया कोड में "YOUR_GAS_WEB_APP_URL_HERE" को अपने Google App Script लिंक से बदलें।</p>';
     }
 
-    // Optional: Add a listener to handle iframe loading issues (though often tricky with cross-origin)
+    // Listener to hide spinner and show iframe after GAS content loads
     iframe.onload = function() {
-        console.log("GAS Portal loaded successfully.");
+        console.log("GAS Portal loaded successfully. Hiding spinner.");
+        
+        // Smoothly hide spinner and show iframe
+        spinner.style.opacity = '0';
+        iframe.style.opacity = '1';
+        
+        // Hide spinner element completely after transition
+        setTimeout(() => {
+            spinner.style.display = 'none';
+        }, 300); 
     };
 
     iframe.onerror = function() {
         console.error("GAS Portal failed to load.");
+        spinner.style.display = 'none'; // Hide spinner on error
         iframe.style.display = 'none';
         fallback.classList.remove('hidden');
     };
