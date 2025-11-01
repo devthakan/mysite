@@ -39,7 +39,7 @@
     -->
     <iframe 
         id="gas-portal-iframe"
-        src="YOUR_GAS_WEB_APP_URL_HERE" 
+        src="https://script.google.com/macros/s/AKfycbxIN6ti_IK1fJA-nkGWTnW2m-IbZxEGAoprpjqNJw2Qzd3eQArkawMah99PxG73aag6/exec" 
         class="w-full h-full border-0" 
         title="KANOD GRAM SEWA SAHKARI SAMITI Application Portal"
         allowfullscreen
@@ -57,7 +57,7 @@
     const fallback = document.getElementById('iframe-fallback');
     
     // Check if the placeholder URL is still present.
-    if (iframe.src.includes("https://script.google.com/macros/s/AKfycbzdE1rKxg8REQQKxYKbETwSNsh-T3HA0v0bGbhI1aLx5WjnfuK5aSSYIuvv9dwyqx0d/exec")) {
+    if (iframe.src.includes("YOUR_GAS_WEB_APP_URL_HERE")) {
         iframe.style.display = 'none';
         fallback.classList.remove('hidden');
         fallback.innerHTML = '<p class="text-xl font-bold text-red-700">❌ URL त्रुटि: कृपया कोड में "YOUR_GAS_WEB_APP_URL_HERE" को अपने Google App Script लिंक से बदलें।</p>';
