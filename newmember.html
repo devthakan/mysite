@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>किसान समिति पोर्टल - KANOD GRAM SEWA SAHKARI SAMITI</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent body scroll, iframe handles scrolling */
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom class to manage the full screen height (minus header height) */
+        .full-viewport-height {
+            height: calc(100vh - 64px); /* 100vh minus the header height (h-16) */
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header (Optional: You can remove this and keep only the iframe) -->
+<header class="bg-green-700 h-16 flex items-center shadow-lg relative z-10">
+    <div class="max-w-7xl mx-auto px-4 w-full">
+        <h1 class="text-2xl font-extrabold text-white">KANOD GRAM SEWA SAHKARI SAMITI Portal</h1>
+    </div>
+</header>
+
+<!-- Main Iframe Container -->
+<main class="full-viewport-height w-full bg-gray-100">
+    
+    <!-- 
+        अति महत्वपूर्ण:
+        नीचे दिए गए 'src' एट्रिब्यूट में "YOUR_GAS_WEB_APP_URL_HERE" को अपने Google App Script के
+        Web App Deployment URL से बदलें (जिसे आपने डिप्लॉय करते समय प्राप्त किया था)। 
+    -->
+    <iframe 
+        id="gas-portal-iframe"
+        src="YOUR_GAS_WEB_APP_URL_HERE" 
+        class="w-full h-full border-0" 
+        title="KANOD GRAM SEWA SAHKARI SAMITI Application Portal"
+        allowfullscreen
+    ></iframe>
+    
+    <!-- Fallback/Error Message -->
+    <div id="iframe-fallback" class="p-8 text-center hidden">
+        <p class="text-red-500 font-semibold">पोर्टल लोड नहीं हो रहा है। कृपया सुनिश्चित करें कि आपने सही Google App Script URL दर्ज किया है और इसे 'Anyone' के लिए डिप्लॉय किया गया है।</p>
+    </div>
+
+</main>
+
+<script>
+    const iframe = document.getElementById('gas-portal-iframe');
+    const fallback = document.getElementById('iframe-fallback');
+    
+    // Check if the placeholder URL is still present.
+    if (iframe.src.includes("https://script.google.com/macros/s/AKfycbzdE1rKxg8REQQKxYKbETwSNsh-T3HA0v0bGbhI1aLx5WjnfuK5aSSYIuvv9dwyqx0d/exec")) {
+        iframe.style.display = 'none';
+        fallback.classList.remove('hidden');
+        fallback.innerHTML = '<p class="text-xl font-bold text-red-700">❌ URL त्रुटि: कृपया कोड में "YOUR_GAS_WEB_APP_URL_HERE" को अपने Google App Script लिंक से बदलें।</p>';
+    }
+
+    // Optional: Add a listener to handle iframe loading issues (though often tricky with cross-origin)
+    iframe.onload = function() {
+        console.log("GAS Portal loaded successfully.");
+    };
+
+    iframe.onerror = function() {
+        console.error("GAS Portal failed to load.");
+        iframe.style.display = 'none';
+        fallback.classList.remove('hidden');
+    };
+</script>
+
+</body>
+</html>
