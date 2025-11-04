@@ -1,346 +1,42 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanod Gram Sewa Sahkari Samiti - बकाया सूची</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<head>
+  <title>Kanod Gram Sewa Sahkari Samiti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <style>
+    /* यह स्टाइल फ़्रेम को पूरी स्क्रीन पर फ़िट कर देगा */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden; /* मुख्य पेज पर कोई स्क्रॉलबार नहीं */
+    }
     
-    <style>
-      :root {
-        --primary-color: #007bff;
-        --danger-color: #dc3545;
-        --success-color: #28a745;
-        --dark-color: #343a40;
-        --light-color: #f8f9fa;
-        --text-color: #212529;
-        --border-radius: 0.375rem;
-        --shadow: 0 4px 12px rgba(0,0,0,0.08);
-      }
-      body {
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-        margin: 0;
-        background-color: var(--light-color);
-        color: var(--text-color);
-        line-height: 1.6;
-      }
-      .container {
-        width: 90%;
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      .header {
-        background-color: #ffffff;
-        padding: 1.25rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 2rem;
-      }
-      .header .container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .header h1 {
-        margin: 0;
-        font-size: 1.75rem;
-        color: var(--dark-color);
-      }
-      .btn {
-        padding: 0.75rem 1.25rem;
-        border: none;
-        border-radius: var(--border-radius);
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-block;
-      }
-      .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-      }
-      .btn-primary:hover:not(:disabled) {
-        background-color: #0056b3;
-      }
-      .btn:disabled {
-        opacity: 0.65;
-        cursor: not-allowed;
-      }
-      
-      .loader-container {
-        text-align: center;
-        padding: 3rem;
-        display: block;
-      }
-      .spinner {
-        border: 6px solid #f3f3f3;
-        border-top: 6px solid var(--primary-color);
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 1rem;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      #data-container {
-        background: #ffffff;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow);
-        overflow-x: auto;
-      }
-      table { width: 100%; border-collapse: collapse; }
-      th, td {
-        border-bottom: 1px solid #e0e0e0;
-        padding: 1rem 1.25rem;
-        text-align: left;
-      }
-      th { background-color: #f9f9f9; font-weight: 500; color: #555; }
-      tr:last-child td { border-bottom: none; }
-      tr:hover { background-color: #fdfdfd; }
-      .amount { font-size: 1.1rem; font-weight: 700; }
-      .amount-due { color: var(--danger-color); }
-      .amount-advance { color: var(--success-color); }
-      .amount-zero { color: var(--text-color); }
-      
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        z-index: 100;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.5);
-        justify-content: center;
-        align-items: center;
-      }
-      .login-container {
-        padding: 2.5rem;
-        background: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        text-align: center;
-        width: 90%;
-        max-width: 400px;
-        margin: 1rem;
-        box-sizing: border-box;
-        position: relative;
-      }
-      .login-container h1 {
-        margin-bottom: 1.5rem;
-        color: #333;
-      }
-      .close-btn {
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        color: #aaa;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-      }
-      .close-btn:hover { color: #333; }
-      input[type="text"], input[type="password"] {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        box-sizing: border-box;
-      }
-      #error-message {
-        color: var(--danger-color);
-        margin-top: 1rem;
-        font-size: 0.9rem;
-        display: none;
-      }
-      
-      @media (max-width: 600px) {
-        .header .container {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
-        }
-        .header h1 { font-size: 1.5rem; }
-        th, td { padding: 0.75rem; }
-      }
-    </style>
-  </head>
-  <body>
-
-    <header class="header">
-      <div class="container">
-        <h1>कानोड़ ग्राम सेवा सहकारी समिति, कानोड़</h1>
-        <button id="admin-login-btn" class="btn btn-primary">एडमिन लॉगिन</button>
-      </div>
-    </header>
-
-    <main class="container">
-      <div id="loader" class="loader-container">
-        <div class="spinner"></div>
-        <p>बकाया सूची लोड हो रही है...</p>
-      </div>
-      <div id="error-container" style="display: none; color: var(--danger-color); text-align: center; padding: 2rem;"></div>
-      <div id="data-container" style="display: none;">
-        <table>
-          <thead>
-            <tr>
-              <th>दुकान नंबर</th>
-              <th>किरायेदार का नाम</th>
-              <th>पिता का नाम</th>
-              <th>बकाया / एडवांस</th>
-            </tr>
-          </thead>
-          <tbody id="data-table-body">
-            </tbody>
-        </table>
-      </div>
-    </main>
-
-    <div id="login-modal" class="modal-overlay">
-      <div class="login-container">
-        <span id="close-btn" class="close-btn">&times;</span>
-        <h1>एडमिन लॉगिन</h1>
-        <form id="login-form">
-          <input type="text" id="username" placeholder="यूज़रनेम" required>
-          <input type="password" id="password" placeholder="पासवर्ड" required>
-          <button type="submit" id="login-button" class="btn btn-primary">लॉगिन करें</button>
-        </form>
-        <div id="error-message"></div>
-      </div>
-    </div>
-
-
-    <script>
-      // -----------------------------------------------------------------
-      // --- ⭐ यहाँ अपना नया Web App URL पेस्ट करें ---
-      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwtjDfg0RxMeC0TN9L0henLrNneOcNvyqCbJUGL8kor9DcYcpcWGk5S7_KEpWpVRs/exec";
-      // -----------------------------------------------------------------
-      
-      
-      // --- भाग 1: पब्लिक लिस्ट लोड करना ---
-      
-      document.addEventListener('DOMContentLoaded', function() {
-        // पेज लोड होते ही पब्लिक लिस्ट मँगाएँ (GET रिक्वेस्ट)
-        fetch(WEB_APP_URL)
-          .then(response => response.json())
-          .then(result => {
-            if (result.success) {
-              renderData(result.data);
-            } else {
-              showError(new Error(result.error));
-            }
-          })
-          .catch(error => {
-            showError(error);
-          });
-      });
-
-      function renderData(dataList) {
-        const tableBody = document.getElementById('data-table-body');
-        tableBody.innerHTML = ''; 
-        if (dataList.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">कोई बकाया डेटा नहीं मिला।</td></tr>';
-        }
-        dataList.forEach(item => {
-          let amountClass = 'amount-zero';
-          let amountLabel = '';
-          if (item.outstanding > 0) {
-            amountClass = 'amount-due'; amountLabel = 'बकाया';
-          } else if (item.outstanding < 0) {
-            amountClass = 'amount-advance'; amountLabel = 'एडवांस';
-          } else {
-            amountLabel = 'शून्य';
-          }
-          const formattedAmount = new Intl.NumberFormat('hi-IN', {
-            style: 'currency', currency: 'INR'
-          }).format(Math.abs(item.outstanding)); 
-          const rowHtml = `
-            <tr>
-              <td>${item.shop}</td>
-              <td>${item.tenant}</td>
-              <td>${item.father}</td>
-              <td><span class="${amountClass} amount">${amountLabel} ${formattedAmount}</span></td>
-            </tr>`;
-          tableBody.innerHTML += rowHtml;
-        });
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('data-container').style.display = 'block';
-      }
-
-      function showError(error) {
-        document.getElementById('loader').style.display = 'none';
-        const errorContainer = document.getElementById('error-container');
-        errorContainer.style.display = 'block';
-        errorContainer.innerHTML = `<p>${error.message}</p>`;
-      }
-      
-      // --- भाग 2: लॉगिन पॉप-अप (Modal) को संभालना ---
-      
-      const modal = document.getElementById('login-modal');
-      const adminBtn = document.getElementById('admin-login-btn');
-      const closeBtn = document.getElementById('close-btn');
-
-      adminBtn.onclick = function() { modal.style.display = 'flex'; }
-      closeBtn.onclick = function() { modal.style.display = 'none'; }
-      window.onclick = function(event) {
-        if (event.target == modal) {
-          modal.style.display = 'none';
-        }
-      }
-
-      // --- भाग 3: लॉगिन फ़ॉर्म सबमिट करना (POST रिक्वेस्ट) ---
-      
-      document.getElementById('login-form').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        const loginBtn = document.getElementById('login-button');
-        const errorMsg = document.getElementById('error-message');
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'प्रतीक्षा करें...';
-        errorMsg.style.display = 'none';
-
-        const credentials = {
-          username: document.getElementById('username').value,
-          password: document.getElementById('password').value
-        };
-
-        // API को POST रिक्वेस्ट भेजें
-        fetch(WEB_APP_URL, {
-          method: 'POST',
-          body: JSON.stringify(credentials),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then(response => response.json())
-        .then(result => {
-          if (result.success) {
-            // लॉगिन सफल! यूज़र को एडमिन URL पर भेजें
-            window.top.location.href = result.redirectUrl;
-          } else {
-            handleLoginFailure(new Error(result.message));
-          }
-        })
-        .catch(error => {
-          handleLoginFailure(error);
-        });
-      });
-
-      function handleLoginFailure(error) {
-        const loginBtn = document.getElementById('login-button');
-        const errorMsg = document.getElementById('error-message');
-        errorMsg.textContent = error.message || "एक अज्ञात त्रुटि हुई।";
-        errorMsg.style.display = 'block';
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'लॉगिन करें';
-      }
-      
-    </script>
+    .iframe-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
     
-  </body>
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none; /* कोई भद्दा बॉर्डर नहीं */
+    }
+  </style>
+</head>
+<body>
+
+  <div class="iframe-container">
+  
+    <iframe src="https://script.google.com/macros/s/AKfycbxiLjy1HGMohG0ekz5hCbvx6GX7ltxW0oY4EN56edKeQVXVouPtCkAOobwQMgJeCdKT/exec">
+      <p>आपका ब्राउज़र iframes को सपोर्ट नहीं करता है।</p>
+    </iframe>
+    
+  </div>
+
+</body>
 </html>
